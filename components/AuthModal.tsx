@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { dummyUser } from "@/lib/dummy-data";
 
 type Tab = "masuk" | "daftar";
 type Role = "mahasiswa" | "perusahaan";
@@ -14,18 +16,45 @@ export function AuthModal({
   onClose: () => void;
   defaultTab?: Tab;
 }) {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>(defaultTab);
   const [role, setRole] = useState<Role>("mahasiswa");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   if (!isOpen) return null;
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (tab === "masuk") {
+      if (email === dummyUser.email && password === dummyUser.password) {
+        localStorage.setItem("bridgeu_user", JSON.stringify(dummyUser));
+        onClose();
+        router.push("/dashboard");
+      } else {
+        setError("Email atau kata sandi salah. Coba pakai akun dummy.");
+      }
+    } else {
+      // daftar — dummy, langsung anggap sukses & login
+      localStorage.setItem(
+        "bridgeu_user",
+        JSON.stringify({ ...dummyUser, email: email || dummyUser.email })
+      );
+      onClose();
+      router.push("/dashboard");
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 px-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl bg-paper p-8 shadow-2xl"
+        className="relative w-full max-w-sm rounded-2xl bg-paper p-8 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -36,18 +65,15 @@ export function AuthModal({
           ✕
         </button>
 
-        <span className="font-display text-xl font-semibold text-ink">
+        <span className="font-display text-lg font-semibold text-ink">
           Bridge<span className="text-bridge-gold">U</span>
         </span>
 
-        {/* TABS */}
         <div className="mt-6 flex gap-1 rounded-full bg-steel/10 p-1">
           <button
             onClick={() => setTab("masuk")}
             className={`flex-1 rounded-full py-2 text-sm font-medium transition ${
-              tab === "masuk"
-                ? "bg-ink text-paper"
-                : "text-steel hover:text-ink"
+              tab === "masuk" ? "bg-ink text-paper" : "text-steel hover:text-ink"
             }`}
           >
             Masuk
@@ -55,16 +81,13 @@ export function AuthModal({
           <button
             onClick={() => setTab("daftar")}
             className={`flex-1 rounded-full py-2 text-sm font-medium transition ${
-              tab === "daftar"
-                ? "bg-ink text-paper"
-                : "text-steel hover:text-ink"
+              tab === "daftar" ? "bg-ink text-paper" : "text-steel hover:text-ink"
             }`}
           >
             Daftar
           </button>
         </div>
 
-        {/* ROLE TOGGLE — hanya saat daftar */}
         {tab === "daftar" && (
           <div className="mt-5 flex gap-2 font-mono text-xs">
             <button
@@ -90,8 +113,7 @@ export function AuthModal({
           </div>
         )}
 
-        {/* FORM */}
-        <form className="mt-6 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           {tab === "daftar" && (
             <div>
               <label className="font-mono text-xs uppercase tracking-wide text-steel">
@@ -99,9 +121,7 @@ export function AuthModal({
               </label>
               <input
                 type="text"
-                placeholder={
-                  role === "mahasiswa" ? "Nama kamu" : "Nama perusahaan"
-                }
+                placeholder={role === "mahasiswa" ? "Nama kamu" : "Nama perusahaan"}
                 className="mt-1 w-full rounded-lg border border-steel/25 px-4 py-3 text-sm outline-none transition focus:border-ink"
               />
             </div>
@@ -112,7 +132,9 @@ export function AuthModal({
             </label>
             <input
               type="email"
-              placeholder="nama@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="mahasiswa@umn.ac.id"
               className="mt-1 w-full rounded-lg border border-steel/25 px-4 py-3 text-sm outline-none transition focus:border-ink"
             />
           </div>
@@ -122,10 +144,20 @@ export function AuthModal({
             </label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="mt-1 w-full rounded-lg border border-steel/25 px-4 py-3 text-sm outline-none transition focus:border-ink"
             />
           </div>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          {tab === "masuk" && (
+            <p className="font-mono text-xs text-steel">
+              Dummy: {dummyUser.email} / {dummyUser.password}
+            </p>
+          )}
+
           <button
             type="submit"
             className="mt-2 rounded-lg bg-ink py-3 text-sm font-medium text-paper transition hover:bg-steel"
@@ -138,20 +170,14 @@ export function AuthModal({
           {tab === "masuk" ? (
             <>
               Belum punya akun?{" "}
-              <button
-                onClick={() => setTab("daftar")}
-                className="text-bridge-gold underline"
-              >
+              <button onClick={() => setTab("daftar")} className="text-bridge-gold underline">
                 Daftar
               </button>
             </>
           ) : (
             <>
               Sudah punya akun?{" "}
-              <button
-                onClick={() => setTab("masuk")}
-                className="text-bridge-gold underline"
-              >
+              <button onClick={() => setTab("masuk")} className="text-bridge-gold underline">
                 Masuk
               </button>
             </>
