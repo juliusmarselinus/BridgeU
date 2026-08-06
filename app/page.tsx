@@ -1,69 +1,171 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { BridgeDivider } from "@/components/BridgeDivider";
+import { AuthModal } from "@/components/AuthModal";
+
+const features = [
+  {
+    label: "01",
+    title: "Perusahaan Terverifikasi",
+    desc: "Jelajahi daftar perusahaan yang sudah diverifikasi untuk kolaborasi akademik.",
+  },
+  {
+    label: "02",
+    title: "Peluang Kolaborasi",
+    desc: "Cari studi kasus, riset, atau magang yang cocok dengan minat dan skill kamu.",
+  },
+  {
+    label: "03",
+    title: "Portfolio Otomatis",
+    desc: "Setiap kolaborasi yang selesai otomatis jadi rekam jejak prestasimu.",
+  },
+];
+
+export default function LandingPage() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState<"masuk" | "daftar">("masuk");
+
+  const openModal = (tab: "masuk" | "daftar") => {
+    setModalTab(tab);
+    setModalOpen(true);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main>
+      {/* NAVBAR — sticky + blur */}
+      <nav className="sticky top-0 z-40 border-b border-steel/10 bg-paper/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+          <span className="font-display text-xl font-semibold tracking-tight">
+            Bridge<span className="text-bridge-gold">U</span>
+          </span>
+
+          <div className="hidden gap-8 font-mono text-xs uppercase tracking-wide text-steel sm:flex">
+            <a href="#fitur" className="transition hover:text-ink">
+              Fitur
+            </a>
+            <a href="#cara-kerja" className="transition hover:text-ink">
+              Cara Kerja
+            </a>
+          </div>
+
+          <div className="flex items-center gap-4 text-sm">
+            <button
+              onClick={() => openModal("masuk")}
+              className="text-steel transition hover:text-ink"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              Masuk
+            </button>
+            <button
+              onClick={() => openModal("daftar")}
+              className="rounded-full bg-ink px-5 py-2.5 text-paper shadow-sm transition hover:scale-[1.03] hover:bg-steel"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              Daftar
+            </button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </nav>
+
+      {/* HERO */}
+      <section className="mx-auto max-w-6xl px-6 pb-20 pt-16">
+        <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-bridge-gold">
+          Bridging Technology and Students&apos; Needs
+        </p>
+        <h1 className="max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+          Menjembatani mahasiswa dan perusahaan lewat kolaborasi akademik.
+        </h1>
+        <p className="mt-5 max-w-xl text-base text-steel">
+          Temukan peluang kolaborasi nyata tanpa perlu koneksi pribadi — atau
+          kelola permintaan mahasiswa langsung dari satu dasbor terpusat.
+        </p>
+
+        <button
+          onClick={() => openModal("daftar")}
+          className="mt-8 rounded-full bg-bridge-gold px-7 py-3.5 text-sm font-medium text-ink shadow-sm transition hover:scale-[1.03] hover:shadow-md"
+        >
+          Mulai Sekarang →
+        </button>
+
+        <div className="mt-14 grid grid-cols-1 gap-0 overflow-hidden rounded-2xl border border-steel/15 shadow-sm sm:grid-cols-2">
+          <div className="bg-ink p-8 text-paper transition sm:p-10">
+            <span className="font-mono text-xs uppercase tracking-widest text-bridge-gold">
+              Untuk Mahasiswa/i
+            </span>
+            <h2 className="mt-3 font-display text-2xl font-semibold">
+              Temukan peluang tanpa perlu koneksi
+            </h2>
+            <p className="mt-3 text-sm text-paper/70">
+              Ajukan kolaborasi ke perusahaan nyata, bangun portofolio, dan
+              dapat rekomendasi berdasarkan skill kamu.
+            </p>
+            <button
+              onClick={() => openModal("daftar")}
+              className="mt-6 font-mono text-sm text-bridge-gold underline underline-offset-4 transition hover:text-paper"
+            >
+              Daftar sebagai mahasiswa →
+            </button>
+          </div>
+
+          <div className="bg-paper p-8 transition sm:p-10">
+            <span className="font-mono text-xs uppercase tracking-widest text-steel">
+              Untuk Perusahaan
+            </span>
+            <h2 className="mt-3 font-display text-2xl font-semibold text-ink">
+              Kelola kolaborasi dalam satu dasbor
+            </h2>
+            <p className="mt-3 text-sm text-steel">
+              Publikasikan studi kasus, terima permintaan mahasiswa, dan
+              temukan talenta lebih awal.
+            </p>
+            <button
+              onClick={() => openModal("daftar")}
+              className="mt-6 font-mono text-sm text-ink underline underline-offset-4 transition hover:text-bridge-gold"
+            >
+              Daftar sebagai perusahaan →
+            </button>
+          </div>
         </div>
-      </main>
-    </div>
+      </section>
+
+      <div className="mx-auto max-w-6xl px-6">
+        <BridgeDivider />
+      </div>
+
+      {/* FITUR */}
+      <section id="fitur" className="mx-auto max-w-6xl px-6 py-20">
+        <h2 className="font-display text-2xl font-semibold text-ink">
+          Kenapa BridgeU?
+        </h2>
+        <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-3">
+          {features.map((f) => (
+            <div
+              key={f.label}
+              className="rounded-xl p-1 transition hover:-translate-y-1"
+            >
+              <span className="font-mono text-xs text-bridge-gold">
+                {f.label}
+              </span>
+              <h3 className="mt-2 font-display text-lg font-semibold text-ink">
+                {f.title}
+              </h3>
+              <p className="mt-2 text-sm text-steel">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t border-steel/15 px-6 py-8">
+        <p className="mx-auto max-w-6xl font-mono text-xs text-steel">
+          BridgeU — INSPIRE 2026 · Lotus Biru
+        </p>
+      </footer>
+
+      <AuthModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        defaultTab={modalTab}
+      />
+    </main>
   );
 }
