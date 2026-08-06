@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { dummyUser } from "@/lib/dummy-data";
+import { dummyUser, dummyPerusahaan, dummyAdmin } from "@/lib/dummy-data";
 
 type Tab = "masuk" | "daftar";
 type Role = "mahasiswa" | "perusahaan";
@@ -30,7 +30,15 @@ export function AuthModal({
     setError("");
 
     if (tab === "masuk") {
-      if (email === dummyUser.email && password === dummyUser.password) {
+      if (email === dummyAdmin.email && password === dummyAdmin.password) {
+        localStorage.setItem("bridgeu_admin", JSON.stringify(dummyAdmin));
+        onClose();
+        router.push("/admin/dashboard");
+      } else if (email === dummyPerusahaan.email && password === dummyPerusahaan.password) {
+        localStorage.setItem("bridgeu_company", JSON.stringify(dummyPerusahaan));
+        onClose();
+        router.push("/perusahaan/dashboard");
+      } else if (email === dummyUser.email && password === dummyUser.password) {
         localStorage.setItem("bridgeu_user", JSON.stringify(dummyUser));
         onClose();
         router.push("/dashboard");
@@ -38,13 +46,21 @@ export function AuthModal({
         setError("Email atau kata sandi salah. Coba pakai akun dummy.");
       }
     } else {
-      // daftar — dummy, langsung anggap sukses & login
-      localStorage.setItem(
-        "bridgeu_user",
-        JSON.stringify({ ...dummyUser, email: email || dummyUser.email })
-      );
-      onClose();
-      router.push("/dashboard");
+      if (role === "perusahaan") {
+        localStorage.setItem(
+          "bridgeu_company",
+          JSON.stringify({ ...dummyPerusahaan, email: email || dummyPerusahaan.email })
+        );
+        onClose();
+        router.push("/perusahaan/dashboard");
+      } else {
+        localStorage.setItem(
+          "bridgeu_user",
+          JSON.stringify({ ...dummyUser, email: email || dummyUser.email })
+        );
+        onClose();
+        router.push("/dashboard");
+      }
     }
   };
 
@@ -153,9 +169,11 @@ export function AuthModal({
 
           {error && <p className="text-sm text-red-600">{error}</p>}
           {tab === "masuk" && (
-            <p className="font-mono text-xs text-steel">
-              Dummy: {dummyUser.email} / {dummyUser.password}
-            </p>
+            <div className="font-mono text-[11px] text-steel space-y-1 bg-white/40 p-2.5 rounded-lg border border-steel/15">
+              <p>🔑 <span className="font-semibold">Mahasiswa:</span> {dummyUser.email} / {dummyUser.password}</p>
+              <p>🏢 <span className="font-semibold">Perusahaan:</span> {dummyPerusahaan.email} / {dummyPerusahaan.password}</p>
+              <p>⚡ <span className="font-semibold">Admin:</span> {dummyAdmin.email} / {dummyAdmin.password}</p>
+            </div>
           )}
 
           <button

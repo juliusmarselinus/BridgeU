@@ -32,7 +32,10 @@ export function Navbar() {
 
   useEffect(() => {
     const stored = localStorage.getItem("bridgeu_user");
-    if (stored) setUser(JSON.parse(stored));
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      queueMicrotask(() => setUser(parsed));
+    }
   }, []);
 
   return (

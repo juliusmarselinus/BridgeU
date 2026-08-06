@@ -23,7 +23,10 @@ export default function DetailKolaborasiPage() {
 
   useEffect(() => {
     const stored = localStorage.getItem("bridgeu_user");
-    if (stored) setUser(JSON.parse(stored));
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      queueMicrotask(() => setUser(parsed));
+    }
   }, []);
 
   if (!data) {

@@ -41,10 +41,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("bridgeu_user");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      queueMicrotask(() => setUser(parsedUser));
+    }
 
     const storedPengajuan = localStorage.getItem("bridgeu_pengajuan");
-    if (storedPengajuan) setPengajuan(JSON.parse(storedPengajuan));
+    if (storedPengajuan) {
+      const parsedPengajuan = JSON.parse(storedPengajuan);
+      queueMicrotask(() => setPengajuan(parsedPengajuan));
+    }
   }, []);
 
   const total = pengajuan.length;

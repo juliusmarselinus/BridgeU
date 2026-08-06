@@ -26,7 +26,10 @@ export default function StatusPage() {
 
   useEffect(() => {
     const stored = localStorage.getItem("bridgeu_pengajuan");
-    if (stored) setPengajuan(JSON.parse(stored));
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      queueMicrotask(() => setPengajuan(parsed));
+    }
   }, []);
 
   return (

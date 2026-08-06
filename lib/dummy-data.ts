@@ -4,7 +4,188 @@ export const dummyUser = {
   nama: "John Doe",
   universitas: "Universitas Multimedia Nusantara",
   prodi: "Sistem Informasi",
+  role: "mahasiswa",
 };
+
+export const dummyPerusahaan = {
+  email: "perusahaan@nexora.com",
+  password: "password123",
+  nama: "Nexora Digital",
+  industri: "Teknologi & Produk Digital",
+  lokasi: "Jakarta Selatan",
+  role: "perusahaan",
+};
+
+export const dummyAdmin = {
+  email: "admin@bridgeu.id",
+  password: "password123",
+  nama: "Administrator BridgeU",
+  role: "admin",
+};
+
+export type RegisteredCompany = {
+  id: string;
+  nama: string;
+  email: string;
+  industri: string;
+  nib: string;
+  lokasi: string;
+  tanggalDaftar: string;
+  statusVerifikasi: "Terverifikasi" | "Menunggu Verifikasi" | "Ditolak";
+};
+
+export const dummyRegisteredCompanies: RegisteredCompany[] = [
+  {
+    id: "comp-1",
+    nama: "Nexora Digital",
+    email: "perusahaan@nexora.com",
+    industri: "Teknologi & Produk Digital",
+    nib: "9120003418921",
+    lokasi: "Jakarta Selatan",
+    tanggalDaftar: "12 Januari 2026",
+    statusVerifikasi: "Terverifikasi",
+  },
+  {
+    id: "comp-2",
+    nama: "Vertex Logistics",
+    email: "hr@vertexlogistics.co.id",
+    industri: "Logistik & Supply Chain",
+    nib: "8190001237722",
+    lokasi: "Jakarta Barat",
+    tanggalDaftar: "01 Februari 2026",
+    statusVerifikasi: "Menunggu Verifikasi",
+  },
+  {
+    id: "comp-3",
+    nama: "Skyline Fintech",
+    email: "contact@skylinefintech.id",
+    industri: "Financial Technology",
+    nib: "9120009988112",
+    lokasi: "Tangerang",
+    tanggalDaftar: "18 Juli 2026",
+    statusVerifikasi: "Terverifikasi",
+  },
+  {
+    id: "comp-4",
+    nama: "Cakra Health Tech",
+    email: "admin@cakrahealth.com",
+    industri: "HealthTech & Medis",
+    nib: "9120005544332",
+    lokasi: "Bandung",
+    tanggalDaftar: "02 Agustus 2026",
+    statusVerifikasi: "Menunggu Verifikasi",
+  },
+];
+
+export type ManagedUser = {
+  id: string;
+  nama: string;
+  email: string;
+  role: "Mahasiswa" | "Perusahaan";
+  detail: string; // Universitas & Prodi or Industri & Lokasi
+  status: "Aktif" | "Suspended";
+  tanggalGabung: string;
+};
+
+export const dummyManagedUsers: ManagedUser[] = [
+  {
+    id: "usr-1",
+    nama: "John Doe",
+    email: "mahasiswa@umn.ac.id",
+    role: "Mahasiswa",
+    detail: "Universitas Multimedia Nusantara • Sistem Informasi",
+    status: "Aktif",
+    tanggalGabung: "10 Januari 2026",
+  },
+  {
+    id: "usr-2",
+    nama: "Nexora Digital",
+    email: "perusahaan@nexora.com",
+    role: "Perusahaan",
+    detail: "Teknologi & Produk Digital • Jakarta Selatan",
+    status: "Aktif",
+    tanggalGabung: "12 Januari 2026",
+  },
+  {
+    id: "usr-3",
+    nama: "Siti Rahma",
+    email: "siti.rahma@itb.ac.id",
+    role: "Mahasiswa",
+    detail: "Institut Teknologi Bandung • DKV",
+    status: "Aktif",
+    tanggalGabung: "15 Februari 2026",
+  },
+  {
+    id: "usr-4",
+    nama: "Budi Santoso",
+    email: "budi.s@ui.ac.id",
+    role: "Mahasiswa",
+    detail: "Universitas Indonesia • Ilmu Komputer",
+    status: "Aktif",
+    tanggalGabung: "01 Maret 2026",
+  },
+  {
+    id: "usr-5",
+    nama: "Vertex Logistics",
+    email: "hr@vertexlogistics.co.id",
+    role: "Perusahaan",
+    detail: "Logistik & Supply Chain • Jakarta Barat",
+    status: "Aktif",
+    tanggalGabung: "01 Februari 2026",
+  },
+];
+
+export type Pelamar = {
+  id: string;
+  kolaborasiId: string;
+  kolaborasiJudul: string;
+  namaMahasiswa: string;
+  universitas: string;
+  prodi: string;
+  emailMahasiswa: string;
+  tujuan: string;
+  status: "Menunggu" | "Diterima" | "Ditolak" | "Selesai";
+  tanggal: string;
+};
+
+export const dummyPelamarList: Pelamar[] = [
+  {
+    id: "pelamar-1",
+    kolaborasiId: "1",
+    kolaborasiJudul: "Studi Kasus: Optimasi UX Aplikasi Perbankan",
+    namaMahasiswa: "John Doe",
+    universitas: "Universitas Multimedia Nusantara",
+    prodi: "Sistem Informasi",
+    emailMahasiswa: "mahasiswa@umn.ac.id",
+    tujuan: "Ingin menerapkan riset UX perbankan untuk tugas akhir dan portofolio profesional.",
+    status: "Menunggu",
+    tanggal: "04 Agustus 2026",
+  },
+  {
+    id: "pelamar-2",
+    kolaborasiId: "1",
+    kolaborasiJudul: "Studi Kasus: Optimasi UX Aplikasi Perbankan",
+    namaMahasiswa: "Siti Rahma",
+    universitas: "Institut Teknologi Bandung",
+    prodi: "Desain Komunikasi Visual",
+    emailMahasiswa: "siti.rahma@itb.ac.id",
+    tujuan: "Fokus pada pembuatan perancangan visual antarmuka mobile banking yang inklusif.",
+    status: "Menunggu",
+    tanggal: "05 Agustus 2026",
+  },
+  {
+    id: "pelamar-3",
+    kolaborasiId: "3",
+    kolaborasiJudul: "Magang: Frontend Developer",
+    namaMahasiswa: "Budi Santoso",
+    universitas: "Universitas Indonesia",
+    prodi: "Ilmu Komputer",
+    emailMahasiswa: "budi.s@ui.ac.id",
+    tujuan: "Pengalaman praktis Next.js dan Tailwind CSS dalam proyek finansial nyata.",
+    status: "Diterima",
+    tanggal: "02 Agustus 2026",
+  },
+];
 
 export type Kolaborasi = {
   id: string;
@@ -15,6 +196,7 @@ export type Kolaborasi = {
   deskripsi: string;
   lokasi: string;
   batasWaktu: string;
+  statusModerasi?: "Disetujui" | "Menunggu" | "Ditolak";
 };
 
 export const dummyKolaborasi: Kolaborasi[] = [
