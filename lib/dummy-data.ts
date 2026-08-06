@@ -187,6 +187,112 @@ export const dummyPelamarList: Pelamar[] = [
   },
 ];
 
+export const universitasList = [
+  "Universitas Multimedia Nusantara (UMN)",
+  "Universitas Indonesia (UI)",
+  "Institut Teknologi Bandung (ITB)",
+  "Universitas Gadjah Mada (UGM)",
+  "Institut Teknologi Sepuluh Nopember (ITS)",
+  "Universitas Airlangga (UNAIR)",
+  "Universitas Padjadjaran (UNPAD)",
+  "Universitas Diponegoro (UNDIP)",
+  "Universitas Bina Nusantara (BINUS)",
+  "Telkom University",
+  "Universitas Brawijaya (UB)",
+  "Universitas Sebelas Maret (UNS)",
+  "Universitas Pelita Harapan (UPH)",
+  "Universitas Katolik Indonesia Atma Jaya",
+  "Universitas Tarumanagara (UNTAR)",
+  "Universitas Trisakti",
+  "Universitas Hasanuddin (UNHAS)",
+  "Universitas Udayana (UNUD)",
+  "Universitas Islam Indonesia (UII)",
+  "Universitas Sanata Dharma",
+  "Universitas Parahyangan (UNPAR)",
+  "Perguruan Tinggi Lainnya",
+];
+
+export const prodiList = [
+  // Ekonomi & Bisnis
+  { label: "Manajemen & Bisnis", value: "Manajemen", group: "Ekonomi & Bisnis" },
+  { label: "Akuntansi & Keuangan", value: "Akuntansi", group: "Ekonomi & Bisnis" },
+  { label: "Bisnis Digital", value: "Bisnis Digital", group: "Ekonomi & Bisnis" },
+  { label: "Ekonomi Pembangunan", value: "Ekonomi Pembangunan", group: "Ekonomi & Bisnis" },
+  { label: "Manajemen Pemasaran", value: "Pemasaran", group: "Ekonomi & Bisnis" },
+
+  // Seni, Desain & Komunikasi
+  { label: "Desain Komunikasi Visual (DKV)", value: "Desain Komunikasi Visual", group: "Desain & Komunikasi" },
+  { label: "Ilmu Komunikasi", value: "Ilmu Komunikasi", group: "Desain & Komunikasi" },
+  { label: "Hubungan Masyarakat (PR)", value: "Hubungan Masyarakat", group: "Desain & Komunikasi" },
+  { label: "Desain Produk", value: "Desain Produk", group: "Desain & Komunikasi" },
+  { label: "Broadcasting & Film", value: "Broadcasting", group: "Desain & Komunikasi" },
+
+  // Teknologi & Komputer
+  { label: "Sistem Informasi", value: "Sistem Informasi", group: "Teknologi & Komputer" },
+  { label: "Teknik Informatika", value: "Teknik Informatika", group: "Teknologi & Komputer" },
+  { label: "Data Science & Analitik", value: "Data Science", group: "Teknologi & Komputer" },
+  { label: "Cyber Security", value: "Cyber Security", group: "Teknologi & Komputer" },
+  { label: "Ilmu Komputer", value: "Ilmu Komputer", group: "Teknologi & Komputer" },
+
+  // Teknik & Arsitektur
+  { label: "Teknik Industri", value: "Teknik Industri", group: "Teknik & Arsitektur" },
+  { label: "Arsitektur", value: "Arsitektur", group: "Teknik & Arsitektur" },
+  { label: "Teknik Sipil", value: "Teknik Sipil", group: "Teknik & Arsitektur" },
+  { label: "Teknik Elektro", value: "Teknik Elektro", group: "Teknik & Arsitektur" },
+
+  // Hukum & Humaniora
+  { label: "Hukum Bisnis & Keperdataan", value: "Hukum", group: "Hukum & Humaniora" },
+  { label: "Psikologi Organisasi", value: "Psikologi", group: "Hukum & Humaniora" },
+  { label: "Hubungan Internasional", value: "Hubungan Internasional", group: "Hukum & Humaniora" },
+  { label: "Sastra & Bahasa Inggris", value: "Sastra Inggris", group: "Hukum & Humaniora" },
+
+  // Kesehatan & Sains
+  { label: "Kesehatan Masyarakat", value: "Kesehatan Masyarakat", group: "Kesehatan & Sains" },
+  { label: "Farmasi", value: "Farmasi", group: "Kesehatan & Sains" },
+  { label: "Bioteknologi", value: "Bioteknologi", group: "Kesehatan & Sains" },
+];
+
+export const allCategoriesList = [
+  "UI/UX & Product Design",
+  "Business Strategy & Marketing",
+  "Data Science & Analytics",
+  "Software Development",
+  "Content & Brand Communications",
+  "Finance & Financial Modeling",
+  "Human Resources & Psychology",
+  "Legal & Regulatory Affairs",
+  "Supply Chain & Logistics",
+  "Cyber Security & Cloud",
+];
+
+export const allSkillsList = [
+  // Design & Media
+  "Figma",
+  "Adobe Photoshop",
+  "Premiere Pro",
+  "Copywriting",
+  "Branding",
+  // Business & Finance
+  "Business Planning",
+  "Financial Modeling",
+  "Market Research",
+  "Excel / Sheets",
+  "Public Speaking",
+  "Social Media Marketing",
+  // Tech & Data
+  "Python",
+  "SQL",
+  "React / Next.js",
+  "TypeScript",
+  "Tableau",
+  "SPSS",
+  // Management & Legal
+  "Project Management",
+  "Legal Drafting",
+  "HR Analytics",
+  "Supply Chain Ops",
+];
+
 export type Kolaborasi = {
   id: string;
   perusahaan: string;
@@ -197,6 +303,12 @@ export type Kolaborasi = {
   lokasi: string;
   batasWaktu: string;
   statusModerasi?: "Disetujui" | "Menunggu" | "Ditolak";
+  // Smart Recommendation Metadata
+  tags?: string[];
+  matchScore?: number; // 0-100%
+  tingkatKesulitan?: "Pemula" | "Menengah" | "Lanjutan";
+  rekomendasiProdi?: string[];
+  gajiStipend?: string;
 };
 
 export const dummyKolaborasi: Kolaborasi[] = [
@@ -205,55 +317,153 @@ export const dummyKolaborasi: Kolaborasi[] = [
     perusahaan: "Nexora Digital",
     judul: "Studi Kasus: Optimasi UX Aplikasi Perbankan",
     tipe: "Akademik",
-    kategori: "UI/UX",
+    kategori: "UI/UX & Product Design",
     deskripsi:
-      "Analisis dan usulkan perbaikan alur onboarding pada aplikasi mobile banking.",
+      "Analisis dan usulkan perbaikan alur onboarding serta aksesibilitas pada aplikasi mobile banking berbasis data pengujian pengguna.",
     lokasi: "Remote",
     batasWaktu: "20 Agustus 2026",
+    statusModerasi: "Disetujui",
+    tags: ["Figma", "User Research", "Usability Testing", "UI/UX"],
+    matchScore: 98,
+    tingkatKesulitan: "Menengah",
+    rekomendasiProdi: ["Sistem Informasi", "Desain Komunikasi Visual", "Teknik Informatika"],
+    gajiStipend: "E-Sertifikat + Insentif Riset Rp 1.500.000",
   },
   {
     id: "2",
     perusahaan: "Vertex Logistics",
-    judul: "Riset: Prediksi Permintaan Gudang",
+    judul: "Riset: Prediksi Permintaan Gudang Berbasis AI",
     tipe: "Akademik",
-    kategori: "Data Science",
+    kategori: "Data Science & Analytics",
     deskripsi:
-      "Membangun model prediksi sederhana untuk kebutuhan stok gudang regional.",
+      "Membangun model Machine Learning prediktif sederhana untuk kebutuhan pengalokasian stok gudang logistik regional.",
     lokasi: "Jakarta",
     batasWaktu: "25 Agustus 2026",
+    statusModerasi: "Disetujui",
+    tags: ["Python", "Pandas", "Scikit-Learn", "Machine Learning"],
+    matchScore: 94,
+    tingkatKesulitan: "Lanjutan",
+    rekomendasiProdi: ["Sistem Informasi", "Data Science", "Teknik Informatika", "Teknik Industri"],
+    gajiStipend: "Insentif Proyek Rp 2.500.000",
   },
   {
     id: "3",
-    perusahaan: "Skyline Fintech",
-    judul: "Magang: Frontend Developer",
-    tipe: "Magang",
-    kategori: "Software Development",
+    perusahaan: "Harmoni Retail Group",
+    judul: "Studi Kasus: Strategi Branding & Campaign Media Sosial",
+    tipe: "Akademik",
+    kategori: "Content & Brand Communications",
     deskripsi:
-      "Membantu tim frontend membangun fitur dashboard transaksi pengguna.",
-    lokasi: "Hybrid",
-    batasWaktu: "30 Agustus 2026",
+      "Merancang konsep pesan komunikasi digital dan perencanaan konten pemasaran omnichannel untuk memperluas jangkauan brand ritel ke Gen-Z.",
+    lokasi: "Remote",
+    batasWaktu: "18 Agustus 2026",
+    statusModerasi: "Disetujui",
+    tags: ["Branding", "Copywriting", "Social Media Marketing", "Public Speaking"],
+    matchScore: 96,
+    tingkatKesulitan: "Pemula",
+    rekomendasiProdi: ["Ilmu Komunikasi", "Desain Komunikasi Visual", "Pemasaran", "Hubungan Masyarakat"],
+    gajiStipend: "E-Sertifikat + Hadiah Produk Retail & Insentif",
   },
   {
     id: "4",
-    perusahaan: "Harmoni Retail Group",
-    judul: "Studi Kasus: Strategi Loyalitas Pelanggan",
-    tipe: "Akademik",
-    kategori: "Business Case",
+    perusahaan: "Nusantara Capital Partners",
+    judul: "Magang: Business Strategy & Financial Analyst",
+    tipe: "Magang",
+    kategori: "Finance & Financial Modeling",
     deskripsi:
-      "Merancang strategi program loyalitas untuk retail berbasis data transaksi.",
-    lokasi: "Remote",
-    batasWaktu: "18 Agustus 2026",
+      "Membantu tim investasi menyusun analisis kelayakan finansial dan riset persaingan industri pasar berkembang.",
+    lokasi: "Jakarta Pusat",
+    batasWaktu: "31 Agustus 2026",
+    statusModerasi: "Disetujui",
+    tags: ["Financial Modeling", "Business Planning", "Excel / Sheets", "Market Research"],
+    matchScore: 97,
+    tingkatKesulitan: "Menengah",
+    rekomendasiProdi: ["Manajemen", "Akuntansi", "Ekonomi Pembangunan", "Bisnis Digital"],
+    gajiStipend: "Rp 4.000.000 / bulan",
   },
   {
     id: "5",
-    perusahaan: "Cakra Health Tech",
-    judul: "Magang: Data Analyst",
+    perusahaan: "Skyline Fintech",
+    judul: "Magang: Frontend Developer (Next.js & Tailwind)",
     tipe: "Magang",
-    kategori: "Data Science",
+    kategori: "Software Development",
     deskripsi:
-      "Mengolah data rekam medis anonim untuk mendukung riset internal tim produk.",
+      "Membantu tim engineer memproduksi komponen UI dashboard transaksi finansial secara responsif dan performan.",
+    lokasi: "Hybrid",
+    batasWaktu: "30 Agustus 2026",
+    statusModerasi: "Disetujui",
+    tags: ["Next.js", "React", "TypeScript", "Tailwind CSS"],
+    matchScore: 95,
+    tingkatKesulitan: "Menengah",
+    rekomendasiProdi: ["Sistem Informasi", "Teknik Informatika", "Ilmu Komputer"],
+    gajiStipend: "Rp 3.500.000 / bulan",
+  },
+  {
+    id: "6",
+    perusahaan: "Cakra Health Tech",
+    judul: "Magang: Data Analyst Telemedisin",
+    tipe: "Magang",
+    kategori: "Data Science & Analytics",
+    deskripsi:
+      "Mengolah data rekam konsul medis anonim untuk mendukung insight peningkatan layanan aplikasi kesehatan internal.",
     lokasi: "Jakarta",
     batasWaktu: "28 Agustus 2026",
+    statusModerasi: "Disetujui",
+    tags: ["SQL", "Tableau", "Data Analysis", "Healthcare Tech"],
+    matchScore: 91,
+    tingkatKesulitan: "Menengah",
+    rekomendasiProdi: ["Sistem Informasi", "Data Science", "Kesehatan Masyarakat", "Farmasi"],
+    gajiStipend: "Rp 3.000.000 / bulan",
+  },
+  {
+    id: "7",
+    perusahaan: "LegalTech Mitra Utama",
+    judul: "Studi Kasus: Analisis Regulasi Pelindungan Data Pribadi (UU PDP)",
+    tipe: "Akademik",
+    kategori: "Legal & Regulatory Affairs",
+    deskripsi:
+      "Menyusun draf rekomendasi kepatuhan tata kelola data perusahaan startup terhadap ketentuan UU PDP Indonesia.",
+    lokasi: "Remote",
+    batasWaktu: "08 September 2026",
+    statusModerasi: "Disetujui",
+    tags: ["Legal Drafting", "Cyber Law", "Compliance", "UU PDP"],
+    matchScore: 93,
+    tingkatKesulitan: "Menengah",
+    rekomendasiProdi: ["Hukum", "Hubungan Internasional", "Sistem Informasi"],
+    gajiStipend: "Insentif Riset Rp 2.000.000",
+  },
+  {
+    id: "8",
+    perusahaan: "Kreatif Studio Indonesia",
+    judul: "Studi Kasus: Redesign Packaging & Visual Identity Produk Lokal",
+    tipe: "Akademik",
+    kategori: "UI/UX & Product Design",
+    deskripsi:
+      "Merancang ulang identitas visual, kemasan produk, dan ilustrasi digital untuk brand kuliner lokal Nusantara.",
+    lokasi: "Remote",
+    batasWaktu: "12 September 2026",
+    statusModerasi: "Disetujui",
+    tags: ["Adobe Photoshop", "Branding", "Desain Produk", "Illustration"],
+    matchScore: 94,
+    tingkatKesulitan: "Pemula",
+    rekomendasiProdi: ["Desain Komunikasi Visual", "Desain Produk", "Pemasaran"],
+    gajiStipend: "E-Sertifikat + Award Portofolio Terbaik",
+  },
+  {
+    id: "9",
+    perusahaan: "TalentFlow Consulting",
+    judul: "Riset: Evaluasi Budaya Kerja Hybrid & Employee Engagement",
+    tipe: "Akademik",
+    kategori: "Human Resources & Psychology",
+    deskripsi:
+      "Melakukan survei dan analisis indikator kepuasan karyawan pada skema kerja hybrid pasca-pandemi.",
+    lokasi: "Remote",
+    batasWaktu: "15 September 2026",
+    statusModerasi: "Disetujui",
+    tags: ["HR Analytics", "Psikologi", "Survey Research", "SPSS"],
+    matchScore: 92,
+    tingkatKesulitan: "Pemula",
+    rekomendasiProdi: ["Psikologi", "Manajemen", "Ilmu Komunikasi"],
+    gajiStipend: "Insentif Riset Rp 1.800.000",
   },
 ];
 export type Badge = {

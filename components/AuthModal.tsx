@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { dummyUser, dummyPerusahaan, dummyAdmin } from "@/lib/dummy-data";
 
 type Tab = "masuk" | "daftar";
@@ -188,9 +189,13 @@ export function AuthModal({
           {tab === "masuk" ? (
             <>
               Belum punya akun?{" "}
-              <button onClick={() => setTab("daftar")} className="text-bridge-gold underline">
-                Daftar
-              </button>
+              <Link
+                href="/daftar"
+                onClick={onClose}
+                className="text-bridge-gold font-semibold underline"
+              >
+                Daftar Profil Lengkap
+              </Link>
             </>
           ) : (
             <>

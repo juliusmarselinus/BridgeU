@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { BridgeDivider } from "@/components/BridgeDivider";
 import { AuthModal } from "@/components/AuthModal";
 
@@ -56,12 +57,12 @@ export default function LandingPage() {
             >
               Masuk
             </button>
-            <button
-              onClick={() => openModal("daftar")}
-              className="rounded-full bg-ink px-5 py-2.5 text-paper shadow-sm transition hover:scale-[1.03] hover:bg-steel"
+            <Link
+              href="/daftar"
+              className="rounded-full bg-ink px-5 py-2.5 text-paper shadow-sm transition hover:scale-[1.03] hover:bg-steel font-medium"
             >
               Daftar
-            </button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -79,12 +80,12 @@ export default function LandingPage() {
           kelola permintaan mahasiswa langsung dari satu dasbor terpusat.
         </p>
 
-        <button
-          onClick={() => openModal("daftar")}
-          className="mt-8 rounded-full bg-bridge-gold px-7 py-3.5 text-sm font-medium text-ink shadow-sm transition hover:scale-[1.03] hover:shadow-md"
+        <Link
+          href="/daftar"
+          className="mt-8 inline-block rounded-full bg-bridge-gold px-7 py-3.5 text-sm font-medium text-ink shadow-sm transition hover:scale-[1.03] hover:shadow-md"
         >
           Mulai Sekarang →
-        </button>
+        </Link>
 
         <div className="mt-14 grid grid-cols-1 gap-0 overflow-hidden rounded-2xl border border-steel/15 shadow-sm sm:grid-cols-2">
           <div className="bg-ink p-8 text-paper transition sm:p-10">
@@ -98,12 +99,12 @@ export default function LandingPage() {
               Ajukan kolaborasi ke perusahaan nyata, bangun portofolio, dan
               dapat rekomendasi berdasarkan skill kamu.
             </p>
-            <button
-              onClick={() => openModal("daftar")}
-              className="mt-6 font-mono text-sm text-bridge-gold underline underline-offset-4 transition hover:text-paper"
+            <Link
+              href="/daftar"
+              className="mt-6 inline-block font-mono text-sm text-bridge-gold underline underline-offset-4 transition hover:text-paper"
             >
               Daftar sebagai mahasiswa →
-            </button>
+            </Link>
           </div>
 
           <div className="bg-paper p-8 transition sm:p-10">
@@ -117,12 +118,12 @@ export default function LandingPage() {
               Publikasikan studi kasus, terima permintaan mahasiswa, dan
               temukan talenta lebih awal.
             </p>
-            <button
-              onClick={() => openModal("daftar")}
-              className="mt-6 font-mono text-sm text-ink underline underline-offset-4 transition hover:text-bridge-gold"
+            <Link
+              href="/daftar"
+              className="mt-6 inline-block font-mono text-sm text-ink underline underline-offset-4 transition hover:text-bridge-gold"
             >
               Daftar sebagai perusahaan →
-            </button>
+            </Link>
           </div>
         </div>
       </section>
