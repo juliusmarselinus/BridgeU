@@ -15,6 +15,7 @@ type StoredUser = {
   nama: string;
   universitas: string;
   prodi: string;
+  foto?: string;
 };
 
 function initials(name: string) {
@@ -26,16 +27,46 @@ function initials(name: string) {
     .toUpperCase();
 }
 
+function readStoredUser(): StoredUser | null {
+  const stored = localStorage.getItem("bridgeu_user");
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+}
+
 export function Navbar() {
   const pathname = usePathname();
   const [user, setUser] = useState<StoredUser | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem("bridgeu_user");
-    if (stored) {
-      const parsed = JSON.parse(stored);
+    // initial load
+    const parsed = readStoredUser();
+    if (parsed) {
       queueMicrotask(() => setUser(parsed));
     }
+
+    // sync ketika bridgeu_user diupdate di tab lain
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "bridgeu_user") {
+        setUser(readStoredUser());
+      }
+    };
+
+    // sync ketika bridgeu_user diupdate di tab yang sama (mis. halaman profile)
+    const handleLocalUpdate = () => {
+      setUser(readStoredUser());
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("bridgeu_user_updated", handleLocalUpdate);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("bridgeu_user_updated", handleLocalUpdate);
+    };
   }, []);
 
   return (
@@ -87,15 +118,29 @@ export function Navbar() {
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-bridge-gold" />
           </button>
 
-          {/* avatar inisial */}
-          <div className="flex items-center gap-2.5 rounded-full bg-white/10 py-1.5 pl-1.5 pr-3.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-bridge-gold font-mono text-[11px] font-medium text-ink">
-              {user ? initials(user.nama) : "?"}
+          {/* avatar */}
+          <Link
+            href="/profile"
+            className="flex items-center gap-2.5 rounded-full bg-white/10 py-1.5 pl-1.5 pr-3.5 transition hover:bg-white/20"
+          >
+            <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-bridge-gold font-mono text-[11px] font-medium text-ink">
+              {user?.foto ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.foto}
+                  alt="Foto profil"
+                  className="h-full w-full object-cover"
+                />
+              ) : user ? (
+                initials(user.nama)
+              ) : (
+                "?"
+              )}
             </div>
             <span className="hidden font-mono text-xs text-paper sm:inline">
               {user ? user.nama.split(" ")[0] : "Tamu"}
             </span>
-          </div>
+          </Link>
         </div>
       </nav>
     </div>
