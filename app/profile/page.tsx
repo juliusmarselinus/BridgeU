@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
-import { allCategoriesList, allSkillsList } from "@/lib/dummy-data";
+import { allCategoriesList, allSkillsList, badgeList } from "@/lib/dummy-data";
 
 type StoredUser = {
   nama: string;
@@ -16,6 +17,15 @@ type StoredUser = {
   preferensiLokasi?: string;
   ringkasan?: string;
   foto?: string; // base64 data URL, hasil crop bulat
+};
+
+type Pengajuan = {
+  id: string;
+  judul: string;
+  perusahaan: string;
+  status: string;
+  tujuan: string;
+  tanggal: string;
 };
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -237,6 +247,9 @@ export default function ProfilePage() {
   const [minatKategori, setMinatKategori] = useState<string[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
 
+  // portfolio / gamification state
+  const [pengajuan, setPengajuan] = useState<Pengajuan[]>([]);
+
   useEffect(() => {
     const stored = localStorage.getItem("bridgeu_user");
     if (stored) {
@@ -253,6 +266,16 @@ export default function ProfilePage() {
       setFoto(parsed.foto || "");
       setMinatKategori(parsed.minatKategori || []);
       setSkills(parsed.skills || []);
+    }
+
+    const storedPengajuan = localStorage.getItem("bridgeu_pengajuan");
+    if (storedPengajuan) {
+      try {
+        const parsedPengajuan = JSON.parse(storedPengajuan);
+        queueMicrotask(() => setPengajuan(parsedPengajuan));
+      } catch {
+        // ignore data rusak
+      }
     }
   }, []);
 
@@ -334,6 +357,19 @@ export default function ProfilePage() {
 
   const inisial = nama ? nama.trim().charAt(0).toUpperCase() : "?";
 
+  // hitung level & badge
+  const totalPengajuan = pengajuan.length;
+  const diterima = pengajuan.filter(
+    (p) => p.status === "Diterima" || p.status === "Selesai"
+  ).length;
+  const level = Math.floor(totalPengajuan / 2) + 1;
+  const progressToNextLevel = (totalPengajuan % 2) / 2;
+  const earnedBadges = badgeList.filter((b) => b.check(totalPengajuan, diterima));
+  const lockedBadges = badgeList.filter((b) => !b.check(totalPengajuan, diterima));
+  const outcomes = pengajuan.filter(
+    (p) => p.status === "Diterima" || p.status === "Selesai"
+  );
+
   return (
     <main>
       <Navbar />
@@ -346,7 +382,7 @@ export default function ProfilePage() {
         />
       )}
 
-      <div className="mx-auto max-w-3xl px-6 py-12">
+      <div className="mx-auto max-w-6xl px-6 py-12">
         <h1 className="font-display text-2xl font-semibold text-ink">
           Profil Saya
         </h1>
@@ -369,251 +405,375 @@ export default function ProfilePage() {
           onSubmit={handleSave}
           className="mt-8 overflow-hidden rounded-2xl bg-[#FAF7EE] shadow-[0_4px_6px_-1px_rgba(27,39,64,0.1),0_12px_28px_-6px_rgba(27,39,64,0.15)]"
         >
-          {/* Header: foto kiri, info tengah */}
-          <div className="flex flex-col items-center gap-6 border-b border-steel/10 px-7 py-8 sm:flex-row sm:items-center">
-            <div className="relative h-28 w-28 shrink-0 sm:h-32 sm:w-32">
-              <div className="h-full w-full overflow-hidden rounded-full border-4 border-white bg-ink/5 shadow-md">
-                {foto ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={foto}
-                    alt="Foto profil"
-                    className="h-full w-full object-cover"
+          {/* Header: kolom kiri foto+nama+data+portfolio, kolom kanan form */}
+          <div className="flex flex-col sm:flex-row">
+            {/* Kolom kiri: foto, nama, email, jurusan, stats, level, badge, rekam jejak */}
+            <div className="flex shrink-0 flex-col gap-6 border-b border-steel/10 px-7 py-8 sm:w-80 sm:border-b-0 sm:border-r sm:py-10">
+              {/* Foto + identitas */}
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="relative h-28 w-28 sm:h-32 sm:w-32">
+                  <div className="h-full w-full overflow-hidden rounded-full border-4 border-white bg-ink/5 shadow-md">
+                    {foto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={foto}
+                        alt="Foto profil"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-white font-display text-3xl font-semibold text-steel">
+                        {inisial}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fotoInputRef.current?.click()}
+                    aria-label="Edit foto profil"
+                    className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-ink text-paper shadow transition hover:bg-steel"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                    </svg>
+                  </button>
+                  <input
+                    ref={fotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={readFile}
+                    className="hidden"
                   />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center font-display text-3xl font-semibold text-steel">
-                    {inisial}
+                </div>
+
+                <div>
+                  <h2 className="font-display text-lg font-semibold text-ink">
+                    {nama || "Nama Kamu"}
+                  </h2>
+                  <p className="mt-1 text-sm text-steel">
+                    {email || "email@kamu.com"}
+                  </p>
+                  {(prodi || universitas) && (
+                    <p className="mt-1 font-mono text-xs text-steel/80">
+                      {[prodi, universitas].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
+                </div>
+
+                {minatKategori.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    {minatKategori.slice(0, 3).map((m) => (
+                      <span
+                        key={m}
+                        className="rounded-full bg-ink/5 px-2.5 py-1 font-mono text-[11px] text-ink"
+                      >
+                        {m}
+                      </span>
+                    ))}
+                    {minatKategori.length > 3 && (
+                      <span className="rounded-full bg-ink/5 px-2.5 py-1 font-mono text-[11px] text-steel">
+                        +{minatKategori.length - 3} lainnya
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => fotoInputRef.current?.click()}
-                aria-label="Edit foto profil"
-                className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-ink text-paper shadow transition hover:bg-steel"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                </svg>
-              </button>
-              <input
-                ref={fotoInputRef}
-                type="file"
-                accept="image/*"
-                onChange={readFile}
-                className="hidden"
-              />
-            </div>
 
-            <div className="min-w-0 flex-1 text-center sm:text-left">
-              <h2 className="font-display text-xl font-semibold text-ink">
-                {nama || "Nama Kamu"}
-              </h2>
-              <p className="mt-0.5 text-sm text-steel">
-                {email || "email@kamu.com"}
-              </p>
-              {(prodi || universitas) && (
-                <p className="mt-1 font-mono text-xs text-steel/80">
-                  {[prodi, universitas].filter(Boolean).join(" · ")}
+              {/* Stats singkat */}
+              <div className="grid grid-cols-2 gap-3 border-t border-steel/10 pt-5">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-wide text-steel">
+                    Skill
+                  </p>
+                  <p className="mt-1 font-display text-xl font-semibold text-ink">
+                    {skills.length}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-wide text-steel">
+                    Minat
+                  </p>
+                  <p className="mt-1 font-display text-xl font-semibold text-ink">
+                    {minatKategori.length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Level */}
+              <div className="border-t border-steel/10 pt-5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase tracking-wide text-steel">
+                    Level Mahasiswa
+                  </span>
+                  <span className="font-display text-sm font-semibold text-bridge-gold">
+                    Level {level}
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-steel/10">
+                  <div
+                    className="h-full rounded-full bg-bridge-gold transition-all"
+                    style={{ width: `${progressToNextLevel * 100}%` }}
+                  />
+                </div>
+                <p className="mt-2 font-mono text-[10px] text-steel">
+                  {totalPengajuan} kolaborasi diajukan
                 </p>
-              )}
+              </div>
 
-              <div className="mt-3 flex flex-wrap justify-center gap-1.5 sm:justify-start">
-                {minatKategori.slice(0, 3).map((m) => (
-                  <span
-                    key={m}
-                    className="rounded-full bg-ink/5 px-2.5 py-1 font-mono text-[11px] text-ink"
-                  >
-                    {m}
-                  </span>
-                ))}
-                {minatKategori.length > 3 && (
-                  <span className="rounded-full bg-ink/5 px-2.5 py-1 font-mono text-[11px] text-steel">
-                    +{minatKategori.length - 3} lainnya
-                  </span>
+              {/* Badge */}
+              <div className="border-t border-steel/10 pt-5">
+                <span className="font-mono text-[10px] uppercase tracking-wide text-steel">
+                  Badge &amp; Pencapaian
+                </span>
+                <div className="mt-3 flex flex-col gap-2">
+                  {earnedBadges.map((b) => (
+                    <div
+                      key={b.id}
+                      className="rounded-lg border border-bridge-gold/40 bg-bridge-gold/5 px-3 py-2.5"
+                    >
+                      <p className="font-display text-xs font-semibold text-ink">
+                        {b.nama}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[10px] text-steel">
+                        {b.deskripsi}
+                      </p>
+                    </div>
+                  ))}
+                  {lockedBadges.map((b) => (
+                    <div
+                      key={b.id}
+                      className="rounded-lg border border-steel/15 px-3 py-2.5 opacity-50"
+                    >
+                      <p className="font-display text-xs font-semibold text-ink">
+                        {b.nama}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[10px] text-steel">
+                        {b.deskripsi}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rekam jejak kolaborasi */}
+              <div className="border-t border-steel/10 pt-5">
+                <span className="font-mono text-[10px] uppercase tracking-wide text-steel">
+                  Rekam Jejak Kolaborasi
+                </span>
+                {outcomes.length === 0 ? (
+                  <div className="mt-3 rounded-lg border border-steel/15 px-3 py-4 text-center">
+                    <p className="font-mono text-[11px] text-steel">
+                      Belum ada kolaborasi yang diterima.
+                    </p>
+                    <Link
+                      href="/kolaborasi"
+                      className="mt-2 inline-block font-mono text-[11px] text-bridge-gold hover:underline"
+                    >
+                      Cari peluang →
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex flex-col gap-2">
+                    {outcomes.map((o, i) => (
+                      <div
+                        key={i}
+                        className="rounded-lg border border-steel/15 px-3 py-2.5"
+                      >
+                        <p className="font-display text-xs font-medium text-ink">
+                          {o.judul}
+                        </p>
+                        <p className="font-mono text-[10px] text-steel">
+                          {o.perusahaan}
+                        </p>
+                        <p className="mt-1 font-mono text-[10px] text-verified">
+                          {o.status}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="px-7 py-7">
-            <h3 className="font-display text-base font-semibold text-ink">
-              Informasi Akun
-            </h3>
+            {/* Kolom kanan: form data */}
+            <div className="flex-1 px-7 py-7">
+              <h3 className="font-display text-base font-semibold text-ink">
+                Informasi Akun
+              </h3>
 
-            <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <div>
-                <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                  Nama Lengkap
+              <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
+                    Nama Lengkap
+                  </label>
+                  <input
+                    type="text"
+                    value={nama}
+                    onChange={(e) => setNama(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
+                  />
+                </div>
+                <div>
+                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
+                <div>
+                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
+                    Universitas
+                  </label>
+                  <input
+                    type="text"
+                    value={universitas}
+                    onChange={(e) => setUniversitas(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
+                  />
+                </div>
+                <div>
+                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
+                    Program Studi
+                  </label>
+                  <input
+                    type="text"
+                    value={prodi}
+                    onChange={(e) => setProdi(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
+                  />
+                </div>
+                <div>
+                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
+                    Semester
+                  </label>
+                  <input
+                    type="text"
+                    value={semester}
+                    onChange={(e) => setSemester(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
+                  />
+                </div>
+              </div>
+
+              {/* Kategori Minat — bisa diedit */}
+              <div className="mt-6 border-t border-steel/10 pt-6">
+                <label className="block font-mono text-xs uppercase tracking-wide text-steel">
+                  Kategori Proyek Minat
                 </label>
-                <input
-                  type="text"
-                  value={nama}
-                  onChange={(e) => setNama(e.target.value)}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {allCategoriesList.map((m) => {
+                    const selected = minatKategori.includes(m);
+                    return (
+                      <button
+                        type="button"
+                        key={m}
+                        onClick={() => toggleMinat(m)}
+                        className={`rounded-full px-3.5 py-1.5 font-mono text-xs font-medium transition ${
+                          selected
+                            ? "bg-ink text-paper shadow-sm"
+                            : "border border-steel/25 bg-white text-steel hover:border-ink"
+                        }`}
+                      >
+                        {selected ? "✓ " : "+ "}
+                        {m}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Skill & Tools — bisa diedit */}
+              <div className="mt-6">
+                <label className="block font-mono text-xs uppercase tracking-wide text-steel">
+                  Skill &amp; Tools
+                </label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {allSkillsList.map((s) => {
+                    const selected = skills.includes(s);
+                    return (
+                      <button
+                        type="button"
+                        key={s}
+                        onClick={() => toggleSkill(s)}
+                        className={`rounded-full px-3 py-1.5 font-mono text-xs transition ${
+                          selected
+                            ? "bg-bridge-gold font-bold text-ink shadow-sm"
+                            : "border border-steel/20 bg-white/60 text-steel hover:border-ink"
+                        }`}
+                      >
+                        {selected ? "✓ " : "# "}
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
+                    Preferensi Tipe Kolaborasi
+                  </label>
+                  <select
+                    value={preferensiTipe}
+                    onChange={(e) => setPreferensiTipe(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
+                  >
+                    <option value="Semua">Semua</option>
+                    <option value="Akademik">Hanya Studi Kasus / Riset</option>
+                    <option value="Magang">Hanya Magang</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
+                    Preferensi Sistem Kerja
+                  </label>
+                  <select
+                    value={preferensiLokasi}
+                    onChange={(e) => setPreferensiLokasi(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
+                  >
+                    <option value="Remote">Remote</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="Onsite">Onsite</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <label className="font-mono text-xs uppercase tracking-wide text-steel">
+                  Ringkasan Pengalaman &amp; Motivasi
+                </label>
+                <textarea
+                  rows={3}
+                  value={ringkasan}
+                  onChange={(e) => setRingkasan(e.target.value)}
                   className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
                 />
               </div>
-              <div>
-                <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                />
-              </div>
-            </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
-              <div>
-                <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                  Universitas
-                </label>
-                <input
-                  type="text"
-                  value={universitas}
-                  onChange={(e) => setUniversitas(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                />
-              </div>
-              <div>
-                <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                  Program Studi
-                </label>
-                <input
-                  type="text"
-                  value={prodi}
-                  onChange={(e) => setProdi(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                />
-              </div>
-              <div>
-                <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                  Semester
-                </label>
-                <input
-                  type="text"
-                  value={semester}
-                  onChange={(e) => setSemester(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                />
-              </div>
+              <button
+                type="submit"
+                className="mt-7 rounded-full bg-ink px-6 py-3 font-mono text-sm font-medium text-paper transition hover:bg-steel"
+              >
+                Simpan Perubahan
+              </button>
             </div>
-
-            {/* Kategori Minat — sekarang bisa diedit */}
-            <div className="mt-6 border-t border-steel/10 pt-6">
-              <label className="block font-mono text-xs uppercase tracking-wide text-steel">
-                Kategori Proyek Minat
-              </label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {allCategoriesList.map((m) => {
-                  const selected = minatKategori.includes(m);
-                  return (
-                    <button
-                      type="button"
-                      key={m}
-                      onClick={() => toggleMinat(m)}
-                      className={`rounded-full px-3.5 py-1.5 font-mono text-xs font-medium transition ${
-                        selected
-                          ? "bg-ink text-paper shadow-sm"
-                          : "border border-steel/25 bg-white text-steel hover:border-ink"
-                      }`}
-                    >
-                      {selected ? "✓ " : "+ "}
-                      {m}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Skill & Tools — sekarang bisa diedit */}
-            <div className="mt-6">
-              <label className="block font-mono text-xs uppercase tracking-wide text-steel">
-                Skill &amp; Tools
-              </label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {allSkillsList.map((s) => {
-                  const selected = skills.includes(s);
-                  return (
-                    <button
-                      type="button"
-                      key={s}
-                      onClick={() => toggleSkill(s)}
-                      className={`rounded-full px-3 py-1.5 font-mono text-xs transition ${
-                        selected
-                          ? "bg-bridge-gold font-bold text-ink shadow-sm"
-                          : "border border-steel/20 bg-white/60 text-steel hover:border-ink"
-                      }`}
-                    >
-                      {selected ? "✓ " : "# "}
-                      {s}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <div>
-                <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                  Preferensi Tipe Kolaborasi
-                </label>
-                <select
-                  value={preferensiTipe}
-                  onChange={(e) => setPreferensiTipe(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                >
-                  <option value="Semua">Semua</option>
-                  <option value="Akademik">Hanya Studi Kasus / Riset</option>
-                  <option value="Magang">Hanya Magang</option>
-                </select>
-              </div>
-              <div>
-                <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                  Preferensi Sistem Kerja
-                </label>
-                <select
-                  value={preferensiLokasi}
-                  onChange={(e) => setPreferensiLokasi(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                >
-                  <option value="Remote">Remote</option>
-                  <option value="Hybrid">Hybrid</option>
-                  <option value="Onsite">Onsite</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                Ringkasan Pengalaman &amp; Motivasi
-              </label>
-              <textarea
-                rows={3}
-                value={ringkasan}
-                onChange={(e) => setRingkasan(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="mt-7 rounded-full bg-ink px-6 py-3 font-mono text-sm font-medium text-paper transition hover:bg-steel"
-            >
-              Simpan Perubahan
-            </button>
           </div>
         </form>
       </div>
