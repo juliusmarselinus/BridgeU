@@ -372,50 +372,56 @@ export function Navbar() {
 
   return (
     <div className="sticky top-4 z-40 px-4 sm:px-6">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-bridge-gold/20 bg-ink px-5 py-3 shadow-[0_8px_24px_-6px_rgba(27,39,64,0.35)]">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-2xl border border-bridge-gold/20 bg-ink px-6 py-3.5 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.4)]">
+        {/* Logo */}
         <Link href="/" className="font-display text-lg font-semibold tracking-tight text-paper">
           Bridge<span className="text-bridge-gold">U</span>
         </Link>
 
-        <div className="hidden gap-1 font-mono text-xs sm:flex">
-          {navLinks.map((link) => {
+        {/* Center nav links with dot separators */}
+        <div className="hidden items-center gap-5 font-mono text-[13px] text-paper/70 md:flex">
+          {navLinks.map((link, i) => {
             const active = pathname === link.href;
             return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`relative rounded-full px-4 py-2 transition ${
-                  active
-                    ? "bg-white/10 text-paper"
-                    : "text-paper/50 hover:bg-white/5 hover:text-paper/80"
-                }`}
-              >
-                {link.label}
-              </Link>
+              <div key={link.href} className="flex items-center gap-5">
+                <Link
+                  href={link.href}
+                  className={`transition ${
+                    active ? "text-paper" : "text-paper/60 hover:text-paper"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+                {i < navLinks.length - 1 && (
+                  <span className="text-paper/25">&middot;</span>
+                )}
+              </div>
             );
           })}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Right side actions */}
+        <div className="flex items-center gap-3">
           <NotificationBell />
 
           <Link
             href="/profile"
-            className="flex items-center gap-2.5 rounded-full bg-white/10 py-1.5 pl-1.5 pr-3.5 transition hover:bg-white/20"
+            className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/10 text-paper/80 transition hover:bg-white/20"
+            aria-label="Profil"
           >
-            <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-bridge-gold font-mono text-[11px] font-medium text-ink">
-              {user?.foto ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.foto} alt="Foto profil" className="h-full w-full object-cover" />
-              ) : user ? (
-                initials(user.nama)
-              ) : (
-                "?"
-              )}
-            </div>
-            <span className="hidden font-mono text-xs text-paper sm:inline">
-              {user ? user.nama.split(" ")[0] : "Tamu"}
-            </span>
+            {user?.foto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.foto} alt="Foto profil" className="h-full w-full object-cover" />
+            ) : user ? (
+              <span className="font-mono text-[11px] font-medium text-paper">
+                {initials(user.nama)}
+              </span>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+              </svg>
+            )}
           </Link>
         </div>
       </nav>

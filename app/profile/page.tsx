@@ -16,7 +16,7 @@ type StoredUser = {
   preferensiTipe?: string;
   preferensiLokasi?: string;
   ringkasan?: string;
-  foto?: string; // base64 data URL, hasil crop bulat
+  foto?: string;
 };
 
 type Pengajuan = {
@@ -28,12 +28,37 @@ type Pengajuan = {
   tanggal: string;
 };
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 /* ------------------------------------------------------------------ */
-/* Modal: Edit Photo (zoom + rotate, output = square canvas data URL) */
+/* Modal Success Animated Pop-up                                       */
 /* ------------------------------------------------------------------ */
+function SuccessModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl border border-slate-100">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-2xl mb-4 shadow-inner">
+          ✓
+        </div>
+        <h3 className="text-xl font-bold text-slate-900">Berhasil Disimpan! 🎉</h3>
+        <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+          Perubahan profil kamu telah diperbarui dan siap ditampilkan.
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-6 w-full rounded-xl bg-slate-900 py-3 text-xs font-semibold text-white shadow-md hover:bg-slate-800 transition active:scale-95"
+        >
+          Mantap, Siap! 🚀
+        </button>
+      </div>
+    </div>
+  );
+}
 
+/* ------------------------------------------------------------------ */
+/* Modal Edit Photo                                                   */
+/* ------------------------------------------------------------------ */
 function EditPhotoModal({
   imageSrc,
   onClose,
@@ -55,7 +80,7 @@ function EditPhotoModal({
   });
 
   const imgRef = useRef<HTMLImageElement>(null);
-  const PREVIEW_SIZE = 260;
+  const PREVIEW_SIZE = 240;
 
   const handlePointerDown = (e: React.PointerEvent) => {
     dragState.current = {
@@ -117,29 +142,27 @@ function EditPhotoModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-[0_12px_40px_-8px_rgba(27,39,64,0.35)]">
-        <div className="flex items-center justify-between border-b border-steel/10 px-5 py-4">
-          <h3 className="font-display text-base font-semibold text-ink">
-            Edit Photo
-          </h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-100">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <h3 className="text-sm font-bold text-slate-900">Edit Foto Profil 📸</h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="flex h-7 w-7 items-center justify-center rounded-full text-steel transition hover:bg-steel/10"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
           >
             ✕
           </button>
         </div>
 
-        <div className="flex flex-col items-center gap-6 px-5 py-7">
+        <div className="flex flex-col items-center gap-5 pt-5">
           <div
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerUp}
-            className="relative overflow-hidden rounded-full border border-steel/15 bg-ink/5 shadow-inner"
+            className="relative overflow-hidden rounded-full border-2 border-slate-200 bg-slate-50 shadow-inner"
             style={{
               width: PREVIEW_SIZE,
               height: PREVIEW_SIZE,
@@ -160,34 +183,21 @@ function EditPhotoModal({
                 height: PREVIEW_SIZE,
                 objectFit: "cover",
               }}
-              onLoad={(e) => {
-                const el = e.currentTarget;
-                const ratio = el.naturalWidth / el.naturalHeight;
-                if (ratio >= 1) {
-                  el.style.height = `${PREVIEW_SIZE}px`;
-                  el.style.width = "auto";
-                } else {
-                  el.style.width = `${PREVIEW_SIZE}px`;
-                  el.style.height = "auto";
-                }
-              }}
             />
           </div>
 
           <div className="flex w-full items-center gap-3">
-            <span className="font-mono text-xs text-steel">−</span>
+            <span className="text-xs text-slate-400">−</span>
             <input
               type="range"
               min={50}
               max={200}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
-              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-steel/20 accent-ink"
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-slate-900"
             />
-            <span className="font-mono text-xs text-steel">+</span>
-            <span className="w-10 shrink-0 text-right font-mono text-xs text-steel">
-              {zoom}%
-            </span>
+            <span className="text-xs text-slate-400">+</span>
+            <span className="w-10 shrink-0 text-right font-mono text-xs text-slate-500">{zoom}%</span>
           </div>
 
           <div className="flex w-full items-center justify-between">
@@ -195,7 +205,7 @@ function EditPhotoModal({
               type="button"
               onClick={handleRotate}
               aria-label="Putar gambar"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-steel/25 text-steel transition hover:bg-steel/10"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50"
             >
               ↻
             </button>
@@ -204,16 +214,16 @@ function EditPhotoModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-steel/25 px-5 py-2.5 font-mono text-xs font-medium text-steel transition hover:bg-steel/10"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={handleSave}
-                className="rounded-full bg-ink px-5 py-2.5 font-mono text-xs font-medium text-paper transition hover:bg-steel"
+                className="rounded-xl bg-slate-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 transition"
               >
-                Save
+                Simpan
               </button>
             </div>
           </div>
@@ -224,17 +234,30 @@ function EditPhotoModal({
 }
 
 /* ------------------------------------------------------------------ */
-/* Main Profile Page                                                  */
+/* Helper Component                                                   */
 /* ------------------------------------------------------------------ */
+function InfoField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-800">{value || "—"}</p>
+    </div>
+  );
+}
 
+/* ------------------------------------------------------------------ */
+/* Main Profile Page Component                                        */
+/* ------------------------------------------------------------------ */
 export default function ProfilePage() {
   const [user, setUser] = useState<StoredUser | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [fileError, setFileError] = useState("");
   const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState<"profile" | "pencapaian" | "pengajuan">("profile");
   const fotoInputRef = useRef<HTMLInputElement>(null);
 
-  // form state
+  // Form State
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [universitas, setUniversitas] = useState("");
@@ -247,10 +270,9 @@ export default function ProfilePage() {
   const [minatKategori, setMinatKategori] = useState<string[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
 
-  // portfolio / gamification state
   const [pengajuan, setPengajuan] = useState<Pengajuan[]>([]);
 
-  useEffect(() => {
+  const loadFromStorage = () => {
     const stored = localStorage.getItem("bridgeu_user");
     if (stored) {
       const parsed: StoredUser = JSON.parse(stored);
@@ -267,6 +289,10 @@ export default function ProfilePage() {
       setMinatKategori(parsed.minatKategori || []);
       setSkills(parsed.skills || []);
     }
+  };
+
+  useEffect(() => {
+    loadFromStorage();
 
     const storedPengajuan = localStorage.getItem("bridgeu_pengajuan");
     if (storedPengajuan) {
@@ -274,21 +300,17 @@ export default function ProfilePage() {
         const parsedPengajuan = JSON.parse(storedPengajuan);
         queueMicrotask(() => setPengajuan(parsedPengajuan));
       } catch {
-        // ignore data rusak
+        // ignore
       }
     }
   }, []);
 
   const toggleMinat = (m: string) => {
-    setMinatKategori((prev) =>
-      prev.includes(m) ? prev.filter((item) => item !== m) : [...prev, m]
-    );
+    setMinatKategori((prev) => (prev.includes(m) ? prev.filter((item) => item !== m) : [...prev, m]));
   };
 
   const toggleSkill = (s: string) => {
-    setSkills((prev) =>
-      prev.includes(s) ? prev.filter((item) => item !== s) : [...prev, s]
-    );
+    setSkills((prev) => (prev.includes(s) ? prev.filter((item) => item !== s) : [...prev, s]));
   };
 
   const readFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -297,11 +319,11 @@ export default function ProfilePage() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setFileError("File harus berupa gambar (JPG, PNG, dll).");
+      setFileError("File harus berupa gambar (JPG, PNG). ⚠️");
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      setFileError("Ukuran gambar maksimal 5MB.");
+      setFileError("Ukuran gambar maksimal 5MB. ⚠️");
       return;
     }
 
@@ -334,21 +356,27 @@ export default function ProfilePage() {
       minatKategori,
       skills,
     } as StoredUser;
+
     localStorage.setItem("bridgeu_user", JSON.stringify(updated));
     window.dispatchEvent(new Event("bridgeu_user_updated"));
     setUser(updated);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setIsEditing(false);
+    setShowSuccessModal(true);
+  };
+
+  const handleCancel = () => {
+    loadFromStorage();
+    setIsEditing(false);
+    setFileError("");
   };
 
   if (!user) {
     return (
-      <main>
+      <main className="min-h-screen bg-slate-100/70">
         <Navbar />
         <div className="mx-auto max-w-3xl px-6 py-20 text-center">
-          <p className="text-sm text-steel">
-            Kamu belum masuk. Silakan masuk terlebih dahulu untuk melihat
-            profil.
+          <p className="text-sm font-medium text-slate-500">
+            Kamu belum masuk. Silakan masuk terlebih dahulu untuk melihat profil. 🔒
           </p>
         </div>
       </main>
@@ -356,24 +384,20 @@ export default function ProfilePage() {
   }
 
   const inisial = nama ? nama.trim().charAt(0).toUpperCase() : "?";
-
-  // hitung level & badge
   const totalPengajuan = pengajuan.length;
-  const diterima = pengajuan.filter(
-    (p) => p.status === "Diterima" || p.status === "Selesai"
-  ).length;
+  const diterima = pengajuan.filter((p) => p.status === "Diterima" || p.status === "Selesai").length;
   const level = Math.floor(totalPengajuan / 2) + 1;
-  const progressToNextLevel = (totalPengajuan % 2) / 2;
   const earnedBadges = badgeList.filter((b) => b.check(totalPengajuan, diterima));
   const lockedBadges = badgeList.filter((b) => !b.check(totalPengajuan, diterima));
-  const outcomes = pengajuan.filter(
-    (p) => p.status === "Diterima" || p.status === "Selesai"
-  );
 
   return (
-    <main>
+    <main className="min-h-screen bg-slate-100/70 text-slate-900 pb-20">
       <Navbar />
 
+      {/* Pop-up Modal Sukses */}
+      {showSuccessModal && <SuccessModal onClose={() => setShowSuccessModal(false)} />}
+
+      {/* Modal Edit Foto */}
       {pendingImage && (
         <EditPhotoModal
           imageSrc={pendingImage}
@@ -382,398 +406,453 @@ export default function ProfilePage() {
         />
       )}
 
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        <h1 className="font-display text-2xl font-semibold text-ink">
-          Profil Saya
-        </h1>
-        <p className="mt-2 text-sm text-steel">
-          Kelola data pribadi dan preferensi kolaborasi kamu.
-        </p>
-
-        {saved && (
-          <div className="mt-6 rounded-xl border border-verified/30 bg-verified/10 px-5 py-3 text-sm text-verified">
-            Perubahan berhasil disimpan.
-          </div>
-        )}
+      <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
         {fileError && (
-          <div className="mt-6 rounded-xl border border-red-300 bg-red-50 px-5 py-3 text-sm text-red-600">
+          <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700 shadow-sm">
             {fileError}
           </div>
         )}
 
-        <form
-          onSubmit={handleSave}
-          className="mt-8 overflow-hidden rounded-2xl bg-[#FAF7EE] shadow-[0_4px_6px_-1px_rgba(27,39,64,0.1),0_12px_28px_-6px_rgba(27,39,64,0.15)]"
-        >
-          {/* Header: kolom kiri foto+nama+data+portfolio, kolom kanan form */}
-          <div className="flex flex-col sm:flex-row">
-            {/* Kolom kiri: foto, nama, email, jurusan, stats, level, badge, rekam jejak */}
-            <div className="flex shrink-0 flex-col gap-6 border-b border-steel/10 px-7 py-8 sm:w-80 sm:border-b-0 sm:border-r sm:py-10">
-              {/* Foto + identitas */}
-              <div className="flex flex-col items-center gap-4 text-center">
-                <div className="relative h-28 w-28 sm:h-32 sm:w-32">
-                  <div className="h-full w-full overflow-hidden rounded-full border-4 border-white bg-ink/5 shadow-md">
-                    {foto ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={foto}
-                        alt="Foto profil"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-white font-display text-3xl font-semibold text-steel">
-                        {inisial}
-                      </div>
-                    )}
+        <form id="profile-form" onSubmit={handleSave}>
+         
+          <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-lg shadow-slate-200/50">
+            
+            {/* Banner Cover Gradient */}
+            <div className="h-44 sm:h-52 w-full bg-gradient-to-r from-slate-800 via-slate-900 to-indigo-950 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.1),transparent)]" />
+              {/* Optional Decorative Elements */}
+              <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-indigo-500/10 blur-2xl" />
+            </div>
+
+            {/* Content Under Banner */}
+            <div className="px-6 pb-4 pt-0 sm:px-8">
+              
+              <div className="flex flex-col items-center md:flex-row md:items-end md:justify-between relative -mt-16 sm:-mt-20 gap-4">
+                
+                {/* Left Stats (Desktop) */}
+                <div className="hidden md:flex items-center gap-8 mb-2">
+                  <div className="text-center">
+                    <p className="text-lg font-black text-slate-900">{skills.length}</p>
+                    <p className="text-[11px] font-medium text-slate-400">Skills</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => fotoInputRef.current?.click()}
-                    aria-label="Edit foto profil"
-                    className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-ink text-paper shadow transition hover:bg-steel"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                    </svg>
-                  </button>
-                  <input
-                    ref={fotoInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={readFile}
-                    className="hidden"
-                  />
+                  <div className="text-center">
+                    <p className="text-lg font-black text-slate-900">{minatKategori.length}</p>
+                    <p className="text-[11px] font-medium text-slate-400">Minat</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-black text-amber-600">Lvl {level}</p>
+                    <p className="text-[11px] font-medium text-slate-400">Mahasiswa</p>
+                  </div>
                 </div>
 
-                <div>
-                  <h2 className="font-display text-lg font-semibold text-ink">
-                    {nama || "Nama Kamu"}
-                  </h2>
-                  <p className="mt-1 text-sm text-steel">
-                    {email || "email@kamu.com"}
-                  </p>
-                  {(prodi || universitas) && (
-                    <p className="mt-1 font-mono text-xs text-steel/80">
-                      {[prodi, universitas].filter(Boolean).join(" · ")}
-                    </p>
+                {/* Avatar Center */}
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                    <div className="h-28 w-28 sm:h-36 sm:w-36 overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-xl">
+                      {foto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={foto} alt="Foto profil" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center font-display text-4xl font-bold text-slate-400">
+                          {inisial}
+                        </div>
+                      )}
+                    </div>
+                    {isEditing && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => fotoInputRef.current?.click()}
+                          aria-label="Edit foto"
+                          className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-slate-900 text-white shadow-lg transition hover:scale-105"
+                        >
+                          ✏️
+                        </button>
+                        <input ref={fotoInputRef} type="file" accept="image/*" onChange={readFile} className="hidden" />
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Actions / Edit Button */}
+                <div className="flex items-center gap-2 mb-2">
+                  {!isEditing ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(true)}
+                      className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition active:scale-95"
+                    >
+                      Edit Profil ✏️
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition active:scale-95"
+                      >
+                        Simpan 💾
+                      </button>
+                    </div>
                   )}
                 </div>
 
-                {minatKategori.length > 0 && (
-                  <div className="flex flex-wrap justify-center gap-1.5">
-                    {minatKategori.slice(0, 3).map((m) => (
-                      <span
-                        key={m}
-                        className="rounded-full bg-ink/5 px-2.5 py-1 font-mono text-[11px] text-ink"
-                      >
-                        {m}
-                      </span>
-                    ))}
-                    {minatKategori.length > 3 && (
-                      <span className="rounded-full bg-ink/5 px-2.5 py-1 font-mono text-[11px] text-steel">
-                        +{minatKategori.length - 3} lainnya
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
 
-              {/* Stats singkat */}
-              <div className="grid grid-cols-2 gap-3 border-t border-steel/10 pt-5">
-                <div>
-                  <p className="font-mono text-[10px] uppercase tracking-wide text-steel">
-                    Skill
-                  </p>
-                  <p className="mt-1 font-display text-xl font-semibold text-ink">
-                    {skills.length}
-                  </p>
-                </div>
-                <div>
-                  <p className="font-mono text-[10px] uppercase tracking-wide text-steel">
-                    Minat
-                  </p>
-                  <p className="mt-1 font-display text-xl font-semibold text-ink">
-                    {minatKategori.length}
-                  </p>
-                </div>
-              </div>
-
-              {/* Level */}
-              <div className="border-t border-steel/10 pt-5">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] uppercase tracking-wide text-steel">
-                    Level Mahasiswa
-                  </span>
-                  <span className="font-display text-sm font-semibold text-bridge-gold">
-                    Level {level}
-                  </span>
-                </div>
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-steel/10">
-                  <div
-                    className="h-full rounded-full bg-bridge-gold transition-all"
-                    style={{ width: `${progressToNextLevel * 100}%` }}
-                  />
-                </div>
-                <p className="mt-2 font-mono text-[10px] text-steel">
-                  {totalPengajuan} kolaborasi diajukan
+              {/* User Identity Center Text */}
+              <div className="mt-3 text-center">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900">{nama || "Nama Kamu"}</h2>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">
+                  {[prodi, universitas].filter(Boolean).join(" • ") || email}
                 </p>
               </div>
 
-              {/* Badge */}
-              <div className="border-t border-steel/10 pt-5">
-                <span className="font-mono text-[10px] uppercase tracking-wide text-steel">
-                  Badge &amp; Pencapaian
-                </span>
-                <div className="mt-3 flex flex-col gap-2">
+              {/* Mobile Stats Bar */}
+              <div className="md:hidden mt-5 grid grid-cols-3 divide-x divide-slate-100 border-t border-b border-slate-100 py-3 text-center">
+                <div>
+                  <p className="text-base font-bold text-slate-900">{skills.length}</p>
+                  <p className="text-[10px] text-slate-400">Skills</p>
+                </div>
+                <div>
+                  <p className="text-base font-bold text-slate-900">{minatKategori.length}</p>
+                  <p className="text-[10px] text-slate-400">Minat</p>
+                </div>
+                <div>
+                  <p className="text-base font-bold text-amber-600">Lvl {level}</p>
+                  <p className="text-[10px] text-slate-400">Level</p>
+                </div>
+              </div>
+
+              {/* Tab Navigation (MatDash Style) */}
+              <div className="mt-6 flex justify-center border-t border-slate-100 pt-2">
+                <div className="flex gap-1 sm:gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("profile")}
+                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                      activeTab === "profile"
+                        ? "bg-slate-100 text-slate-900"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    👤 Detail Profil
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("pencapaian")}
+                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                      activeTab === "pencapaian"
+                        ? "bg-slate-100 text-slate-900"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    🏆 Pencapaian
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("pengajuan")}
+                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                      activeTab === "pengajuan"
+                        ? "bg-slate-100 text-slate-900"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    🚀 Status Kolaborasi
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          
+          <div className="mt-6">
+            {activeTab === "profile" && (
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                
+                {/* Left Card: Summary / Intro */}
+                <div className="lg:col-span-4 space-y-6">
+                  <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+                    <h3 className="text-sm font-bold text-slate-900 mb-4">Ringkasan & Bio 📝</h3>
+                    <p className="text-xs leading-relaxed text-slate-600">
+                      {ringkasan || "Belum ada ringkasan atau deskripsi diri yang ditambahkan."}
+                    </p>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+                    <h3 className="text-sm font-bold text-slate-900 mb-4">Informasi Tambahan 📌</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Tipe Kolaborasi</p>
+                        <p className="text-xs font-semibold text-slate-800 mt-0.5">{preferensiTipe}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Sistem Kerja</p>
+                        <p className="text-xs font-semibold text-slate-800 mt-0.5">{preferensiLokasi}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Card: Main Info Form / Details */}
+                <div className="lg:col-span-8 rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
+                  <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-4 mb-6">
+                    {isEditing ? "Edit Informasi Akun ✏️" : "Informasi Akun Lengkap 📋"}
+                  </h3>
+
+                  {!isEditing ? (
+                    /* VIEW MODE */
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <InfoField label="Nama Lengkap" value={nama} />
+                        <InfoField label="Email" value={email} />
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-slate-100 pt-5">
+                        <InfoField label="Universitas" value={universitas} />
+                        <InfoField label="Program Studi" value={prodi} />
+                        <InfoField label="Semester" value={semester} />
+                      </div>
+
+                      <div className="border-t border-slate-100 pt-5">
+                        <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Kategori Proyek Minat 🎯</p>
+                        <div className="mt-2.5 flex flex-wrap gap-2">
+                          {minatKategori.length > 0 ? (
+                            minatKategori.map((m) => (
+                              <span key={m} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+                                ✓ {m}
+                              </span>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-400">Belum ada minat dipilih.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="border-t border-slate-100 pt-5">
+                        <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Skill & Tools 🛠️</p>
+                        <div className="mt-2.5 flex flex-wrap gap-2">
+                          {skills.length > 0 ? (
+                            skills.map((s) => (
+                              <span key={s} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+                                # {s}
+                              </span>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-400">Belum ada skill ditambahkan.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* EDIT MODE */
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Nama Lengkap</label>
+                          <input
+                            type="text"
+                            value={nama}
+                            onChange={(e) => setNama(e.target.value)}
+                            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Email</label>
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div>
+                          <label className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Universitas</label>
+                          <input
+                            type="text"
+                            value={universitas}
+                            onChange={(e) => setUniversitas(e.target.value)}
+                            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Program Studi</label>
+                          <input
+                            type="text"
+                            value={prodi}
+                            onChange={(e) => setProdi(e.target.value)}
+                            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Semester</label>
+                          <input
+                            type="text"
+                            value={semester}
+                            onChange={(e) => setSemester(e.target.value)}
+                            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold tracking-wider text-slate-500 uppercase">Kategori Proyek Minat 🎯</label>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {allCategoriesList.map((m) => {
+                            const selected = minatKategori.includes(m);
+                            return (
+                              <button
+                                type="button"
+                                key={m}
+                                onClick={() => toggleMinat(m)}
+                                className={`rounded-xl px-3 py-1.5 text-xs font-medium transition ${
+                                  selected
+                                    ? "bg-slate-900 text-white"
+                                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                }`}
+                              >
+                                {selected ? "✓ " : "+ "}
+                                {m}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold tracking-wider text-slate-500 uppercase">Skill & Tools 🛠️</label>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {allSkillsList.map((s) => {
+                            const selected = skills.includes(s);
+                            return (
+                              <button
+                                type="button"
+                                key={s}
+                                onClick={() => toggleSkill(s)}
+                                className={`rounded-xl px-3 py-1.5 text-xs font-medium transition ${
+                                  selected
+                                    ? "bg-amber-500 text-white"
+                                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                }`}
+                              >
+                                {selected ? "✓ " : "# "}
+                                {s}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Preferensi Tipe Kolaborasi</label>
+                          <select
+                            value={preferensiTipe}
+                            onChange={(e) => setPreferensiTipe(e.target.value)}
+                            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-slate-900"
+                          >
+                            <option value="Semua">Semua</option>
+                            <option value="Akademik">Hanya Studi Kasus / Riset</option>
+                            <option value="Magang">Hanya Magang</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Preferensi Sistem Kerja</label>
+                          <select
+                            value={preferensiLokasi}
+                            onChange={(e) => setPreferensiLokasi(e.target.value)}
+                            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-slate-900"
+                          >
+                            <option value="Remote">Remote</option>
+                            <option value="Hybrid">Hybrid</option>
+                            <option value="Onsite">Onsite</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Ringkasan Pengalaman & Motivasi 📝</label>
+                        <textarea
+                          rows={3}
+                          value={ringkasan}
+                          onChange={(e) => setRingkasan(e.target.value)}
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-slate-900"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
+
+            {activeTab === "pencapaian" && (
+              <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
+                <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-4 mb-6">
+                  Pencapaian & Badge 🏆
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {earnedBadges.map((b) => (
-                    <div
-                      key={b.id}
-                      className="rounded-lg border border-bridge-gold/40 bg-bridge-gold/5 px-3 py-2.5"
-                    >
-                      <p className="font-display text-xs font-semibold text-ink">
-                        {b.nama}
-                      </p>
-                      <p className="mt-0.5 font-mono text-[10px] text-steel">
-                        {b.deskripsi}
-                      </p>
+                    <div key={b.id} className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+                      <p className="text-sm font-bold text-slate-900">🏆 {b.nama}</p>
+                      <p className="mt-1 text-xs text-slate-600 leading-relaxed">{b.deskripsi}</p>
+                      <span className="mt-3 inline-block rounded-lg bg-amber-200/80 px-2.5 py-1 text-[10px] font-bold text-amber-900">
+                        Unlocked
+                      </span>
                     </div>
                   ))}
                   {lockedBadges.map((b) => (
-                    <div
-                      key={b.id}
-                      className="rounded-lg border border-steel/15 px-3 py-2.5 opacity-50"
-                    >
-                      <p className="font-display text-xs font-semibold text-ink">
-                        {b.nama}
-                      </p>
-                      <p className="mt-0.5 font-mono text-[10px] text-steel">
-                        {b.deskripsi}
-                      </p>
+                    <div key={b.id} className="rounded-2xl border border-slate-200/60 bg-slate-50 p-4 opacity-60">
+                      <p className="text-sm font-bold text-slate-600">🔒 {b.nama}</p>
+                      <p className="mt-1 text-xs text-slate-400 leading-relaxed">{b.deskripsi}</p>
+                      <span className="mt-3 inline-block rounded-lg bg-slate-200 px-2.5 py-1 text-[10px] font-medium text-slate-500">
+                        Terkunci
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* Rekam jejak kolaborasi */}
-              <div className="border-t border-steel/10 pt-5">
-                <span className="font-mono text-[10px] uppercase tracking-wide text-steel">
-                  Rekam Jejak Kolaborasi
-                </span>
-                {outcomes.length === 0 ? (
-                  <div className="mt-3 rounded-lg border border-steel/15 px-3 py-4 text-center">
-                    <p className="font-mono text-[11px] text-steel">
-                      Belum ada kolaborasi yang diterima.
-                    </p>
-                    <Link
-                      href="/kolaborasi"
-                      className="mt-2 inline-block font-mono text-[11px] text-bridge-gold hover:underline"
-                    >
-                      Cari peluang →
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="mt-3 flex flex-col gap-2">
-                    {outcomes.map((o, i) => (
-                      <div
-                        key={i}
-                        className="rounded-lg border border-steel/15 px-3 py-2.5"
-                      >
-                        <p className="font-display text-xs font-medium text-ink">
-                          {o.judul}
-                        </p>
-                        <p className="font-mono text-[10px] text-steel">
-                          {o.perusahaan}
-                        </p>
-                        <p className="mt-1 font-mono text-[10px] text-verified">
-                          {o.status}
-                        </p>
+            {activeTab === "pengajuan" && (
+              <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                  <h3 className="text-base font-bold text-slate-900">
+                    Riwayat Kolaborasi 🚀
+                  </h3>
+                  <Link href="/kolaborasi" className="text-xs font-semibold text-indigo-600 hover:underline">
+                    Cari Peluang →
+                  </Link>
+                </div>
+
+                {pengajuan.length > 0 ? (
+                  <div className="divide-y divide-slate-100">
+                    {pengajuan.map((p) => (
+                      <div key={p.id} className="py-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{p.judul}</p>
+                          <p className="text-xs text-slate-500">{p.perusahaan} • {p.tanggal}</p>
+                        </div>
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                          {p.status}
+                        </span>
                       </div>
                     ))}
                   </div>
+                ) : (
+                  <p className="text-xs text-slate-400 text-center py-8">Belum ada riwayat kolaborasi.</p>
                 )}
               </div>
-            </div>
-
-            {/* Kolom kanan: form data */}
-            <div className="flex-1 px-7 py-7">
-              <h3 className="font-display text-base font-semibold text-ink">
-                Informasi Akun
-              </h3>
-
-              <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div>
-                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                    Nama Lengkap
-                  </label>
-                  <input
-                    type="text"
-                    value={nama}
-                    onChange={(e) => setNama(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                  />
-                </div>
-                <div>
-                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
-                <div>
-                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                    Universitas
-                  </label>
-                  <input
-                    type="text"
-                    value={universitas}
-                    onChange={(e) => setUniversitas(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                  />
-                </div>
-                <div>
-                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                    Program Studi
-                  </label>
-                  <input
-                    type="text"
-                    value={prodi}
-                    onChange={(e) => setProdi(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                  />
-                </div>
-                <div>
-                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                    Semester
-                  </label>
-                  <input
-                    type="text"
-                    value={semester}
-                    onChange={(e) => setSemester(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                  />
-                </div>
-              </div>
-
-              {/* Kategori Minat — bisa diedit */}
-              <div className="mt-6 border-t border-steel/10 pt-6">
-                <label className="block font-mono text-xs uppercase tracking-wide text-steel">
-                  Kategori Proyek Minat
-                </label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {allCategoriesList.map((m) => {
-                    const selected = minatKategori.includes(m);
-                    return (
-                      <button
-                        type="button"
-                        key={m}
-                        onClick={() => toggleMinat(m)}
-                        className={`rounded-full px-3.5 py-1.5 font-mono text-xs font-medium transition ${
-                          selected
-                            ? "bg-ink text-paper shadow-sm"
-                            : "border border-steel/25 bg-white text-steel hover:border-ink"
-                        }`}
-                      >
-                        {selected ? "✓ " : "+ "}
-                        {m}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Skill & Tools — bisa diedit */}
-              <div className="mt-6">
-                <label className="block font-mono text-xs uppercase tracking-wide text-steel">
-                  Skill &amp; Tools
-                </label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {allSkillsList.map((s) => {
-                    const selected = skills.includes(s);
-                    return (
-                      <button
-                        type="button"
-                        key={s}
-                        onClick={() => toggleSkill(s)}
-                        className={`rounded-full px-3 py-1.5 font-mono text-xs transition ${
-                          selected
-                            ? "bg-bridge-gold font-bold text-ink shadow-sm"
-                            : "border border-steel/20 bg-white/60 text-steel hover:border-ink"
-                        }`}
-                      >
-                        {selected ? "✓ " : "# "}
-                        {s}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div>
-                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                    Preferensi Tipe Kolaborasi
-                  </label>
-                  <select
-                    value={preferensiTipe}
-                    onChange={(e) => setPreferensiTipe(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                  >
-                    <option value="Semua">Semua</option>
-                    <option value="Akademik">Hanya Studi Kasus / Riset</option>
-                    <option value="Magang">Hanya Magang</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                    Preferensi Sistem Kerja
-                  </label>
-                  <select
-                    value={preferensiLokasi}
-                    onChange={(e) => setPreferensiLokasi(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                  >
-                    <option value="Remote">Remote</option>
-                    <option value="Hybrid">Hybrid</option>
-                    <option value="Onsite">Onsite</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <label className="font-mono text-xs uppercase tracking-wide text-steel">
-                  Ringkasan Pengalaman &amp; Motivasi
-                </label>
-                <textarea
-                  rows={3}
-                  value={ringkasan}
-                  onChange={(e) => setRingkasan(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-steel/25 bg-white px-4 py-3 text-sm outline-none transition focus:border-ink"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="mt-7 rounded-full bg-ink px-6 py-3 font-mono text-sm font-medium text-paper transition hover:bg-steel"
-              >
-                Simpan Perubahan
-              </button>
-            </div>
+            )}
           </div>
         </form>
       </div>
