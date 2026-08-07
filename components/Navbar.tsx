@@ -51,7 +51,6 @@ function readStoredUser(): StoredUser | null {
   }
 }
 
-// dummy notif — nanti tinggal diganti fetch dari Supabase
 const defaultNotifications: AppNotification[] = [
   {
     id: "1",
@@ -81,7 +80,6 @@ const defaultNotifications: AppNotification[] = [
 
 const NOTIF_TYPES: NotificationType[] = ["success", "info", "warning"];
 
-// bikin satu notif "bersih" dari data apapun (termasuk data lama/rusak) biar gak pernah undefined
 function sanitizeNotification(raw: unknown, fallbackId: string): AppNotification {
   const n = (raw ?? {}) as Partial<AppNotification>;
   return {
@@ -129,8 +127,8 @@ type NotifIconConfig = {
 
 const NOTIF_ICON_CONFIG: { [key in NotificationType]: NotifIconConfig } = {
   success: {
-    bg: "bg-verified/15",
-    fg: "text-verified",
+    bg: "bg-bridge-gold/15",
+    fg: "text-bridge-gold",
     path: <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />,
   },
   info: {
