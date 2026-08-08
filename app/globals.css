@@ -2,22 +2,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #c0d7da;
-  --foreground: #142033;
+  --background: #F2EDE5;   /* Warm Cream */
+--foreground: #0F2A44;   /* Navy */
+--color-bridge-gold: #B08A44;   /* Antique Gold */
+--color-steel: #7A8CA3;         /* Blue Gray */
+--color-verified: #5B7F5E;
 }
 
 @theme inline {
   --color-paper: var(--background);
   --color-ink: var(--foreground);
-  --color-bridge-gold: #C98A3D;
-  --color-steel: #4C6178;
-  --color-verified: #5B7F5E;
+  --color-bridge-gold: #B08A44;   /* antique gold, lebih muted dari #C98A3D */
+  --color-steel: #7A8CA3;         /* slate/blue-gray */
+  --color-verified: #5B7F5E;      /* tetep, udah cocok */
 
   --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
-
 body {
   background: var(--background);
   color: var(--foreground);
