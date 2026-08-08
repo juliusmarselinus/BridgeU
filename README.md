@@ -34,3 +34,27 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Animations & Interactive Components
+
+Landing page BridgeU menggunakan beberapa komponen animasi berbasis scroll:
+
+| Komponen | Lokasi | Fungsi |
+|---|---|---|
+| `ScrollReveal` | `components/ScrollReveal.tsx` | Wrapper fade-in + slide-up saat elemen masuk viewport (pakai IntersectionObserver) |
+| `ProgramsSection` | `components/ProgramsSection.tsx` | Section "Kolaborasi Akademik" di homepage, pakai `ScrollReveal` |
+| `HeroScrollSection` | `components/HeroScrollSection.tsx` | Preview mockup platform dengan efek parallax zoom saat discroll |
+| `container-scroll-animation` | `components/ui/container-scroll-animation.tsx` | Primitive animasi scroll (dipakai `HeroScrollSection`) |
+| `resizable-navbar` | `components/ui/resizable-navbar.tsx` | Navbar yang mengecil jadi floating pill saat discroll, dengan animasi mobile menu |
+
+Background halaman (`body` di `app/globals.css`) juga punya animasi gradient transition yang subtle, otomatis nonaktif kalau user punya setting `prefers-reduced-motion`.
+
+### Dependency tambahan
+
+Semua komponen di atas butuh package berikut (install sekali via `npm install`):
+
+```bash
+npm install framer-motion clsx tailwind-merge lucide-react
+```
+
+`lib/utils.ts` berisi helper `cn()` (gabungan `clsx` + `tailwind-merge`) yang dipakai oleh semua komponen di atas — jangan dihapus.

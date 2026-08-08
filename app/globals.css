@@ -21,6 +21,26 @@
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
 body {
-  background: var(--background);
+  background: linear-gradient(
+    -45deg,
+    #F4F8FE,
+    #EAF3FF,
+    #F4F8FE,
+    #E9F2FD
+  );
+  background-size: 300% 300%;
+  animation: bgFlow 30s ease infinite;
   color: var(--foreground);
+}
+
+@keyframes bgFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    animation: none;
+  }
 }
