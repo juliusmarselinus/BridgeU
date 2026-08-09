@@ -1,3 +1,9 @@
+// lib/dummy-data.ts
+
+/* ==========================================================================
+   1. AUTH & ROLE DUMMY DATA
+   ========================================================================== */
+
 export const dummyUser = {
   email: "mahasiswa@umn.ac.id",
   password: "password123",
@@ -22,6 +28,10 @@ export const dummyAdmin = {
   nama: "Administrator BridgeU",
   role: "admin",
 };
+
+/* ==========================================================================
+   2. REGISTERED COMPANIES (ADMIN MANAGEMENT)
+   ========================================================================== */
 
 export type RegisteredCompany = {
   id: string;
@@ -76,6 +86,10 @@ export const dummyRegisteredCompanies: RegisteredCompany[] = [
     statusVerifikasi: "Menunggu Verifikasi",
   },
 ];
+
+/* ==========================================================================
+   3. MANAGED USERS (ADMIN & SEARCH MANAGEMENT)
+   ========================================================================== */
 
 export type ManagedUser = {
   id: string;
@@ -133,7 +147,101 @@ export const dummyManagedUsers: ManagedUser[] = [
     status: "Aktif",
     tanggalGabung: "01 Februari 2026",
   },
+  {
+    id: "usr-6",
+    nama: "Andi Pratama",
+    email: "andi.pratama@ugm.ac.id",
+    role: "Mahasiswa",
+    detail: "Universitas Gadjah Mada • Teknik Informatika",
+    status: "Aktif",
+    tanggalGabung: "10 Maret 2026",
+  },
+  {
+    id: "usr-7",
+    nama: "Maya Anggraini",
+    email: "maya.a@its.ac.id",
+    role: "Mahasiswa",
+    detail: "Institut Teknologi Sepuluh Nopember • Data Science",
+    status: "Aktif",
+    tanggalGabung: "18 Maret 2026",
+  },
+  {
+    id: "usr-8",
+    nama: "Rizky Febrian",
+    email: "rizky.f@unair.ac.id",
+    role: "Mahasiswa",
+    detail: "Universitas Airlangga • Manajemen",
+    status: "Aktif",
+    tanggalGabung: "22 Maret 2026",
+  },
+  {
+    id: "usr-9",
+    nama: "Nadia Putri",
+    email: "nadia.p@unpad.ac.id",
+    role: "Mahasiswa",
+    detail: "Universitas Padjadjaran • Akuntansi",
+    status: "Aktif",
+    tanggalGabung: "05 April 2026",
+  },
+  {
+    id: "usr-10",
+    nama: "Dimas Setyo",
+    email: "dimas.s@undip.ac.id",
+    role: "Mahasiswa",
+    detail: "Universitas Diponegoro • Teknik Industri",
+    status: "Aktif",
+    tanggalGabung: "12 April 2026",
+  },
+  {
+    id: "usr-11",
+    nama: "Aurelia Clarissa",
+    email: "aurelia.c@binus.ac.id",
+    role: "Mahasiswa",
+    detail: "Universitas Bina Nusantara • Bisnis Digital",
+    status: "Aktif",
+    tanggalGabung: "19 April 2026",
+  },
+  {
+    id: "usr-12",
+    nama: "Farhan Ramadhan",
+    email: "farhan.r@telkomuniversity.ac.id",
+    role: "Mahasiswa",
+    detail: "Telkom University • Cyber Security",
+    status: "Aktif",
+    tanggalGabung: "02 Mei 2026",
+  },
+  {
+    id: "usr-13",
+    nama: "Dewa Kusuma",
+    email: "dewa.k@ub.ac.id",
+    role: "Mahasiswa",
+    detail: "Universitas Brawijaya • Ilmu Komputer",
+    status: "Aktif",
+    tanggalGabung: "15 Mei 2026",
+  },
+  {
+    id: "usr-14",
+    nama: "Jessica Tan",
+    email: "jessica.t@uph.edu",
+    role: "Mahasiswa",
+    detail: "Universitas Pelita Harapan • Desain Produk",
+    status: "Aktif",
+    tanggalGabung: "28 Mei 2026",
+  },
+  {
+    id: "usr-15",
+    nama: "Kevin Wijaya",
+    email: "kevin.w@atmajaya.ac.id",
+    role: "Mahasiswa",
+    detail: "Universitas Katolik Indonesia Atma Jaya • Hukum",
+    status: "Aktif",
+    tanggalGabung: "10 Juni 2026",
+  },
 ];
+
+/* ==========================================================================
+   4. APPLICANTS (PELAMAR LOG)
+   ========================================================================== */
 
 export type Pelamar = {
   id: string;
@@ -186,6 +294,10 @@ export const dummyPelamarList: Pelamar[] = [
     tanggal: "02 Agustus 2026",
   },
 ];
+
+/* ==========================================================================
+   5. DROPDOWN & FORM OPTIONS LISTS
+   ========================================================================== */
 
 export const universitasList = [
   "Universitas Multimedia Nusantara (UMN)",
@@ -293,6 +405,10 @@ export const allSkillsList = [
   "Supply Chain Ops",
 ];
 
+/* ==========================================================================
+   6. COLLABORATIONS DATA
+   ========================================================================== */
+
 export type Kolaborasi = {
   id: string;
   perusahaan: string;
@@ -303,9 +419,8 @@ export type Kolaborasi = {
   lokasi: string;
   batasWaktu: string;
   statusModerasi?: "Disetujui" | "Menunggu" | "Ditolak";
-  // Smart Recommendation Metadata
   tags?: string[];
-  matchScore?: number; // 0-100%
+  matchScore?: number;
   tingkatKesulitan?: "Pemula" | "Menengah" | "Lanjutan";
   rekomendasiProdi?: string[];
   gajiStipend?: string;
@@ -466,6 +581,11 @@ export const dummyKolaborasi: Kolaborasi[] = [
     gajiStipend: "Insentif Riset Rp 1.800.000",
   },
 ];
+
+/* ==========================================================================
+   7. BADGES LIST
+   ========================================================================== */
+
 export type Badge = {
   id: string;
   nama: string;
@@ -499,3 +619,258 @@ export const badgeList: Badge[] = [
     check: (_, diterima) => diterima >= 2,
   },
 ];
+
+/* ==========================================================================
+   8. PUBLIC USER PROFILES & PROFILE SEARCH LOOKUP
+   ========================================================================== */
+
+export type PublicUserProfile = {
+  id: string;
+  nama: string;
+  email: string;
+  universitas?: string;
+  prodi?: string;
+  semester?: string;
+  sistemKerja?: string;
+  minatKategori?: string[];
+  skills?: string[];
+  preferensiTipe?: string;
+  ringkasan?: string;
+  foto?: string;
+  level?: number;
+};
+
+export const dummyPublicUsers: Record<string, PublicUserProfile> = {
+  john: {
+    id: "john",
+    nama: "John Doe",
+    email: "mahasiswa@umn.ac.id",
+    universitas: "Universitas Multimedia Nusantara",
+    prodi: "Sistem Informasi",
+    semester: "Semester 3",
+    sistemKerja: "Remote",
+    preferensiTipe: "Akademik & Magang",
+    ringkasan: "Passionate Data & UI/UX Student.",
+    skills: ["Figma", "SQL", "Python", "React / Next.js"],
+    minatKategori: ["UI/UX & Product Design", "Software Development"],
+    level: 1,
+  },
+  julius: {
+    id: "wijaya",
+    nama: "andi wijaya ",
+    email: "andi.wijaya@student.umn.ac.id",
+    universitas: "Universitas Multimedia Nusantara",
+    prodi: "Sistem Informasi",
+    semester: "Semester 3",
+    sistemKerja: "Remote",
+    preferensiTipe: "Akademik & Proyek",
+    ringkasan: "Passionate Data Analyst & Tech Enthusiast.",
+    skills: ["Premiere Pro", "Public Speaking", "SQL", "Python"],
+    minatKategori: ["Legal & Regulatory Affairs", "Content & Brand Communications"],
+    level: 1,
+  },
+  siti: {
+    id: "siti",
+    nama: "Siti Rahma",
+    email: "siti.rahma@itb.ac.id",
+    universitas: "Institut Teknologi Bandung",
+    prodi: "Desain Komunikasi Visual",
+    semester: "Semester 5",
+    sistemKerja: "Hybrid",
+    preferensiTipe: "Proyek & Magang",
+    ringkasan: "UI/UX Designer & Graphic Specialist.",
+    skills: ["Figma", "Adobe Photoshop", "Branding", "Copywriting"],
+    minatKategori: ["UI/UX & Product Design", "Content & Brand Communications"],
+    level: 2,
+  },
+  budi: {
+    id: "budi",
+    nama: "Budi Santoso",
+    email: "budi.s@ui.ac.id",
+    universitas: "Universitas Indonesia",
+    prodi: "Ilmu Komputer",
+    semester: "Semester 5",
+    sistemKerja: "Hybrid",
+    preferensiTipe: "Magang",
+    ringkasan: "Software Engineering & Fullstack Web Developer.",
+    skills: ["React / Next.js", "TypeScript", "SQL", "Python"],
+    minatKategori: ["Software Development", "Cyber Security & Cloud"],
+    level: 2,
+  },
+  andi: {
+    id: "andi",
+    nama: "Andi Pratama",
+    email: "andi.pratama@ugm.ac.id",
+    universitas: "Universitas Gadjah Mada",
+    prodi: "Teknik Informatika",
+    semester: "Semester 5",
+    sistemKerja: "Remote",
+    preferensiTipe: "Akademik & Magang",
+    ringkasan: "Backend Developer & AI Practitioner.",
+    skills: ["Python", "SQL", "Project Management"],
+    minatKategori: ["Software Development", "Data Science & Analytics"],
+    level: 1,
+  },
+  maya: {
+    id: "maya",
+    nama: "Maya Anggraini",
+    email: "maya.a@its.ac.id",
+    universitas: "Institut Teknologi Sepuluh Nopember",
+    prodi: "Data Science",
+    semester: "Semester 3",
+    sistemKerja: "Remote",
+    preferensiTipe: "Akademik",
+    ringkasan: "Data Enthusiast specializing in Machine Learning.",
+    skills: ["Python", "Tableau", "SPSS", "SQL"],
+    minatKategori: ["Data Science & Analytics"],
+    level: 1,
+  },
+  rizky: {
+    id: "rizky",
+    nama: "Rizky Febrian",
+    email: "rizky.f@unair.ac.id",
+    universitas: "Universitas Airlangga",
+    prodi: "Manajemen",
+    semester: "Semester 5",
+    sistemKerja: "Onsite / Hybrid",
+    preferensiTipe: "Magang",
+    ringkasan: "Marketing Strategy & Business Development Student.",
+    skills: ["Business Planning", "Market Research", "Social Media Marketing"],
+    minatKategori: ["Business Strategy & Marketing", "Finance & Financial Modeling"],
+    level: 1,
+  },
+  nadia: {
+    id: "nadia",
+    nama: "Nadia Putri",
+    email: "nadia.p@unpad.ac.id",
+    universitas: "Universitas Padjadjaran",
+    prodi: "Akuntansi",
+    semester: "Semester 5",
+    sistemKerja: "Hybrid",
+    preferensiTipe: "Magang & Akademik",
+    ringkasan: "Financial Modeling & Corporate Accounting Student.",
+    skills: ["Financial Modeling", "Excel / Sheets", "Market Research"],
+    minatKategori: ["Finance & Financial Modeling"],
+    level: 1,
+  },
+  dimas: {
+    id: "dimas",
+    nama: "Dimas Setyo",
+    email: "dimas.s@undip.ac.id",
+    universitas: "Universitas Diponegoro",
+    prodi: "Teknik Industri",
+    semester: "Semester 7",
+    sistemKerja: "Remote",
+    preferensiTipe: "Akademik",
+    ringkasan: "Supply Chain & Operations Enthusiast.",
+    skills: ["Supply Chain Ops", "Project Management", "Excel / Sheets"],
+    minatKategori: ["Supply Chain & Logistics", "Business Strategy & Marketing"],
+    level: 2,
+  },
+  aurelia: {
+    id: "aurelia",
+    nama: "Aurelia Clarissa",
+    email: "aurelia.c@binus.ac.id",
+    universitas: "Universitas Bina Nusantara",
+    prodi: "Bisnis Digital",
+    semester: "Semester 3",
+    sistemKerja: "Remote",
+    preferensiTipe: "Magang",
+    ringkasan: "Digital Marketer & E-Commerce Strategist.",
+    skills: ["Social Media Marketing", "Copywriting", "Branding"],
+    minatKategori: ["Business Strategy & Marketing", "Content & Brand Communications"],
+    level: 1,
+  },
+  farhan: {
+    id: "farhan",
+    nama: "Farhan Ramadhan",
+    email: "farhan.r@telkomuniversity.ac.id",
+    universitas: "Telkom University",
+    prodi: "Cyber Security",
+    semester: "Semester 5",
+    sistemKerja: "Remote",
+    preferensiTipe: "Proyek & Magang",
+    ringkasan: "Cybersecurity Analyst & Ethical Hacking Trainee.",
+    skills: ["Python", "SQL", "Project Management"],
+    minatKategori: ["Cyber Security & Cloud", "Software Development"],
+    level: 2,
+  },
+  dewa: {
+    id: "dewa",
+    nama: "Dewa Kusuma",
+    email: "dewa.k@ub.ac.id",
+    universitas: "Universitas Brawijaya",
+    prodi: "Ilmu Komputer",
+    semester: "Semester 5",
+    sistemKerja: "Hybrid",
+    preferensiTipe: "Magang",
+    ringkasan: "Fullstack Web & Mobile App Developer.",
+    skills: ["React / Next.js", "TypeScript", "Python"],
+    minatKategori: ["Software Development"],
+    level: 1,
+  },
+  jessica: {
+    id: "jessica",
+    nama: "Jessica Tan",
+    email: "jessica.t@uph.edu",
+    universitas: "Universitas Pelita Harapan",
+    prodi: "Desain Produk",
+    semester: "Semester 3",
+    sistemKerja: "Remote",
+    preferensiTipe: "Akademik & Proyek",
+    ringkasan: "Industrial & Visual Product Designer.",
+    skills: ["Adobe Photoshop", "Branding", "Figma"],
+    minatKategori: ["UI/UX & Product Design"],
+    level: 1,
+  },
+  kevin: {
+    id: "kevin",
+    nama: "Kevin Wijaya",
+    email: "kevin.w@atmajaya.ac.id",
+    universitas: "Universitas Katolik Indonesia Atma Jaya",
+    prodi: "Hukum",
+    semester: "Semester 7",
+    sistemKerja: "Remote",
+    preferensiTipe: "Akademik",
+    ringkasan: "Corporate & Cyber Law Researcher.",
+    skills: ["Legal Drafting", "Public Speaking"],
+    minatKategori: ["Legal & Regulatory Affairs"],
+    level: 2,
+  },
+};
+
+/**
+ * Helper untuk mengambil profil pengguna berdasarkan ID / Nama pencarian URL slug.
+ */
+export function getUserProfileById(id: string): PublicUserProfile {
+  const normalizedId = id.toLowerCase().trim();
+
+  if (dummyPublicUsers[normalizedId]) {
+    return dummyPublicUsers[normalizedId];
+  }
+
+  // Fallback pencarian parsial berdasarkan nama jika slug tidak persis sama
+  const matchedKey = Object.keys(dummyPublicUsers).find((key) =>
+    dummyPublicUsers[key].nama.toLowerCase().includes(normalizedId)
+  );
+
+  if (matchedKey) {
+    return dummyPublicUsers[matchedKey];
+  }
+
+  // Fallback default jika ID acak dimasukkan
+  return {
+    id: normalizedId,
+    nama: normalizedId.charAt(0).toUpperCase() + normalizedId.slice(1),
+    email: `${normalizedId}@student.umn.ac.id`,
+    universitas: "Universitas Multimedia Nusantara",
+    prodi: "Sistem Informasi",
+    semester: "Semester 3",
+    sistemKerja: "Remote",
+    preferensiTipe: "Akademik",
+    ringkasan: "Mahasiswa Aktif BridgeU",
+    skills: ["General Skill"],
+    minatKategori: ["Umum"],
+    level: 1,
+  };
+}

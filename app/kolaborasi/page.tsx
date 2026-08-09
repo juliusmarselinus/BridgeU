@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { dummyKolaborasi, Kolaborasi } from "@/lib/dummy-data";
 import { Navbar } from "@/components/Navbar";
+import { ApplyModal } from "@/components/ApplyModal";
 
 type StoredUser = {
   nama: string;
@@ -17,6 +18,10 @@ export default function KolaborasiPage() {
   const [search, setSearch] = useState("");
   const [tipeFilter, setTipeFilter] = useState<"Semua" | "Akademik" | "Magang">("Semua");
   const [kategoriFilter, setKategoriFilter] = useState<string>("Semua");
+
+  // State modal pengajuan — item yang lagi diajukan (null = modal tertutup)
+  const [applyTarget, setApplyTarget] = useState<Kolaborasi | null>(null);
+  const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
     // Hydrate user
@@ -85,10 +90,23 @@ export default function KolaborasiPage() {
     });
   }, [displayList, search, tipeFilter, kategoriFilter]);
 
+  const handleApplySuccess = () => {
+    setApplyTarget(null);
+    setSuccessToast(true);
+    setTimeout(() => setSuccessToast(false), 3000);
+  };
+
   return (
     <main className="min-h-screen bg-paper pb-20">
       {/* NAVBAR */}
       <Navbar />
+
+      {/* TOAST SUKSES */}
+      {successToast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[70] rounded-xl bg-ink px-5 py-3 text-xs font-semibold text-paper shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+          Pengajuan berhasil dikirim!
+        </div>
+      )}
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-8">
         {/* Header Hero */}
@@ -163,16 +181,25 @@ export default function KolaborasiPage() {
                     )}
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-between">
-                    <span className="font-mono text-[11px] text-paper/60">
+                  <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                    <span className="font-mono text-[11px] text-paper/60 truncate">
                       📍 {item.lokasi}
                     </span>
-                    <Link
-                      href={`/kolaborasi/${item.id}`}
-                      className="rounded-full bg-bridge-gold px-4 py-1.5 font-mono text-xs font-bold text-ink hover:bg-white transition"
-                    >
-                      Ajukan →
-                    </Link>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Link
+                        href={`/kolaborasi/${item.id}`}
+                        className="rounded-full border border-white/20 px-3 py-1.5 font-mono text-[11px] font-semibold text-paper/90 hover:bg-white/10 transition"
+                      >
+                        Detail
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setApplyTarget(item)}
+                        className="rounded-full bg-bridge-gold px-4 py-1.5 font-mono text-xs font-bold text-ink hover:bg-white transition"
+                      >
+                        Ajukan →
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -292,12 +319,21 @@ export default function KolaborasiPage() {
                   )}
                 </div>
 
-                <Link
-                  href={`/kolaborasi/${k.id}`}
-                  className="block w-full rounded-2xl bg-ink py-3 text-center font-mono text-xs font-semibold text-paper transition hover:bg-steel shadow-md"
-                >
-                  Lihat Detail &amp; Ajukan →
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/kolaborasi/${k.id}`}
+                    className="flex-1 rounded-2xl border border-steel/25 py-3 text-center font-mono text-xs font-semibold text-ink transition hover:bg-steel/5"
+                  >
+                    Lihat Detail
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setApplyTarget(k)}
+                    className="flex-1 rounded-2xl bg-ink py-3 text-center font-mono text-xs font-semibold text-paper transition hover:bg-steel shadow-md"
+                  >
+                    Ajukan →
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -314,6 +350,15 @@ export default function KolaborasiPage() {
           )}
         </div>
       </div>
+
+      {applyTarget && user && (
+        <ApplyModal
+          data={applyTarget}
+          user={user}
+          onClose={() => setApplyTarget(null)}
+          onSuccess={handleApplySuccess}
+        />
+      )}
     </main>
   );
 }

@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SearchBar } from "./SearchBar";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/kolaborasi", label: "Peluang Kolaborasi" },
   { href: "/status", label: "Status Pengajuan" },
-  { href: "/portfolio", label: "Portfolio" },
 ];
 
 type StoredUser = {
@@ -400,6 +400,8 @@ export function Navbar() {
 
         {/* Right side actions */}
         <div className="flex items-center gap-3">
+          <SearchBar />
+
           <NotificationBell />
 
           <Link
