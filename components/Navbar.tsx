@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SearchBar } from "./SearchBar";
+import { supabase } from "@/lib/supabase";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
@@ -41,15 +42,7 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-function readStoredUser(): StoredUser | null {
-  const stored = localStorage.getItem("bridgeu_user");
-  if (!stored) return null;
-  try {
-    return JSON.parse(stored);
-  } catch {
-    return null;
-  }
-}
+
 
 const defaultNotifications: AppNotification[] = [
   {
@@ -343,28 +336,44 @@ export function Navbar() {
   const pathname = usePathname();
   const [user, setUser] = useState<StoredUser | null>(null);
 
-  useEffect(() => {
-    const parsed = readStoredUser();
-    if (parsed) {
-      queueMicrotask(() => setUser(parsed));
+  const loadUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setUser(null);
+      return;
     }
 
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "bridgeu_user") {
-        setUser(readStoredUser());
-      }
-    };
+    const res = await fetch("/api/me", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (!res.ok) return;
 
+    const data = await res.json();
+    setUser({
+      nama: data.nama,
+      universitas: data.universitas,
+      prodi: data.prodi,
+      foto: data.fotoUrl,
+    });
+  };
+
+  useEffect(() => {
+    loadUser();
+
+    // dipanggil manual dari halaman lain (mis. setelah edit profil) via window.dispatchEvent
     const handleLocalUpdate = () => {
-      setUser(readStoredUser());
+      loadUser();
     };
 
-    window.addEventListener("storage", handleStorage);
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      loadUser();
+    });
+
     window.addEventListener("bridgeu_user_updated", handleLocalUpdate);
 
     return () => {
-      window.removeEventListener("storage", handleStorage);
       window.removeEventListener("bridgeu_user_updated", handleLocalUpdate);
+      authListener.subscription.unsubscribe();
     };
   }, []);
 

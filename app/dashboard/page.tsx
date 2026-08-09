@@ -2,32 +2,39 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
+import { supabase } from "@/lib/supabase";
 
 type StoredUser = {
   nama: string;
   universitas: string;
   prodi: string;
+  fotoUrl?: string;
+  skills?: string[];
+  minatKategori?: string[];
 };
 
 type Pengajuan = {
   id: string;
   judul: string;
   perusahaan: string;
-  status: string;
+  status: "Menunggu" | "Diproses" | "Diterima" | "Ditolak" | "Selesai";
   tanggal: string;
+  kategori?: string;
 };
 
 const statusStyle: Record<string, string> = {
-  Menunggu: "bg-bridge-gold/15 text-bridge-gold border-bridge-gold/30",
-  Diproses: "bg-steel/10 text-steel border-steel/20",
-  Diterima: "bg-verified/15 text-verified border-verified/30",
-  Ditolak: "bg-red-100 text-red-600 border-red-200",
-  Selesai: "bg-ink/10 text-ink border-ink/10",
+  Menunggu: "bg-bridge-gold/20 text-amber-700 border-bridge-gold/50 font-bold",
+  Diproses: "bg-blue-100 text-blue-800 border-blue-300 font-bold",
+  Diterima: "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold",
+  Ditolak: "bg-red-100 text-red-700 border-red-300 font-bold",
+  Selesai: "bg-slate-200 text-slate-800 border-slate-300 font-bold",
 };
 
 function initials(name: string) {
+  if (!name) return "MU";
   return name
     .split(" ")
     .slice(0, 2)
@@ -36,365 +43,471 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-/* ------------------------------------------------------------------ */
-/* Icons                                                              */
-/* ------------------------------------------------------------------ */
-function IconSigma({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 4H6l6 8-6 8h12" />
-    </svg>
-  );
-}
+// Rekomendasi berdasarkan proposal
+const recommendedProjects = [
+  {
+    id: "rec-1",
+    judul: "Optimasi UI/UX & Redesign E-Commerce Mobile App",
+    perusahaan: "PT Digital Innovate Indonesia",
+    kategori: "UI/UX & System Design",
+    matchScore: 95,
+    tipe: "Studi Kasus Akademik",
+  },
+  {
+    id: "rec-2",
+    judul: "Analisis Sentimen Data Pelanggan Berbasis Machine Learning",
+    perusahaan: "DataTech Nusantara",
+    kategori: "Data Science & Analytics",
+    matchScore: 88,
+    tipe: "Riset Industri",
+  },
+];
 
-function IconClock({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
-function IconCheckCircle({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function IconTrophy({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-      <path d="M4 22h16" />
-      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-      <path d="M18 2H6v7a6 6 0 0 0 12 0V2z" />
-    </svg>
-  );
-}
-
-function IconCompass({ className = "w-5 h-5 text-bridge-gold" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-    </svg>
-  );
-}
-
-function IconActivity({ className = "w-5 h-5 text-bridge-gold" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Animated number counter                                            */
-/* ------------------------------------------------------------------ */
-function useSpringNumber(target: number, springConfig = { stiffness: 120, damping: 18 }) {
-  const motionVal = useMotionValue(0);
-  const spring = useSpring(motionVal, springConfig);
-  const [display, setDisplay] = useState(0);
-
-  useEffect(() => {
-    motionVal.set(target);
-  }, [target, motionVal]);
-
-  useEffect(() => {
-    const unsub = spring.on("change", (v) => setDisplay(Math.round(v)));
-    return () => unsub();
-  }, [spring]);
-
-  return display;
-}
-
-/* ------------------------------------------------------------------ */
-/* Entrance wrapper                                                    */
-/* ------------------------------------------------------------------ */
-function RevealCard({
-  children,
-  delay = 0,
-  className = "",
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay, ease: "easeOut" }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
+// Badges Gamifikasi
+const userBadges = [
+  { icon: "🚀", title: "Pionir Kolaborasi", desc: "Mengirim pengajuan pertama" },
+  { icon: "🎓", title: "Akademisi Aktif", desc: "Terhubung dengan industri" },
+  { icon: "⚡", title: "Quick Learner", desc: "Profil terverifikasi 100%" },
+];
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<StoredUser | null>(null);
   const [pengajuan, setPengajuan] = useState<Pengajuan[]>([]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("bridgeu_user");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    const init = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    const storedPengajuan = localStorage.getItem("bridgeu_pengajuan");
-    if (storedPengajuan) setPengajuan(JSON.parse(storedPengajuan));
-  }, []);
+      if (!session) {
+        router.replace("/?auth=login");
+        return;
+      }
+
+      setAuthChecked(true);
+
+      try {
+        const res = await fetch("/api/me", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser({
+            nama: data.nama,
+            universitas: data.universitas,
+            prodi: data.prodi,
+            fotoUrl: data.fotoUrl,
+            skills: data.skills ?? [],
+            minatKategori: data.minatKategori ?? [],
+          });
+        }
+      } catch (err) {
+        console.error("Gagal fetch /api/me:", err);
+      }
+
+      const stored = localStorage.getItem("bridgeu_pengajuan");
+      if (stored) {
+        try {
+          setPengajuan(JSON.parse(stored));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      setLoading(false);
+    };
+
+    init();
+  }, [router]);
 
   const total = pengajuan.length;
   const menunggu = pengajuan.filter((p) => p.status === "Menunggu").length;
   const diterima = pengajuan.filter((p) => p.status === "Diterima").length;
   const level = Math.floor(total / 2) + 1;
-  const progress = (total % 2) / 2;
-  const sisaMenujuLevel = total % 2 === 0 ? 2 : 2 - (total % 2);
+  const progressPercent = Math.min(((total % 2) / 2) * 100, 100);
+  const sisaMenujuLevel = total % 2 === 0 ? 2 : 1;
 
-  const animatedTotal = useSpringNumber(total);
-  const animatedMenunggu = useSpringNumber(menunggu);
-  const animatedDiterima = useSpringNumber(diterima);
-  const animatedLevel = useSpringNumber(level);
+  if (!authChecked && !loading) return null;
 
   return (
-    <main className="min-h-screen bg-paper pb-20">
-      {/* NAVBAR + HERO dibungkus bareng biar background nyambung */}
+    <main className="min-h-screen bg-paper pb-24 font-sans text-ink">
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* HERO SECTION — Modern Deep Navy Theme                           */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
       <div className="-mt-20 w-full bg-paper">
-        <div className="w-full bg-gradient-to-b from-ink via-ink/90 to-paper relative pt-24 pb-16 sm:pb-20 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.12),transparent)]" />
-          <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-bridge-gold/15 blur-3xl" />
+        <div className="relative w-full bg-gradient-to-b from-ink via-ink/95 to-ink/80 pt-28 pb-28 overflow-hidden shadow-2xl">
+          {/* Ambient Glow Effects */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(201,168,76,0.15),transparent_60%)]" />
+          <div className="pointer-events-none absolute -right-20 -top-20 h-96 w-96 rounded-full bg-bridge-gold/20 blur-3xl" />
 
-          <Navbar />
+          {/* Navbar Floating */}
+          <div className="relative z-40">
+            <Navbar />
+          </div>
 
-          <div className="relative mx-auto max-w-6xl px-6">
-            <div className="flex flex-col justify-between gap-10 sm:flex-row sm:items-end">
-              <RevealCard delay={0}>
-                <p className="font-mono text-xs uppercase tracking-[0.2em] text-bridge-gold">
-                  Selamat datang kembali
-                </p>
-                <h1 className="mt-3 font-display text-4xl font-semibold leading-tight text-paper sm:text-6xl">
-                  {user ? user.nama : "Mahasiswa"}
+          {/* Hero Main Header Content */}
+          <div className="relative z-10 mx-auto max-w-6xl px-6 pt-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+              <div className="flex-1 space-y-3">
+                <div className="inline-flex items-center gap-2 rounded-full bg-bridge-gold/20 border border-bridge-gold/40 px-3.5 py-1 text-xs font-mono font-bold text-bridge-gold shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-bridge-gold animate-ping" />
+                  SELAMAT DATANG KEMBALI
+                </div>
+
+                <h1 className="font-display text-4xl sm:text-6xl font-bold tracking-tight text-white capitalize drop-shadow-md">
+                  {loading ? (
+                    <span className="inline-block h-12 w-64 animate-pulse rounded-xl bg-white/10" />
+                  ) : (
+                    user?.nama || "Julius Marselinus"
+                  )}
                 </h1>
-                <p className="mt-3 text-sm text-paper/60">
-                  {user ? `${user.universitas} — ${user.prodi}` : ""}
+
+                <p className="text-base font-medium text-paper/90 max-w-xl drop-shadow-sm">
+                  {user ? (
+                    `${user.universitas || "Universitas Multimedia Nusantara (UMN)"} — ${user.prodi || "Sistem Informasi"}`
+                  ) : (
+                    "Universitas Multimedia Nusantara (UMN) — Sistem Informasi"
+                  )}
                 </p>
 
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-white/10 px-3 py-1.5 font-mono text-[11px] text-paper/70 border border-white/10">
-                    {user?.prodi || "Mahasiswa Aktif"}
+                {/* HIGH VISIBILITY BADGES / CHIPS */}
+                <div className="mt-5 flex flex-wrap gap-2.5 pt-2">
+                  <span className="rounded-xl bg-ink/90 border border-bridge-gold/40 px-4 py-2 text-xs font-bold text-paper shadow-md flex items-center gap-2">
+                    📚 {user?.prodi || "Sistem Informasi"}
                   </span>
-                  <span className="rounded-full bg-bridge-gold/15 px-3 py-1.5 font-mono text-[11px] text-bridge-gold border border-bridge-gold/30 flex items-center gap-1.5">
-                    <IconTrophy className="w-3 h-3 text-bridge-gold" />
-                    Level {animatedLevel}
+                  <span className="rounded-xl bg-bridge-gold text-ink font-extrabold px-4 py-2 text-xs shadow-lg flex items-center gap-2">
+                    🏆 Level {level} Kolaborator
                   </span>
-                  <span className="rounded-full bg-white/10 px-3 py-1.5 font-mono text-[11px] text-paper/70 border border-white/10">
-                    {animatedTotal} Kolaborasi
+                  <span className="rounded-xl bg-white/15 border border-white/30 backdrop-blur-md px-4 py-2 text-xs font-bold text-paper shadow-md">
+                    🚀 {total} Kolaborasi
                   </span>
                 </div>
-              </RevealCard>
+              </div>
 
-              <RevealCard delay={0.1} className="w-full max-w-xs rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+              {/* LEVEL CARD WIDGET WITH HIGH CONTRAST */}
+              <div className="w-full md:w-80 rounded-2xl border-2 border-bridge-gold/40 bg-ink/90 p-6 backdrop-blur-md shadow-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs uppercase tracking-wide text-paper/60">
+                  <span className="font-mono text-xs font-bold uppercase tracking-wider text-paper/70">
                     Level Kolaborasi
                   </span>
-                  <span className="font-display text-lg font-semibold text-bridge-gold">
-                    Lv {animatedLevel}
+                  <span className="font-display text-2xl font-black text-bridge-gold">
+                    Lv {level}
                   </span>
                 </div>
-                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/10 relative border border-white/10">
                   <motion.div
-                    className="h-full rounded-full bg-bridge-gold"
+                    className="h-full rounded-full bg-gradient-to-r from-bridge-gold to-amber-300"
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.max(progress * 100, 6)}%` }}
-                    transition={{ type: "spring", stiffness: 90, damping: 16 }}
+                    animate={{ width: `${Math.max(progressPercent, 8)}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
                   />
                 </div>
-                <p className="mt-2 font-mono text-[11px] text-paper/50">
-                  {total} kolaborasi diajukan sejauh ini
+
+                <p className="font-mono text-xs text-paper/70">
+                  Ajukan <span className="text-bridge-gold font-bold">{sisaMenujuLevel}</span> kolaborasi lagi untuk naik ke <span className="text-paper font-bold">Level {level + 1}</span>.
                 </p>
-              </RevealCard>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* KONTEN */}
-      <div className="relative mx-auto max-w-6xl px-6 pt-10">
-        {/* STATISTIK */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-5">
-          <RevealCard
-            delay={0.05}
-            className="group rounded-2xl border border-steel/20 bg-paper p-7 transition duration-300 hover:-translate-y-1 hover:border-bridge-gold/40 hover:shadow-lg sm:col-span-3"
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* OVERLAPPING / STACKED CARDS ANIMATION (-mt-20 TIMPAH TINDIH)   */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <div className="relative mx-auto max-w-6xl px-6 -mt-16 z-30 space-y-10">
+
+        {/* 1. TIMPAH TINDIH STATS CARDS GRID */}
+        <motion.div 
+          initial={{ y: 40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+        >
+          {/* Card Total */}
+          <motion.div 
+            whileHover={{ y: -6, scale: 1.02 }}
+            className="rounded-2xl border-2 border-steel/20 bg-white p-6 shadow-xl transition-all duration-300"
           >
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-steel uppercase tracking-wide">
+              <p className="text-xs font-bold text-steel uppercase tracking-wider">
                 Total Pengajuan
               </p>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-bridge-gold/30 bg-bridge-gold/10 text-bridge-gold">
-                <IconSigma className="w-4 h-4 text-bridge-gold" />
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-bridge-gold/40 bg-bridge-gold/20 text-ink font-mono font-black text-sm">
+                ∑
               </span>
             </div>
-            <p className="mt-3 font-display text-5xl font-semibold text-ink">
-              {animatedTotal}
+            <p className="mt-3 font-display text-5xl font-black text-ink">
+              {total}
             </p>
-            <p className="mt-2 text-sm text-steel">
-              Kolaborasi yang sudah kamu ajukan sepanjang perjalanan di BridgeU.
+            <p className="mt-2 text-xs font-medium text-steel">
+              Kolaborasi diajukan sepanjang waktu.
             </p>
-          </RevealCard>
+          </motion.div>
 
-          <RevealCard
-            delay={0.1}
-            className="group rounded-2xl border border-steel/20 bg-paper p-6 transition duration-300 hover:-translate-y-1 hover:border-bridge-gold/40 hover:shadow-lg sm:col-span-2"
+          {/* Card Menunggu */}
+          <motion.div 
+            whileHover={{ y: -6, scale: 1.02 }}
+            className="rounded-2xl border-2 border-steel/20 bg-white p-6 shadow-xl transition-all duration-300"
           >
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-steel uppercase tracking-wide">
-                Menunggu
-              </p>
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-bridge-gold/10 border border-bridge-gold/30">
-                <IconClock className="w-4 h-4 text-bridge-gold" />
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-bold text-steel uppercase tracking-wider">
+                  Menunggu
+                </p>
+                {menunggu > 0 && (
+                  <span className="h-2.5 w-2.5 rounded-full bg-bridge-gold animate-ping" />
+                )}
+              </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-bridge-gold/20 border border-bridge-gold/40 text-ink font-mono font-bold text-sm">
+                ⏳
               </span>
             </div>
-            <p className="mt-3 font-display text-4xl font-semibold text-bridge-gold">
-              {animatedMenunggu}
+            <p className="mt-3 font-display text-5xl font-black text-bridge-gold">
+              {menunggu}
             </p>
-          </RevealCard>
+            <p className="mt-2 text-xs font-medium text-steel">
+              Pengajuan dalam proses seleksi.
+            </p>
+          </motion.div>
 
-          <RevealCard
-            delay={0.15}
-            className="group rounded-2xl border border-steel/20 bg-paper p-6 transition duration-300 hover:-translate-y-1 hover:border-verified/40 hover:shadow-lg sm:col-span-2"
+          {/* Card Diterima */}
+          <motion.div 
+            whileHover={{ y: -6, scale: 1.02 }}
+            className="rounded-2xl border-2 border-steel/20 bg-white p-6 shadow-xl transition-all duration-300"
           >
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-steel uppercase tracking-wide">
+              <p className="text-xs font-bold text-steel uppercase tracking-wider">
                 Diterima
               </p>
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-verified/10 border border-verified/30">
-                <IconCheckCircle className="w-4 h-4 text-verified" />
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-700 font-mono font-bold text-sm">
+                ✓
               </span>
             </div>
-            <p className="mt-3 font-display text-4xl font-semibold text-verified">
-              {animatedDiterima}
+            <p className="mt-3 font-display text-5xl font-black text-verified">
+              {diterima}
             </p>
-          </RevealCard>
+            <p className="mt-2 text-xs font-medium text-steel">
+              Kolaborasi disetujui perusahaan.
+            </p>
+          </motion.div>
 
-          <RevealCard
-            delay={0.2}
-            className="rounded-2xl border border-dashed border-steel/25 bg-steel/5 p-6 sm:col-span-3"
+          {/* Quick Action Box Stacked */}
+          <motion.div 
+            whileHover={{ y: -6, scale: 1.02 }}
+            className="rounded-2xl border-2 border-bridge-gold/40 bg-ink p-6 text-paper flex flex-col justify-between shadow-2xl"
           >
-            <p className="text-xs font-semibold text-steel uppercase tracking-wide">
-              Progress Level
-            </p>
-            <p className="mt-3 text-sm leading-relaxed text-steel">
-              Ajukan <span className="font-bold text-ink">{sisaMenujuLevel}</span> kolaborasi lagi untuk naik ke Level{" "}
-              <span className="font-bold text-ink">{level + 1}</span>.
-            </p>
-          </RevealCard>
-        </div>
-
-        {/* CTA UTAMA */}
-        <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <RevealCard delay={0.1}>
+            <div>
+              <span className="font-mono text-xs uppercase tracking-wider text-bridge-gold font-bold">
+                Aksi Utama
+              </span>
+              <h3 className="mt-1 font-display text-lg font-bold text-paper">
+                Cari Peluang Proyek
+              </h3>
+              <p className="mt-1 text-xs text-paper/80 leading-relaxed">
+                Jelajahi tantangan & studi kasus dari mitra industri terverifikasi.
+              </p>
+            </div>
             <Link
               href="/kolaborasi"
-              className="group relative block overflow-hidden rounded-2xl bg-ink p-7 text-paper border border-bridge-gold/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-bridge-gold/50"
+              className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-bridge-gold px-4 py-2.5 font-mono text-xs font-bold text-ink transition hover:bg-bridge-gold/90 shadow-md"
             >
-              <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-bridge-gold/15 blur-2xl pointer-events-none group-hover:bg-bridge-gold/25 transition-colors" />
-              <div className="relative">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-bridge-gold/15 border border-bridge-gold/30 mb-3">
-                  <IconCompass className="w-5 h-5 text-bridge-gold" />
-                </span>
-                <span className="font-mono text-xs uppercase tracking-wide text-bridge-gold">
-                  Aksi Utama
-                </span>
-                <h3 className="mt-2 font-display text-xl font-semibold">
-                  Cari Peluang Kolaborasi
-                </h3>
-                <p className="mt-2 max-w-xs text-sm text-paper/70">
-                  Jelajahi studi kasus, riset, dan magang dari perusahaan terverifikasi.
-                </p>
-                <span className="mt-5 inline-flex items-center gap-2 font-mono text-sm text-bridge-gold transition group-hover:gap-3">
-                  Mulai jelajah <span aria-hidden>→</span>
+              Jelajah Sekarang →
+            </Link>
+          </motion.div>
+        </motion.div>
+
+        {/* 2. MAIN LAYOUT GRID (LEFT 2/3, RIGHT 1/3) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* LEFT COLUMN */}
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* PENGAJUAN TERBARU STACKED LIST */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="rounded-2xl border-2 border-steel/15 bg-white p-6 shadow-lg space-y-4"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-steel/15">
+                <div>
+                  <h2 className="font-display text-lg font-bold text-ink">
+                    Pengajuan Terbaru
+                  </h2>
+                  <p className="text-xs font-medium text-steel">Status pendaftaran kolaborasi kamu</p>
+                </div>
+                <Link
+                  href="/status"
+                  className="font-mono text-xs font-bold text-bridge-gold underline underline-offset-4 transition hover:text-ink"
+                >
+                  Lihat semua →
+                </Link>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {pengajuan.length > 0 ? (
+                  pengajuan.slice(-3).reverse().map((p, i) => (
+                    <motion.div
+                      key={p.id || i}
+                      whileHover={{ x: 4 }}
+                      className="group flex items-center gap-4 rounded-2xl border border-steel/20 bg-slate-50 p-4 transition duration-200 hover:border-bridge-gold/50 hover:bg-white hover:shadow-md"
+                    >
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-xs font-bold text-paper border-2 border-bridge-gold/40 shadow-sm">
+                        {initials(p.perusahaan)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-bold text-ink text-sm">{p.judul}</p>
+                        <p className="text-xs font-medium text-steel">{p.perusahaan}</p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-wider ${
+                          statusStyle[p.status] || "bg-steel/10 text-steel border-steel/20"
+                        }`}
+                      >
+                        {p.status}
+                      </span>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 border-2 border-dashed border-steel/20 rounded-2xl bg-slate-50/50">
+                    <p className="font-display text-base font-bold text-ink">Belum Ada Pengajuan</p>
+                    <p className="text-xs text-steel mt-1 max-w-xs mx-auto">
+                      Mulai kirim pengajuan kolaborasi pertamamu sekarang!
+                    </p>
+                    <Link
+                      href="/kolaborasi"
+                      className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-ink text-paper font-mono text-xs font-bold hover:bg-steel transition shadow-md"
+                    >
+                      Jelajahi Peluang Kolaborasi →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* SMART RECOMMENDATION STACKED CARDS */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="rounded-2xl border-2 border-steel/15 bg-white p-6 shadow-lg space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-steel/15 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 rounded-xl bg-bridge-gold/20 text-ink font-bold text-xs">✨</span>
+                  <div>
+                    <h3 className="font-display text-base font-bold text-ink">Rekomendasi Untukmu</h3>
+                    <p className="text-xs font-medium text-steel">Studi kasus & riset disesuaikan prodi kamu</p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-bridge-gold/20 border border-bridge-gold/50 text-ink text-[11px] font-mono font-black shadow-xs">
+                  Smart Match Engine
                 </span>
               </div>
-            </Link>
-          </RevealCard>
 
-          <RevealCard delay={0.15}>
-            <Link
-              href="/status"
-              className="group block rounded-2xl border border-steel/20 bg-paper p-7 transition duration-300 hover:-translate-y-1 hover:border-bridge-gold/40 hover:shadow-lg"
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-steel/10 border border-steel/20 mb-3">
-                <IconActivity className="w-5 h-5 text-bridge-gold" />
-              </span>
-              <span className="font-mono text-xs uppercase tracking-wide text-steel">
-                Pantau
-              </span>
-              <h3 className="mt-2 font-display text-xl font-semibold text-ink">
-                Lihat Status Pengajuan
-              </h3>
-              <p className="mt-2 text-sm text-steel">
-                Pantau perkembangan pengajuan kolaborasi yang sudah kamu kirim.
-              </p>
-              <span className="mt-5 inline-flex items-center gap-2 font-mono text-sm text-ink transition group-hover:gap-3">
-                Lihat semua <span aria-hidden>→</span>
-              </span>
-            </Link>
-          </RevealCard>
-        </div>
-
-        {/* PENGAJUAN TERBARU */}
-        {pengajuan.length > 0 && (
-          <RevealCard delay={0.2} className="mt-12">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold text-ink">
-                Pengajuan Terbaru
-              </h2>
-              <Link
-                href="/status"
-                className="font-mono text-xs text-bridge-gold underline underline-offset-4 transition hover:text-ink"
-              >
-                Lihat semua
-              </Link>
-            </div>
-            <div className="mt-5 flex flex-col gap-3">
-              {pengajuan
-                .slice(-3)
-                .reverse()
-                .map((p, i) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {recommendedProjects.map((item) => (
                   <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.05, ease: "easeOut" }}
-                    className="group flex items-center gap-4 rounded-2xl border border-steel/20 bg-paper p-5 transition duration-200 hover:-translate-y-0.5 hover:border-bridge-gold/40 hover:shadow-md"
+                    key={item.id}
+                    whileHover={{ y: -4, scale: 1.01 }}
+                    className="p-5 rounded-2xl border-2 border-steel/15 bg-slate-50 hover:border-bridge-gold/60 hover:bg-white transition-all duration-200 flex flex-col justify-between space-y-3 shadow-xs hover:shadow-md group"
                   >
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-xs font-medium text-paper border border-bridge-gold/30">
-                      {initials(p.perusahaan)}
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] font-mono text-steel font-semibold mb-2">
+                        <span className="truncate max-w-[140px]">{item.tipe}</span>
+                        <span className="font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          {item.matchScore}% Match
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-ink group-hover:text-bridge-gold transition line-clamp-2">
+                        {item.judul}
+                      </h4>
+                      <p className="text-xs font-medium text-steel mt-1">{item.perusahaan}</p>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-ink">{p.judul}</p>
-                      <p className="text-sm text-steel">{p.perusahaan}</p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-wide ${
-                        statusStyle[p.status] || "bg-steel/10 text-steel border-steel/20"
-                      }`}
+
+                    <Link
+                      href="/kolaborasi"
+                      className="font-mono text-xs font-bold text-ink group-hover:text-bridge-gold flex items-center gap-1 transition pt-2 border-t border-steel/10"
                     >
-                      {p.status}
-                    </span>
+                      Lihat Detail <span className="group-hover:translate-x-1 transition">→</span>
+                    </Link>
                   </motion.div>
                 ))}
-            </div>
-          </RevealCard>
-        )}
+              </div>
+            </motion.div>
+
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div className="space-y-6">
+
+            {/* GAMIFICATION BADGES OVERLAPPING STACK */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.5 }}
+              className="rounded-2xl border-2 border-steel/15 bg-white p-6 shadow-lg space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-steel/15 pb-3">
+                <h3 className="font-display text-base font-bold text-ink flex items-center gap-2">
+                  <span>🏅</span> Pencapaian kamu
+                </h3>
+                <span className="font-mono text-xs font-bold text-bridge-gold bg-bridge-gold/15 px-2.5 py-1 rounded-md border border-bridge-gold/30">
+                  {userBadges.length} Badge Unlocked
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {userBadges.map((b, i) => (
+                  <motion.div
+                    key={i}
+                    whileHover={{ x: 4 }}
+                    className="flex items-center gap-3.5 p-3.5 rounded-xl border border-steel/15 bg-slate-50 hover:bg-white transition hover:shadow-sm"
+                  >
+                    <span className="text-2xl p-2.5 rounded-xl bg-white border border-steel/20 shrink-0 shadow-xs">
+                      {b.icon}
+                    </span>
+                    <div>
+                      <h5 className="text-xs font-bold text-ink">{b.title}</h5>
+                      <p className="text-[11px] font-medium text-steel">{b.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* STUDENT PORTFOLIO TRACKER CARD */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="rounded-2xl border-2 border-bridge-gold/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-6 space-y-3 shadow-md"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📄</span>
+                <h4 className="font-display text-sm font-bold text-ink">Student Portfolio Tracker</h4>
+              </div>
+              <p className="text-xs font-medium text-steel leading-relaxed">
+                Portofolio dibuat otomatis berdasarkan riwayat studi kasus & kolaborasi akademik kamu.
+              </p>
+              <Link
+                href="/profil"
+                className="inline-block font-mono text-xs font-bold text-ink hover:text-bridge-gold underline underline-offset-4"
+              >
+                Cek Profil & Portofolio →
+              </Link>
+            </motion.div>
+
+          </div>
+
+        </div>
+
       </div>
     </main>
   );

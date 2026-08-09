@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { dummyKolaborasi } from "@/lib/dummy-data";
 import { ApplyModal } from "@/components/ApplyModal";
+import { Navbar } from "@/components/Navbar";
 
 type StoredUser = {
   nama: string;
@@ -25,107 +27,210 @@ export default function DetailKolaborasiPage() {
   useEffect(() => {
     const stored = localStorage.getItem("bridgeu_user");
     if (stored) {
-      const parsed = JSON.parse(stored);
-      queueMicrotask(() => setUser(parsed));
+      try {
+        const parsed = JSON.parse(stored);
+        setUser(parsed);
+      } catch (e) {
+        console.error(e);
+      }
     }
   }, []);
 
   if (!data) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-24 text-center">
-        <p className="text-steel">Peluang kolaborasi tidak ditemukan.</p>
-        <Link href="/kolaborasi" className="mt-4 inline-block text-bridge-gold underline">
-          Kembali ke daftar
-        </Link>
+      <main className="min-h-screen bg-paper flex flex-col justify-center items-center px-6 text-center">
+        <div className="rounded-2xl border border-steel/20 bg-white p-8 max-w-md shadow-xl">
+          <p className="text-lg font-bold text-ink">Peluang tidak ditemukan</p>
+          <p className="text-xs text-steel mt-2">
+            Peluang kolaborasi yang kamu cari mungkin telah dihapus atau tidak tersedia.
+          </p>
+          <Link
+            href="/kolaborasi"
+            className="mt-6 inline-block rounded-xl bg-ink px-5 py-2.5 font-mono text-xs font-bold text-paper hover:bg-steel transition"
+          >
+            ← Kembali ke Daftar Kolaborasi
+          </Link>
+        </div>
       </main>
     );
   }
 
   return (
-    <main>
+    <main className="min-h-screen bg-paper pb-32 text-ink font-sans">
       {/* NAVBAR */}
-      <nav className="sticky top-0 z-40 border-b border-steel/10 bg-paper/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <Link href="/" className="font-display text-lg font-semibold tracking-tight">
-            Bridge<span className="text-bridge-gold">U</span>
-          </Link>
-          <button
-            onClick={() => router.push("/kolaborasi")}
-            className="font-mono text-xs text-steel transition hover:text-ink"
-          >
-            ← Kembali ke daftar
-          </button>
-        </div>
-      </nav>
-
-      <div className="mx-auto max-w-3xl px-6 py-12">
-        {/* HEADER DETAIL */}
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-xs text-steel">{data.perusahaan}</span>
-          <span
-            className={`rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-wide ${
-              data.tipe === "Akademik" ? "bg-steel/10 text-steel" : "bg-bridge-gold/15 text-bridge-gold"
-            }`}
-          >
-            {data.tipe}
-          </span>
-        </div>
-
-        <h1 className="mt-3 font-display text-2xl font-semibold text-ink sm:text-3xl">
-          {data.judul}
-        </h1>
-
-        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 font-mono text-xs text-steel">
-          <span>Kategori: {data.kategori}</span>
-          <span>Lokasi: {data.lokasi}</span>
-          <span>Batas: {data.batasWaktu}</span>
-        </div>
-
-        <p className="mt-6 text-[15px] leading-relaxed text-steel">{data.deskripsi}</p>
-
-        {/* SECTION PENGAJUAN */}
-        <div className="mt-10 border-t border-steel/10 pt-8">
-          {submitted ? (
-            <div className="rounded-xl border border-verified/30 bg-verified/5 p-6 text-center">
-              <p className="font-display text-lg font-semibold text-ink">Pengajuan terkirim</p>
-              <p className="mt-2 text-sm text-steel">
-                Status pengajuan kamu: <span className="text-bridge-gold">Menunggu</span>
-              </p>
-              <Link
-                href="/kolaborasi"
-                className="mt-5 inline-block rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-steel"
-              >
-                Kembali ke Daftar Kolaborasi
-              </Link>
-            </div>
-          ) : user ? (
-            <div className="rounded-xl border border-steel/15 bg-steel/5 p-6 text-center">
-              <p className="font-display text-lg font-semibold text-ink">Tertarik dengan peluang ini?</p>
-              <p className="mt-2 text-sm text-steel">
-                Ajukan kolaborasi ini sebagai <span className="font-semibold text-ink">{user.nama}</span>.
-              </p>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                className="mt-5 rounded-full bg-ink px-6 py-2.5 text-sm font-medium text-paper transition hover:bg-steel"
-              >
-                Ajukan Kolaborasi
-              </button>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-bridge-gold/30 bg-bridge-gold/10 p-4 text-center">
-              <p className="text-sm text-ink">
-                Kamu belum masuk. Silakan{" "}
-                <Link href="/" className="text-bridge-gold underline">
-                  masuk terlebih dahulu
-                </Link>{" "}
-                sebelum mengajukan kolaborasi.
-              </p>
-            </div>
-          )}
-        </div>
+      <div className="sticky top-0 z-50 bg-paper/90 backdrop-blur-md border-b border-steel/10">
+        <Navbar />
       </div>
 
+      {/* TOP HEADER CONTAINER */}
+      <div className="mx-auto max-w-4xl px-6 pt-10 pb-6">
+        <button
+          onClick={() => router.push("/kolaborasi")}
+          className="inline-flex items-center gap-2 font-mono text-xs text-steel hover:text-bridge-gold transition mb-6 font-bold"
+        >
+          ← Kembali ke daftar peluang
+        </button>
+
+        {/* TITLE & META HEADER */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="space-y-4"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="font-mono text-xs uppercase tracking-widest text-bridge-gold font-bold bg-bridge-gold/10 border border-bridge-gold/30 px-3 py-1 rounded-full">
+              🏢 {data.perusahaan}
+            </span>
+            <span
+              className={`rounded-full border px-3.5 py-1 font-mono text-[10px] uppercase tracking-wider font-extrabold ${
+                data.tipe === "Akademik"
+                  ? "bg-steel/10 text-steel border-steel/30"
+                  : "bg-bridge-gold text-ink border-bridge-gold"
+              }`}
+            >
+              {data.tipe}
+            </span>
+          </div>
+
+          <h1 className="font-display text-3xl sm:text-5xl font-black text-ink leading-tight">
+            {data.judul}
+          </h1>
+
+          <div className="flex flex-wrap gap-4 font-mono text-xs text-steel pt-2 border-t border-steel/10">
+            <span className="flex items-center gap-1.5">
+              📁 <strong className="text-ink">Kategori:</strong> {data.kategori}
+            </span>
+            <span className="flex items-center gap-1.5">
+              📍 <strong className="text-ink">Lokasi:</strong> {data.lokasi}
+            </span>
+            <span className="flex items-center gap-1.5">
+              ⏰ <strong className="text-ink">Batas Pendaftaran:</strong> {data.batasWaktu}
+            </span>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* SCROLL-DRIVEN STACKING / TIMPAH TINDIH CARDS SECTION           */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <div className="mx-auto max-w-4xl px-6 pt-6 space-y-6">
+
+        {/* STACKED CARD 1: Ringkasan Proyek & Deskripsi */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}
+          className="sticky top-24 z-10 rounded-3xl border-2 border-steel/20 bg-white p-8 shadow-xl transition-all duration-300 hover:shadow-2xl"
+        >
+          <div className="flex items-center gap-3 border-b border-steel/10 pb-4 mb-4">
+            <span className="p-2.5 rounded-2xl bg-bridge-gold/15 text-ink font-bold text-sm">📌</span>
+            <div>
+              <h2 className="font-display text-xl font-bold text-ink">Deskripsi & Tantangan Utama</h2>
+              <p className="text-xs text-steel">Gambaran umum proyek kolaborasi dari perusahaan</p>
+            </div>
+          </div>
+          <p className="text-base leading-relaxed text-steel font-medium">
+            {data.deskripsi}
+          </p>
+        </motion.div>
+
+        {/* STACKED CARD 2: Manfaat & Hasil Akademik (Menimpah Card 1 saat scroll) */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="sticky top-28 z-20 rounded-3xl border-2 border-bridge-gold/40 bg-ink p-8 text-paper shadow-2xl transition-all duration-300 hover:border-bridge-gold"
+        >
+          <div className="flex items-center gap-3 border-b border-white/15 pb-4 mb-4">
+            <span className="p-2.5 rounded-2xl bg-bridge-gold text-ink font-bold text-sm">🎓</span>
+            <div>
+              <h2 className="font-display text-xl font-bold text-paper">Manfaat Akademik & Portofolio</h2>
+              <p className="text-xs text-paper/70">Yang akan didapatkan mahasiswa dari kolaborasi ini</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
+            <div className="p-4 rounded-2xl bg-white/10 border border-white/10 space-y-1">
+              <span className="text-bridge-gold text-base font-bold">1. Sertifikat Resmi</span>
+              <p className="text-paper/80 font-sans text-xs">Pengakuan dari mitra perusahaan terverifikasi.</p>
+            </div>
+            <div className="p-4 rounded-2xl bg-white/10 border border-white/10 space-y-1">
+              <span className="text-bridge-gold text-base font-bold">2. Auto Portfolio</span>
+              <p className="text-paper/80 font-sans text-xs">Masuk ke Student Portfolio Tracker otomatis.</p>
+            </div>
+            <div className="p-4 rounded-2xl bg-white/10 border border-white/10 space-y-1">
+              <span className="text-bridge-gold text-base font-bold">3. Rekomendasi Magang</span>
+              <p className="text-paper/80 font-sans text-xs">Peluang direkrut magang secara langsung.</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* STACKED CARD 3: Form / Tombol Pengajuan (Menimpah Card 2 saat scroll) */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="sticky top-32 z-30 rounded-3xl border-2 border-steel/20 bg-white p-8 shadow-2xl transition-all duration-300"
+        >
+          <div className="text-center space-y-4">
+            {submitted ? (
+              <div className="rounded-2xl border-2 border-verified/40 bg-verified/10 p-8 text-center space-y-3">
+                <span className="text-4xl">🎉</span>
+                <h3 className="font-display text-2xl font-bold text-ink">Pengajuan Berhasil Terkirim!</h3>
+                <p className="text-xs font-mono text-steel max-w-sm mx-auto">
+                  Status pengajuan kamu: <span className="font-bold text-bridge-gold">Menunggu Peninjauan Perusahaan</span>
+                </p>
+                <div className="pt-4">
+                  <Link
+                    href="/status"
+                    className="inline-block rounded-xl bg-ink px-6 py-3 font-mono text-xs font-bold text-paper hover:bg-steel transition shadow-md"
+                  >
+                    Pantau Status Pengajuan →
+                  </Link>
+                </div>
+              </div>
+            ) : user ? (
+              <div className="space-y-4 py-2">
+                <span className="inline-block p-3 rounded-full bg-bridge-gold/20 text-ink text-2xl">🚀</span>
+                <h3 className="font-display text-2xl font-bold text-ink">Tertarik dengan Peluang Ini?</h3>
+                <p className="text-sm text-steel max-w-md mx-auto">
+                  Ajukan permohonan kolaborasi akademik ini secara langsung sebagai{" "}
+                  <strong className="text-ink">{user.nama}</strong> ({user.prodi || "Mahasiswa"}).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="mt-4 rounded-xl bg-bridge-gold px-8 py-3.5 font-mono text-sm font-extrabold text-ink hover:bg-bridge-gold/90 transition shadow-xl hover:scale-105 active:scale-95"
+                >
+                  Ajukan Kolaborasi Sekarang →
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-2xl border-2 border-bridge-gold/40 bg-bridge-gold/15 p-6 text-center space-y-3">
+                <p className="text-sm font-bold text-ink">
+                  Kamu Belum Masuk Akun
+                </p>
+                <p className="text-xs text-steel">
+                  Silakan masuk terlebih dahulu untuk mengajukan kolaborasi ini.
+                </p>
+                <Link
+                  href="/?auth=login"
+                  className="inline-block rounded-xl bg-ink px-6 py-2.5 font-mono text-xs font-bold text-paper hover:bg-steel transition shadow-md"
+                >
+                  Masuk Ke Akun
+                </Link>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+      </div>
+
+      {/* MODAL APPLY */}
       {isModalOpen && user && (
         <ApplyModal
           data={data}

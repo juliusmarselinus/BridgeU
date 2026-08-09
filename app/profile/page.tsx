@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { allCategoriesList, allSkillsList, badgeList } from "@/lib/dummy-data";
+import { supabase } from "@/lib/supabase";
 
 type StoredUser = {
   nama: string;
@@ -180,6 +182,16 @@ function IconLock({ className = "w-4 h-4 text-bridge-gold" }: { className?: stri
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function IconLogout({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
 }
@@ -971,14 +983,14 @@ function EditProfileModal({
           >
             Batal
           </button>
-          <MagneticButton
+          <button
             type="submit"
-            formId="edit-profile-form"
-            className="rounded-xl bg-ink px-5 py-2.5 text-xs font-bold text-paper transition-colors flex items-center gap-2"
+            form="edit-profile-form"
+            className="rounded-xl bg-ink px-5 py-2.5 text-xs font-bold text-paper transition-colors flex items-center gap-2 active:scale-95"
           >
             <IconSave className="w-4 h-4 text-bridge-gold" />
             Simpan Perubahan
-          </MagneticButton>
+          </button>
         </div>
       </div>
     </div>
@@ -1238,7 +1250,9 @@ const tabSlideVariants = {
 /* Main Profile Page Component                                        */
 /* ------------------------------------------------------------------ */
 export default function ProfilePage() {
+  const router = useRouter();
   const [user, setUser] = useState<StoredUser | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [fileError, setFileError] = useState("");
@@ -1254,16 +1268,47 @@ export default function ProfilePage() {
   const seenBadgeIdsRef = useRef<Set<string> | null>(null);
   const [freshBadgeIds, setFreshBadgeIds] = useState<Set<string>>(new Set());
 
-  const loadFromStorage = () => {
-    const stored = localStorage.getItem("bridgeu_user");
-    if (stored) {
-      const parsed: StoredUser = JSON.parse(stored);
-      setUser(parsed);
+  const [loadError, setLoadError] = useState("");
+
+  const loadFromDatabase = async () => {
+    setLoadError("");
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setIsLoadingUser(false);
+      return; // ini beneran belum login
     }
+
+    const res = await fetch("/api/me", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setLoadError(body.error || `Gagal memuat profil (${res.status})`);
+      setIsLoadingUser(false);
+      return;
+    }
+
+    const data = await res.json();
+    const parsed: StoredUser = {
+      nama: data.nama,
+      email: data.email,
+      universitas: data.universitas,
+      prodi: data.prodi,
+      semester: data.semester,
+      minatKategori: data.minatKategori,
+      skills: data.skills,
+      preferensiTipe: data.preferensiTipe,
+      preferensiLokasi: data.preferensiLokasi,
+      ringkasan: data.ringkasanSelf,
+      foto: data.fotoUrl,
+    };
+    setUser(parsed);
+    setIsLoadingUser(false);
   };
 
   useEffect(() => {
-    loadFromStorage();
+    loadFromDatabase();
 
     const storedPengajuan = localStorage.getItem("bridgeu_pengajuan");
     if (storedPengajuan) {
@@ -1275,6 +1320,11 @@ export default function ProfilePage() {
       }
     }
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/");
+  };
 
   const handleTabChange = (key: TabKey) => {
     const oldIndex = TABS.findIndex((t) => t.key === activeTab);
@@ -1305,19 +1355,55 @@ export default function ProfilePage() {
     e.target.value = "";
   };
 
-  const handlePhotoSave = (dataUrl: string) => {
+  const saveToDatabase = async (payload: Record<string, any>) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { ok: false, error: "Sesi login habis, silakan login ulang." };
+
+    const res = await fetch("/api/me", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { ok: false, error: body.error || `Gagal menyimpan (${res.status})` };
+    }
+    return { ok: true, error: "" };
+  };
+
+  const handlePhotoSave = async (dataUrl: string) => {
     if (!user) return;
     const updated: StoredUser = { ...user, foto: dataUrl };
-    localStorage.setItem("bridgeu_user", JSON.stringify(updated));
-    window.dispatchEvent(new Event("bridgeu_user_updated"));
+    const result = await saveToDatabase({ fotoUrl: dataUrl });
+    if (!result.ok) {
+      setFileError(result.error);
+      return;
+    }
     setUser(updated);
     setPendingImage(null);
     setShowSuccessModal(true);
   };
 
-  const handleProfileDataSave = (updated: StoredUser) => {
-    localStorage.setItem("bridgeu_user", JSON.stringify(updated));
-    window.dispatchEvent(new Event("bridgeu_user_updated"));
+  const handleProfileDataSave = async (updated: StoredUser) => {
+    const result = await saveToDatabase({
+      nama: updated.nama,
+      universitas: updated.universitas,
+      prodi: updated.prodi,
+      semester: updated.semester,
+      preferensiTipe: updated.preferensiTipe,
+      preferensiLokasi: updated.preferensiLokasi,
+      ringkasan: updated.ringkasan,
+      minatKategori: updated.minatKategori,
+      skills: updated.skills,
+    });
+    if (!result.ok) {
+      setFileError(result.error);
+      return;
+    }
     setUser(updated);
     setIsEditModalOpen(false);
     setShowSuccessModal(true);
@@ -1359,6 +1445,17 @@ export default function ProfilePage() {
   const animatedSkillsCount = useSpringNumber(skillsList.length);
   const animatedMinatCount = useSpringNumber(minatList.length);
 
+  if (isLoadingUser) {
+    return (
+      <main className="min-h-screen bg-paper">
+        <Navbar />
+        <div className="mx-auto max-w-3xl px-6 py-20 text-center">
+          <p className="text-sm font-medium text-steel/60">Memuat profil...</p>
+        </div>
+      </main>
+    );
+  }
+
   if (!user) {
     return (
       <main className="min-h-screen bg-paper">
@@ -1368,7 +1465,9 @@ export default function ProfilePage() {
             <IconLock className="w-8 h-8 text-bridge-gold" />
           </div>
           <p className="text-sm font-medium text-steel">
-            Kamu belum masuk. Silakan masuk terlebih dahulu untuk melihat profil.
+            {loadError
+              ? `Gagal memuat profil: ${loadError}`
+              : "Kamu belum masuk. Silakan masuk terlebih dahulu untuk melihat profil."}
           </p>
         </div>
       </main>
@@ -1473,14 +1572,23 @@ export default function ProfilePage() {
 
             <div className="flex items-center gap-3 mb-2 z-10 shrink-0 min-h-[42px]">
               {activeTab === "profile" && (
-                <MagneticButton
+                <button
+                  type="button"
                   onClick={() => setIsEditModalOpen(true)}
-                  className="rounded-xl bg-ink px-5 py-2.5 text-xs font-bold text-paper transition-colors flex items-center gap-2"
+                  className="rounded-xl bg-ink px-5 py-2.5 text-xs font-bold text-paper transition-colors flex items-center gap-2 active:scale-95"
                 >
                   <IconPencil className="w-4 h-4 text-bridge-gold" />
                   Edit Profil
-                </MagneticButton>
+                </button>
               )}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-xl border border-steel/20 bg-paper px-5 py-2.5 text-xs font-bold text-ink transition-colors flex items-center gap-2 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 active:scale-95"
+              >
+                <IconLogout className="w-4 h-4 text-bridge-gold" />
+                Keluar
+              </button>
             </div>
           </div>
 
