@@ -1,24 +1,27 @@
-// components/CompanyNavbar.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 const companyNavLinks = [
   { href: "/perusahaan/dashboard", label: "Dashboard Perusahaan" },
+  { href: "/perusahaan/kolaborasi", label: "Kelola Kolaborasi" },
   { href: "/perusahaan/pelamar", label: "Kelola Pelamar" },
 ];
 
-type StoredCompany = {
-  nama: string;
-  industri: string;
-  email: string;
+type CompanyProfileNav = {
+  nama_perusahaan: string;
+  logo_url?: string | null;
 };
 
 function companyInitials(name: string) {
+  if (!name) return "CP";
   return name
     .split(" ")
+    .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0])
     .join("")
@@ -27,28 +30,44 @@ function companyInitials(name: string) {
 
 export function CompanyNavbar() {
   const pathname = usePathname();
-  const [company, setCompany] = useState<StoredCompany | null>(null);
+  const [company, setCompany] = useState<CompanyProfileNav | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem("bridgeu_company");
-    if (stored) {
+    let isMounted = true;
+
+    async function loadCompanyProfile() {
       try {
-        const parsed = JSON.parse(stored);
-        queueMicrotask(() => setCompany(parsed));
-      } catch {
-        // Fallback jika gagal parse JSON
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from("perusahaan_profiles")
+          .select("nama_perusahaan, logo_url")
+          .eq("user_id", user.id)
+          .single();
+
+        if (!error && data && isMounted) {
+          setCompany({
+            nama_perusahaan: data.nama_perusahaan,
+            logo_url: data.logo_url,
+          });
+        }
+      } catch (err) {
+        console.error("Gagal mengambil profil navbar dari Supabase:", err);
       }
-    } else {
-      queueMicrotask(() =>
-        setCompany({
-          nama: "Nexora Digital",
-          industri: "Teknologi & Produk Digital",
-          email: "perusahaan@nexora.com",
-        })
-      );
     }
+
+    loadCompanyProfile();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
+  const companyName = company?.nama_perusahaan || "Nexora Digital";
   const isProfileActive = pathname === "/perusahaan/profile";
 
   return (
@@ -62,13 +81,13 @@ export function CompanyNavbar() {
           <span>
             Bridge<span className="text-bridge-gold">U</span>
           </span>
-          <span className="rounded-full bg-bridge-gold/20 px-2.5 py-0.5 font-mono text-[10px] font-medium tracking-wide text-bridge-gold uppercase">
+          <span className="rounded-full bg-bridge-gold/20 px-2.5 py-0.5 font-mono text-[10px] font-medium tracking-wide text-bridge-gold uppercase border border-bridge-gold/30">
             Mitra Perusahaan
           </span>
         </Link>
 
-        {/* Navigation Links */}
-        <div className="hidden gap-1 font-mono text-xs sm:flex">
+        {/* Navigation Links (Termasuk Kelola Kolaborasi) */}
+        <div className="hidden gap-1 font-mono text-xs md:flex">
           {companyNavLinks.map((link) => {
             const active = pathname === link.href;
             return (
@@ -87,7 +106,7 @@ export function CompanyNavbar() {
           })}
         </div>
 
-        {/* User / Company Profile Chip -> Ke Halaman Profile */}
+        {/* Profile Chip -> Ke Halaman Profile */}
         <div className="flex items-center gap-2">
           <Link
             href="/perusahaan/profile"
@@ -97,11 +116,20 @@ export function CompanyNavbar() {
                 : "bg-white/10 border-white/10 text-paper hover:bg-white/20"
             }`}
           >
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-bridge-gold font-mono text-[11px] font-bold text-ink">
-              {company ? companyInitials(company.nama) : "ND"}
+            <div className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-bridge-gold font-mono text-[11px] font-bold text-ink">
+              {company?.logo_url ? (
+                <Image
+                  src={company.logo_url}
+                  alt={companyName}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                companyInitials(companyName)
+              )}
             </div>
-            <span className="hidden font-mono text-xs sm:inline font-medium">
-              {company ? company.nama : "Nexora Digital"}
+            <span className="hidden font-mono text-xs sm:inline font-medium max-w-[140px] truncate">
+              {companyName}
             </span>
           </Link>
         </div>

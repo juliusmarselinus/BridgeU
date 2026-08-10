@@ -1,93 +1,82 @@
-// app/(perusahaan)/perusahaan/profile/page.tsx
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import { dummyPerusahaan, RegisteredCompany } from "@/lib/dummy-data";
+import { useCompanyProfile } from "./hooks/useCompanyProfile";
 
 export default function ProfilePerusahaanPage() {
-  const [profile, setProfile] = useState<RegisteredCompany>(dummyPerusahaan);
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<RegisteredCompany>(dummyPerusahaan);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const {
+    profile,
+    formData,
+    setFormData,
+    isEditing,
+    setIsEditing,
+    isLoading,
+    isSubmitting,
+    showSuccessToast,
+    sektorOptions,
+    kotaOptions,
+    handleSubmit,
+  } = useCompanyProfile();
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    
-    // Tangani input untuk nested object kontakPIC
-    if (name.startsWith("pic_")) {
-      const field = name.replace("pic_", "");
-      setFormData((prev) => ({
-        ...prev,
-        kontakPIC: {
-          ...prev.kontakPIC,
-          [field]: value,
-        } as RegisteredCompany["kontakPIC"],
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex h-96 items-center justify-center font-mono text-xs text-steel">
+        Memuat profil perusahaan...
+      </div>
+    );
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setProfile(formData);
-    setIsEditing(false);
-    
-    // Tampilkan notifikasi sukses
-    setShowSuccessToast(true);
-    setTimeout(() => setShowSuccessToast(false), 3000);
-  };
+  if (!profile) {
+    return (
+      <div className="max-w-5xl mx-auto p-6 text-center font-mono text-xs text-steel">
+        Profil perusahaan tidak ditemukan. Silakan pastikan Anda telah terautentikasi.
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       {/* Toast Notifikasi Sukses */}
       {showSuccessToast && (
-        <div className="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-400 border border-green-200">
-          <span className="font-medium">Berhasil!</span> Profil perusahaan berhasil diperbarui.
+        <div className="p-4 mb-4 text-sm text-emerald-800 rounded-xl bg-emerald-50 border border-emerald-200 font-mono">
+          <span className="font-bold">Berhasil!</span> Profil perusahaan berhasil diperbarui.
         </div>
       )}
 
       {/* Header Profile */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-white rounded-2xl border border-steel/15 p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 flex-shrink-0">
-            {profile.logo ? (
+          <div className="relative w-20 h-20 rounded-2xl overflow-hidden border border-steel/15 bg-steel/5 shrink-0">
+            {profile.logo_url ? (
               <Image
-                src={profile.logo}
-                alt={profile.nama}
+                src={profile.logo_url}
+                alt={profile.nama_perusahaan}
                 fill
                 className="object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-blue-600 text-white text-2xl font-bold">
-                {profile.nama.charAt(0)}
+              <div className="w-full h-full flex items-center justify-center bg-ink text-paper text-2xl font-bold font-display">
+                {profile.nama_perusahaan.charAt(0)}
               </div>
             )}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">{profile.nama}</h1>
-              <span className="px-2.5 py-0.5 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
-                {profile.statusVerifikasi}
+              <h1 className="text-2xl font-bold font-display text-ink">{profile.nama_perusahaan}</h1>
+              <span className="px-2.5 py-0.5 text-xs font-semibold font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full">
+                {profile.status_verifikasi}
               </span>
             </div>
-            <p className="text-sm text-gray-500 mt-1">{profile.industri} • {profile.lokasi}</p>
-            <p className="text-xs text-gray-400 mt-0.5">NIB: {profile.nib}</p>
+            <p className="text-xs font-mono text-steel mt-1">
+              {profile.nama_sektor} • {profile.nama_kota}
+            </p>
+            <p className="text-xs font-mono text-steel/70 mt-0.5">NIB: {profile.nib}</p>
           </div>
         </div>
 
         <button
-          onClick={() => {
-            setFormData(profile);
-            setIsEditing(!isEditing);
-          }}
-          className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+          onClick={() => setIsEditing(!isEditing)}
+          className="px-5 py-2.5 text-xs font-mono font-medium text-ink border border-steel/20 rounded-full hover:bg-steel/5 transition shadow-sm"
         >
           {isEditing ? "Batal Edit" : "Edit Profil"}
         </button>
@@ -96,189 +85,223 @@ export default function ProfilePerusahaanPage() {
       {/* Main Content */}
       {isEditing ? (
         /* Form Edit Profil */
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-6">
-          <h2 className="text-lg font-semibold text-gray-900 border-b pb-3">Edit Informasi Perusahaan</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-steel/15 p-6 shadow-sm space-y-6">
+          <h2 className="text-lg font-bold font-display text-ink border-b border-steel/10 pb-3">
+            Edit Informasi Perusahaan
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nama Perusahaan</label>
+              <label className="block font-medium text-ink mb-1">Nama Perusahaan *</label>
               <input
                 type="text"
-                name="nama"
-                value={formData.nama}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 required
+                value={formData.nama_perusahaan}
+                onChange={(e) => setFormData({ ...formData, nama_perusahaan: e.target.value })}
+                className="w-full px-4 py-2.5 border border-steel/20 rounded-xl outline-none focus:border-bridge-gold"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Industri</label>
+              <label className="block font-medium text-ink mb-1">NIB (Nomor Induk Berusaha) *</label>
               <input
                 type="text"
-                name="industri"
-                value={formData.industri}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 required
+                value={formData.nib}
+                onChange={(e) => setFormData({ ...formData, nib: e.target.value })}
+                className="w-full px-4 py-2.5 border border-steel/20 rounded-xl outline-none focus:border-bridge-gold"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Lokasi</label>
-              <input
-                type="text"
-                name="lokasi"
-                value={formData.lokasi}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                required
-              />
+              <label className="block font-medium text-ink mb-1">Sektor Perusahaan *</label>
+              <select
+                value={formData.sektor_id}
+                onChange={(e) => setFormData({ ...formData, sektor_id: Number(e.target.value) })}
+                className="w-full px-4 py-2.5 border border-steel/20 rounded-xl bg-white outline-none focus:border-bridge-gold"
+              >
+                {sektorOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+              <label className="block font-medium text-ink mb-1">Kota *</label>
+              <select
+                value={formData.kota_id}
+                onChange={(e) => setFormData({ ...formData, kota_id: Number(e.target.value) })}
+                className="w-full px-4 py-2.5 border border-steel/20 rounded-xl bg-white outline-none focus:border-bridge-gold"
+              >
+                {kotaOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-medium text-ink mb-1">Ukuran Perusahaan</label>
+              <select
+                value={formData.ukuran_perusahaan}
+                onChange={(e) => setFormData({ ...formData, ukuran_perusahaan: e.target.value })}
+                className="w-full px-4 py-2.5 border border-steel/20 rounded-xl bg-white outline-none focus:border-bridge-gold"
+              >
+                <option value="1-10">1-10 Karyawan</option>
+                <option value="11-50">11-50 Karyawan</option>
+                <option value="51-200">51-200 Karyawan</option>
+                <option value="201-500">201-500 Karyawan</option>
+                <option value="500+">500+ Karyawan</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-medium text-ink mb-1">Tahun Berdiri</label>
+              <input
+                type="number"
+                value={formData.tahun_berdiri}
+                onChange={(e) => setFormData({ ...formData, tahun_berdiri: Number(e.target.value) })}
+                className="w-full px-4 py-2.5 border border-steel/20 rounded-xl outline-none focus:border-bridge-gold"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block font-medium text-ink mb-1">Website Resmi</label>
               <input
                 type="url"
-                name="website"
-                value={formData.website || ""}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                value={formData.situs_web}
+                onChange={(e) => setFormData({ ...formData, situs_web: e.target.value })}
+                placeholder="https://contohperusahaan.com"
+                className="w-full px-4 py-2.5 border border-steel/20 rounded-xl outline-none focus:border-bridge-gold"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi Perusahaan</label>
-            <textarea
-              name="deskripsi"
-              rows={4}
-              value={formData.deskripsi || ""}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          <div className="font-mono text-xs">
+            <label className="block font-medium text-ink mb-1">Alamat Lengkap Perusahaan</label>
+            <input
+              type="text"
+              value={formData.alamat_lengkap}
+              onChange={(e) => setFormData({ ...formData, alamat_lengkap: e.target.value })}
+              placeholder="Jl. Jendral Sudirman No. 123, Jakarta Selatan"
+              className="w-full px-4 py-2.5 border border-steel/20 rounded-xl outline-none focus:border-bridge-gold"
             />
           </div>
 
-          <h3 className="text-md font-semibold text-gray-900 border-b pb-2 pt-2">Kontak Person (PIC)</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nama PIC</label>
-              <input
-                type="text"
-                name="pic_nama"
-                value={formData.kontakPIC?.nama || ""}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email PIC</label>
-              <input
-                type="email"
-                name="pic_email"
-                value={formData.kontakPIC?.email || ""}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Telepon PIC</label>
-              <input
-                type="text"
-                name="pic_telepon"
-                value={formData.kontakPIC?.telepon || ""}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
+          <div className="font-mono text-xs">
+            <label className="block font-medium text-ink mb-1">Deskripsi Perusahaan</label>
+            <textarea
+              rows={4}
+              value={formData.deskripsi_perusahaan}
+              onChange={(e) => setFormData({ ...formData, deskripsi_perusahaan: e.target.value })}
+              placeholder="Jelaskan secara ringkas visi, misi, dan fokus bisnis perusahaan Anda..."
+              className="w-full px-4 py-2.5 border border-steel/20 rounded-xl outline-none focus:border-bridge-gold"
+            />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-end gap-3 pt-4 border-t border-steel/10 font-mono text-xs">
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-5 py-2.5 font-medium text-steel bg-steel/10 rounded-full hover:bg-steel/20 transition"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={isSubmitting}
+              className="px-6 py-2.5 font-semibold text-ink bg-bridge-gold rounded-full hover:bg-bridge-gold/90 transition shadow-md disabled:opacity-50"
             >
-              Simpan Perubahan
+              {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
             </button>
           </div>
         </form>
       ) : (
         /* Tampilan Detail Profil */
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Kolom Kiri - Deskripsi Utama */}
+          {/* Kolom Kiri - Deskripsi & Alamat */}
           <div className="md:col-span-2 space-y-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-3">
-              <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">Tentang Perusahaan</h2>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                {profile.deskripsi || "Belum ada deskripsi yang ditambahkan."}
+            <div className="bg-white rounded-2xl border border-steel/15 p-6 shadow-sm space-y-3">
+              <h2 className="text-lg font-bold font-display text-ink border-b border-steel/10 pb-2">
+                Tentang Perusahaan
+              </h2>
+              <p className="text-xs font-sans text-ink leading-relaxed">
+                {profile.deskripsi_perusahaan || "Belum ada deskripsi yang ditambahkan."}
               </p>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">Kontak Person (PIC)</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            <div className="bg-white rounded-2xl border border-steel/15 p-6 shadow-sm space-y-4">
+              <h2 className="text-lg font-bold font-display text-ink border-b border-steel/10 pb-2">
+                Detail Operasional
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
                 <div>
-                  <p className="text-xs text-gray-400">Nama PIC</p>
-                  <p className="font-medium text-gray-800">{profile.kontakPIC?.nama || "-"}</p>
+                  <p className="text-steel">Alamat Lengkap</p>
+                  <p className="font-medium text-ink mt-0.5">
+                    {profile.alamat_lengkap || "Belum diisi"}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Email PIC</p>
-                  <p className="font-medium text-gray-800">{profile.kontakPIC?.email || "-"}</p>
+                  <p className="text-steel">Ukuran Perusahaan</p>
+                  <p className="font-medium text-ink mt-0.5">
+                    {profile.ukuran_perusahaan} Karyawan
+                  </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Nomor Telepon</p>
-                  <p className="font-medium text-gray-800">{profile.kontakPIC?.telepon || "-"}</p>
+                  <p className="text-steel">Tahun Berdiri</p>
+                  <p className="font-medium text-ink mt-0.5">{profile.tahun_berdiri || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-steel">Kota Operasional</p>
+                  <p className="font-medium text-ink mt-0.5">{profile.nama_kota}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Kolom Kanan - Informasi Detail & Tier */}
+          {/* Kolom Kanan - Informasi Akun */}
           <div className="space-y-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">Informasi Resmi</h2>
-              <div className="space-y-3 text-sm">
+            <div className="bg-white rounded-2xl border border-steel/15 p-6 shadow-sm space-y-4">
+              <h2 className="text-lg font-bold font-display text-ink border-b border-steel/10 pb-2">
+                Informasi Akun
+              </h2>
+              <div className="space-y-3 font-mono text-xs">
                 <div>
-                  <p className="text-xs text-gray-400">Email Akun</p>
-                  <p className="font-medium text-gray-800">{profile.email}</p>
+                  <p className="text-steel">Email Terdaftar</p>
+                  <p className="font-medium text-ink mt-0.5">{profile.email}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Nomor Induk Berusaha (NIB)</p>
-                  <p className="font-medium text-gray-800">{profile.nib}</p>
+                  <p className="text-steel">NIB</p>
+                  <p className="font-medium text-ink mt-0.5">{profile.nib}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Website</p>
-                  {profile.website ? (
+                  <p className="text-steel">Situs Web</p>
+                  {profile.situs_web ? (
                     <a
-                      href={profile.website}
+                      href={profile.situs_web}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-medium text-blue-600 hover:underline break-all"
+                      className="font-medium text-blue-600 hover:underline break-all mt-0.5 block"
                     >
-                      {profile.website}
+                      {profile.situs_web}
                     </a>
                   ) : (
-                    <p className="font-medium text-gray-800">-</p>
+                    <p className="font-medium text-ink mt-0.5">-</p>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 shadow-sm">
-              <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Status Akun</span>
-              <h3 className="text-xl font-bold text-gray-900 mt-1">Paket {profile.tierAkun || "Free"}</h3>
-              <p className="text-xs text-gray-600 mt-2">
-                Anda menggunakan akun versi gratis. Upgrade ke Premium untuk mendapatkan fitur publikasi proyek tanpa batas.
+            <div className="bg-ink text-paper rounded-2xl p-6 shadow-md border border-white/10 space-y-2">
+              <span className="text-[10px] font-mono font-semibold text-bridge-gold uppercase tracking-wider">
+                Status Verifikasi
+              </span>
+              <h3 className="text-xl font-bold font-display">{profile.status_verifikasi}</h3>
+              <p className="text-xs text-paper/70 leading-relaxed pt-1 font-sans">
+                Akun terverifikasi resmi oleh administrator dapat mempublikasikan peluang proyek kolaborasi ke mahasiswa secara langsung.
               </p>
             </div>
           </div>

@@ -115,6 +115,7 @@ CREATE TABLE public.kolaborasi (
   moderated_by_admin_id uuid,
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  slot integer,
   CONSTRAINT kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT kolaborasi_perusahaan_id_fkey FOREIGN KEY (perusahaan_id) REFERENCES public.perusahaan_profiles(user_id),
   CONSTRAINT kolaborasi_kategori_id_fkey FOREIGN KEY (kategori_id) REFERENCES public.kategori_minat(id),

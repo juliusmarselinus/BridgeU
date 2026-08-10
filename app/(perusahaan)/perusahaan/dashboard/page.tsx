@@ -51,6 +51,8 @@ export default function CompanyDashboardPage() {
       const uid = session?.user?.id ?? null;
       setUserId(uid);
 
+      let resolvedCompanyName = "Nexora Digital";
+
       // 2. Ambil profil perusahaan dari DB
       if (uid) {
         const { data: profile } = await supabase
@@ -59,6 +61,7 @@ export default function CompanyDashboardPage() {
           .eq("user_id", uid)
           .maybeSingle();
         if (profile) {
+          resolvedCompanyName = profile.nama_perusahaan;
           setCompany({
             nama: profile.nama_perusahaan,
             industri: (profile.sektor as any)?.nama_sektor ?? "-",
@@ -69,39 +72,44 @@ export default function CompanyDashboardPage() {
         // Fallback: localStorage
         const storedCompany = localStorage.getItem("bridgeu_company");
         if (storedCompany) {
-          try { setCompany(JSON.parse(storedCompany)); } catch (e) { console.error(e); }
+          try {
+            const parsed = JSON.parse(storedCompany);
+            setCompany(parsed);
+            resolvedCompanyName = parsed.nama;
+          } catch (e) { console.error(e); }
         } else {
           setCompany({ nama: "Nexora Digital", industri: "Teknologi & Produk Digital", email: "perusahaan@nexora.com" });
         }
       }
 
       // 3. Ambil kolaborasi dari Supabase
+      let currentKolaborasiList: KolaborasiWithMeta[] = [];
       if (uid) {
         const { data: rows } = await supabase
           .from("kolaborasi")
-          .select(`id, judul, tipe, deskripsi, status_moderasi, batas_waktu,
+          .select(`id, judul, tipe, deskripsi, status_moderasi, batas_waktu, slot,
             kategori:kategori_id(nama_kategori),
             kota:lokasi_id(nama_kota)`)
           .eq("perusahaan_id", uid)
           .order("created_at", { ascending: false });
 
         if (rows && rows.length > 0) {
-          const mapped: KolaborasiWithMeta[] = rows.map((r: any) => ({
+          currentKolaborasiList = rows.map((r: any) => ({
             id: r.id,
             judul: r.judul,
             tipe: r.tipe === "Magang" ? "Magang" : "Akademik",
             kategori: r.kategori?.nama_kategori ?? "-",
             deskripsi: r.deskripsi ?? "",
-            perusahaan: company?.nama ?? "",
+            perusahaan: resolvedCompanyName,
             lokasi: r.kota?.nama_kota ?? "-",
             batasWaktu: r.batas_waktu
               ? new Date(r.batas_waktu).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
               : "-",
             statusPublikasi: r.status_moderasi === "Disetujui" ? "Terbit"
               : r.status_moderasi === "Ditolak" ? "Draft" : "Draft",
-            kuota: r.kuota ?? 5,
+            kuota: r.slot ?? 5,
           }));
-          setKolaborasiList(mapped);
+          setKolaborasiList(currentKolaborasiList);
         } else {
           setKolaborasiList([]);
         }
@@ -109,18 +117,67 @@ export default function CompanyDashboardPage() {
         // Fallback localStorage
         const storedKolaborasi = localStorage.getItem("bridgeu_company_kolaborasi");
         if (storedKolaborasi) {
-          try { setKolaborasiList(JSON.parse(storedKolaborasi)); } catch (e) { console.error(e); }
+          try {
+            currentKolaborasiList = JSON.parse(storedKolaborasi);
+            setKolaborasiList(currentKolaborasiList);
+          } catch (e) { console.error(e); }
         } else {
-          setKolaborasiList(dummyKolaborasi.filter((k) => k.perusahaan.toLowerCase().includes("nexora")) as KolaborasiWithMeta[]);
+          currentKolaborasiList = dummyKolaborasi.filter((k) => k.perusahaan.toLowerCase().includes("nexora")) as KolaborasiWithMeta[];
+          setKolaborasiList(currentKolaborasiList);
         }
       }
 
       // 4. Pelamar
-      const storedPelamar = localStorage.getItem("bridgeu_pelamar_list");
-      if (storedPelamar) {
-        try { setPelamarList(JSON.parse(storedPelamar)); } catch (e) { console.error(e); }
+      if (uid && currentKolaborasiList.length > 0) {
+        const colabIds = currentKolaborasiList.map((k) => k.id);
+        const { data: pelamarRows, error: pelamarError } = await supabase
+          .from("pendaftaran_kolaborasi")
+          .select(`
+            id,
+            kolaborasi_id,
+            status,
+            tanggal_daftar,
+            catatan_perusahaan,
+            mahasiswa_profiles:mahasiswa_id(
+              nama_lengkap,
+              universitas:universitas_id(nama_universitas),
+              prodi:prodi_id(nama_prodi),
+              users:users!user_id(email)
+            ),
+            kolaborasi:kolaborasi_id(judul)
+          `)
+          .in("kolaborasi_id", colabIds);
+
+        if (pelamarError) {
+          console.error("Gagal mengambil pendaftaran_kolaborasi:", pelamarError.message);
+        }
+
+        if (pelamarRows && pelamarRows.length > 0) {
+          const mappedPelamar: Pelamar[] = pelamarRows.map((p: any) => ({
+            id: p.id,
+            kolaborasiId: p.kolaborasi_id,
+            kolaborasiJudul: p.kolaborasi?.judul ?? "-",
+            namaMahasiswa: p.mahasiswa_profiles?.nama_lengkap ?? "Mahasiswa",
+            universitas: p.mahasiswa_profiles?.universitas?.nama_universitas ?? "-",
+            prodi: p.mahasiswa_profiles?.prodi?.nama_prodi ?? "-",
+            emailMahasiswa: p.mahasiswa_profiles?.users?.email ?? "-",
+            tujuan: p.catatan_perusahaan ?? "-",
+            status: p.status,
+            tanggal: p.tanggal_daftar
+              ? new Date(p.tanggal_daftar).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+              : "-",
+          }));
+          setPelamarList(mappedPelamar);
+        } else {
+          setPelamarList([]);
+        }
       } else {
-        setPelamarList(dummyPelamarList);
+        const storedPelamar = localStorage.getItem("bridgeu_pelamar_list");
+        if (storedPelamar) {
+          try { setPelamarList(JSON.parse(storedPelamar)); } catch (e) { console.error(e); }
+        } else {
+          setPelamarList(dummyPelamarList);
+        }
       }
     };
 
@@ -267,6 +324,7 @@ export default function CompanyDashboardPage() {
             deskripsi: formData.deskripsi,
             lokasi_id: lokasiId,
             batas_waktu: batasWaktuDate,
+            slot: Number(formData.kuota),
             status_moderasi: formData.statusPublikasi === "Terbit" ? "Menunggu" : "Menunggu",
           }).eq("id", editingId).eq("perusahaan_id", session.user.id);
 
@@ -275,7 +333,8 @@ export default function CompanyDashboardPage() {
               k.id === editingId
                 ? { ...k, judul: formData.judul, tipe: formData.tipe, kategori: formData.kategori,
                     deskripsi: formData.deskripsi, lokasi: formData.lokasi,
-                    batasWaktu: formData.batasWaktu, statusPublikasi: formData.statusPublikasi }
+                    batasWaktu: formData.batasWaktu, statusPublikasi: formData.statusPublikasi,
+                    kuota: Number(formData.kuota) }
                 : k
             )
           );
@@ -291,6 +350,7 @@ export default function CompanyDashboardPage() {
               deskripsi: formData.deskripsi,
               lokasi_id: lokasiId,
               batas_waktu: batasWaktuDate,
+              slot: Number(formData.kuota),
               status_moderasi: "Menunggu",
             }])
             .select("id")
@@ -491,7 +551,10 @@ export default function CompanyDashboardPage() {
               onClick={handleExportCSV}
               className="inline-flex items-center gap-1.5 rounded-full border border-steel/20 bg-white px-4 py-2 font-mono text-xs font-medium text-ink transition hover:bg-steel/5 shadow-sm"
             >
-              📥 Export CSV
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline-block mr-1">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+              </svg>
+              Export CSV
             </button>
             <button
               onClick={handleOpenCreateModal}
@@ -553,7 +616,10 @@ export default function CompanyDashboardPage() {
         {filteredKolaborasi.length === 0 ? (
           <div className="mt-6 rounded-2xl border border-dashed border-steel/30 bg-white/40 p-12 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-bridge-gold/20 text-bridge-gold">
-              💼
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
             </div>
             <h3 className="mt-4 font-display text-lg font-semibold text-ink">
               {searchQuery
@@ -641,8 +707,22 @@ export default function CompanyDashboardPage() {
 
                   <div className="mt-6 pt-4 border-t border-steel/10 flex items-center justify-between font-mono text-xs text-steel">
                     <div className="flex items-center gap-3 text-[11px]">
-                      <span>📍 {item.lokasi}</span>
-                      <span>📅 s.d {item.batasWaktu}</span>
+                      <span className="flex items-center">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline-block mr-1">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        {item.lokasi}
+                      </span>
+                      <span className="flex items-center">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline-block mr-1">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                          <line x1="16" y1="2" x2="16" y2="6"/>
+                          <line x1="8" y1="2" x2="8" y2="6"/>
+                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        s.d {item.batasWaktu}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
