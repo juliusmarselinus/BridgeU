@@ -119,20 +119,35 @@ export async function GET(req: NextRequest) {
     let recommendedProjects: RecommendedProject[] = [];
     const { data: dbKolaborasi } = await db
       .from("kolaborasi")
-      .select("id, judul, tipe, tingkat_kesulitan, perusahaan:perusahaan_id(nama_perusahaan), kategori:kategori_id(nama_kategori)")
+      .select(`
+        id, judul, tipe, tingkat_kesulitan,
+        perusahaan:perusahaan_id(nama_perusahaan),
+        kategori:kategori_id(nama_kategori),
+        kolaborasi_target_prodi(program_studi:prodi_id(nama_prodi))
+      `)
       .eq("status_moderasi", "Disetujui")
       .order("created_at", { ascending: false })
       .limit(4);
 
+    const userProdi = userData?.prodi || "Sistem Informasi";
+
     if (dbKolaborasi && dbKolaborasi.length > 0) {
-      recommendedProjects = dbKolaborasi.map((k: any, idx: number) => ({
-        id: k.id,
-        judul: k.judul,
-        perusahaan: k.perusahaan?.nama_perusahaan ?? "Mitra Perusahaan",
-        kategori: k.kategori?.nama_kategori ?? "Kolaborasi",
-        matchScore: Math.max(95 - idx * 7, 75),
-        tipe: k.tipe ?? "Studi Kasus Akademik",
-      }));
+      recommendedProjects = dbKolaborasi.map((k: any) => {
+        const matchesProdi = (k.kolaborasi_target_prodi as any[])?.some((tp: any) =>
+          tp.program_studi?.nama_prodi?.toLowerCase().includes(userProdi.toLowerCase())
+        );
+        const baseScore = 85;
+        const calculatedScore = matchesProdi ? Math.min(baseScore + 5, 99) : baseScore - 10;
+
+        return {
+          id: k.id,
+          judul: k.judul,
+          perusahaan: k.perusahaan?.nama_perusahaan ?? "Mitra Perusahaan",
+          kategori: k.kategori?.nama_kategori ?? "Kolaborasi",
+          matchScore: calculatedScore,
+          tipe: k.tipe ?? "Studi Kasus Akademik",
+        };
+      });
     }
 
     // Badges calculated dynamically from user metrics

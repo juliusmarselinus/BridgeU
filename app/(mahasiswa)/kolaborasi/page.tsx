@@ -117,20 +117,23 @@ export default function KolaborasiPage() {
     });
   }, []);
 
-  const smartRecommendations = useMemo(() => {
+  const kolaborasiWithScores = useMemo(() => {
     const userProdi = user?.prodi || "Sistem Informasi";
-    return [...kolaborasiList]
-      .map((item) => {
-        const matchesProdi = item.rekomendasiProdi?.some((p) =>
-          p.toLowerCase().includes(userProdi.toLowerCase())
-        );
-        const baseScore = item.matchScore || 85;
-        const calculatedScore = matchesProdi ? Math.min(baseScore + 5, 99) : baseScore - 10;
-        return { ...item, calculatedScore };
-      })
-      .sort((a, b) => b.calculatedScore - a.calculatedScore)
-      .slice(0, 4);
+    return kolaborasiList.map((item) => {
+      const matchesProdi = item.rekomendasiProdi?.some((p) =>
+        p.toLowerCase().includes(userProdi.toLowerCase())
+      );
+      const baseScore = 85;
+      const matchScore = matchesProdi ? Math.min(baseScore + 5, 99) : baseScore - 10;
+      return { ...item, matchScore };
+    });
   }, [kolaborasiList, user]);
+
+  const smartRecommendations = useMemo(() => {
+    return [...kolaborasiWithScores]
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, 4);
+  }, [kolaborasiWithScores]);
 
   const totalRecs = smartRecommendations.length;
 
@@ -143,12 +146,12 @@ export default function KolaborasiPage() {
   }, [isPaused, totalRecs]);
 
   const categories = useMemo(() => {
-    const set = new Set(kolaborasiList.map((k) => k.kategori));
+    const set = new Set(kolaborasiWithScores.map((k) => k.kategori));
     return ["Semua", ...Array.from(set)];
-  }, [kolaborasiList]);
+  }, [kolaborasiWithScores]);
 
   const filtered = useMemo(() => {
-    return kolaborasiList.filter((k) => {
+    return kolaborasiWithScores.filter((k) => {
       const matchSearch =
         k.judul.toLowerCase().includes(search.toLowerCase()) ||
         k.perusahaan.toLowerCase().includes(search.toLowerCase()) ||
@@ -158,7 +161,7 @@ export default function KolaborasiPage() {
       const matchKategori = kategoriFilter === "Semua" || k.kategori === kategoriFilter;
       return matchSearch && matchTipe && matchKategori;
     });
-  }, [kolaborasiList, search, tipeFilter, kategoriFilter]);
+  }, [kolaborasiWithScores, search, tipeFilter, kategoriFilter]);
 
   const handleApplySuccess = () => {
     setApplyTarget(null);
@@ -299,7 +302,7 @@ export default function KolaborasiPage() {
                             <div>
                               <div className="flex items-center justify-between gap-2 mb-3">
                                 <span className="rounded-full bg-bridge-gold px-3.5 py-1 font-mono text-xs font-black text-ink shadow-md flex items-center gap-1">
-                                  {(rec as any).calculatedScore}% Match
+                                  {rec.matchScore}% Match
                                 </span>
                                 <div className="flex items-center gap-2">
                                   {rec.rekomendasiProdi && rec.rekomendasiProdi.length > 0 && (
@@ -342,13 +345,12 @@ export default function KolaborasiPage() {
                                 >
                                   Detail
                                 </Link>
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); setApplyTarget(rec); }}
-                                  className="rounded-xl bg-bridge-gold px-5 py-1.5 font-mono text-xs font-extrabold text-ink hover:bg-white transition shadow-lg hover:scale-105 active:scale-95"
+                                <Link
+                                  href={`/kolaborasi/${rec.id}`}
+                                  className="rounded-xl bg-bridge-gold px-5 py-1.5 font-mono text-xs font-extrabold text-ink hover:bg-white transition shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center text-center"
                                 >
                                   Ajukan
-                                </button>
+                                </Link>
                               </div>
                             </div>
                           </>
@@ -357,7 +359,7 @@ export default function KolaborasiPage() {
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between text-[10px] font-mono text-paper/60">
                                 <span>{isPrev ? "Sebelumnya" : "Selanjutnya"}</span>
-                                <span className="text-bridge-gold/80 font-bold">{(rec as any).calculatedScore}%</span>
+                                <span className="text-bridge-gold/80 font-bold">{rec.matchScore}%</span>
                               </div>
                               <h4 className="font-display text-sm font-bold text-paper line-clamp-3 leading-snug">
                                 {rec.judul}
@@ -490,9 +492,9 @@ export default function KolaborasiPage() {
                         <Link href={`/kolaborasi/${k.id}`} className="flex-1 rounded-xl border-2 border-steel/20 py-2 text-center font-mono text-xs font-bold text-ink transition hover:bg-slate-50">
                           Detail
                         </Link>
-                        <button type="button" onClick={() => setApplyTarget(k)} className="flex-1 rounded-xl bg-ink py-2 text-center font-mono text-xs font-bold text-paper transition hover:bg-steel shadow-md">
+                        <Link href={`/kolaborasi/${k.id}`} className="flex-1 rounded-xl bg-ink py-2 text-center font-mono text-xs font-bold text-paper transition hover:bg-steel shadow-md flex items-center justify-center">
                           Ajukan
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   </motion.div>

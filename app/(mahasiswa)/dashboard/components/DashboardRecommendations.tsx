@@ -54,7 +54,7 @@ export function DashboardRecommendations({ recommendedProjects }: DashboardRecom
             </div>
 
             <Link
-              href="/kolaborasi"
+              href={`/kolaborasi/${item.id}`}
               className="font-mono text-xs font-bold text-ink group-hover:text-bridge-gold flex items-center gap-1 transition pt-2 border-t border-steel/10"
             >
               Lihat Detail <span className="group-hover:translate-x-1 transition">→</span>
