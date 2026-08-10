@@ -1304,6 +1304,9 @@ export default function ProfilePage() {
     };
     setUser(parsed);
     setIsLoadingUser(false);
+    if (!data.universitas || !data.prodi) {
+      setIsEditModalOpen(true);
+    }
   };
 
   useEffect(() => {

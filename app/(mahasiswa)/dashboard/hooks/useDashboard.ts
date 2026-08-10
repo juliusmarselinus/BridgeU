@@ -14,39 +14,15 @@ import type {
   DashboardStats,
 } from "../types/dashboard";
 
-const defaultRecommendations: RecommendedProject[] = [
-  {
-    id: "rec-1",
-    judul: "Optimasi UI/UX & Redesign E-Commerce Mobile App",
-    perusahaan: "PT Digital Innovate Indonesia",
-    kategori: "UI/UX & System Design",
-    matchScore: 95,
-    tipe: "Studi Kasus Akademik",
-  },
-  {
-    id: "rec-2",
-    judul: "Analisis Sentimen Data Pelanggan Berbasis Machine Learning",
-    perusahaan: "DataTech Nusantara",
-    kategori: "Data Science & Analytics",
-    matchScore: 88,
-    tipe: "Riset Industri",
-  },
-];
-
-const defaultBadges: UserBadge[] = [
-  { iconType: "rocket", title: "Pionir Kolaborasi", desc: "Mengirim pengajuan pertama" },
-  { iconType: "academic", title: "Akademisi Aktif", desc: "Terhubung dengan industri" },
-  { iconType: "lightning", title: "Quick Learner", desc: "Profil terverifikasi 100%" },
-];
-
 export function useDashboard() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<StoredUser | null>(null);
   const [pengajuan, setPengajuan] = useState<Pengajuan[]>([]);
-  const [recommendedProjects, setRecommendedProjects] = useState<RecommendedProject[]>(defaultRecommendations);
-  const [userBadges, setUserBadges] = useState<UserBadge[]>(defaultBadges);
+  const [recommendedProjects, setRecommendedProjects] = useState<RecommendedProject[]>([]);
+  const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
+  const [apiStats, setApiStats] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -55,25 +31,29 @@ export function useDashboard() {
       } = await supabase.auth.getSession();
 
       if (!session) {
+        setUser(null);
+        setPengajuan([]);
         router.replace("/?auth=login");
         return;
       }
+
+      const storedUserId = localStorage.getItem("bridgeu_user_id");
+      if (storedUserId && storedUserId !== session.user.id) {
+        localStorage.removeItem("bridgeu_user");
+        localStorage.removeItem("bridgeu_pengajuan");
+      }
+      localStorage.setItem("bridgeu_user_id", session.user.id);
 
       setAuthChecked(true);
 
       const dashboardRes = await fetchDashboardDataFromApi(session.access_token);
       if (dashboardRes && dashboardRes.user) {
         setUser(dashboardRes.user);
-        if (dashboardRes.pengajuan && dashboardRes.pengajuan.length > 0) {
-          setPengajuan(dashboardRes.pengajuan);
-        } else {
-          setPengajuan(getStoredPengajuan());
-        }
-        if (dashboardRes.recommendedProjects) {
-          setRecommendedProjects(dashboardRes.recommendedProjects);
-        }
-        if (dashboardRes.userBadges) {
-          setUserBadges(dashboardRes.userBadges);
+        setPengajuan(dashboardRes.pengajuan ?? []);
+        setRecommendedProjects(dashboardRes.recommendedProjects ?? []);
+        setUserBadges(dashboardRes.userBadges ?? []);
+        if (dashboardRes.stats) {
+          setApiStats(dashboardRes.stats);
         }
       } else {
         const profile = await fetchUserProfileFromApi(session.access_token);
@@ -92,9 +72,13 @@ export function useDashboard() {
   const total = pengajuan.length;
   const menunggu = pengajuan.filter((p) => p.status === "Menunggu").length;
   const diterima = pengajuan.filter((p) => p.status === "Diterima").length;
-  const level = Math.floor(total / 2) + 1;
-  const progressPercent = Math.min(((total % 2) / 2) * 100, 100);
-  const sisaMenujuLevel = total % 2 === 0 ? 2 : 1;
+  const xp = user?.xp ?? apiStats?.xp ?? 150;
+  const level = Math.floor(xp / 100) + 1;
+  const progressPercent = Math.min(xp % 100, 100);
+  const sisaMenujuLevel = 100 - (xp % 100);
+  const streakCount = user?.streakCount ?? apiStats?.streakCount ?? 5;
+  const reputationScore = user?.reputationScore ?? apiStats?.reputationScore ?? 98;
+  const responseRate = user?.responseRate ?? apiStats?.responseRate ?? 98.5;
 
   const stats: DashboardStats = {
     total,
@@ -103,6 +87,10 @@ export function useDashboard() {
     level,
     progressPercent,
     sisaMenujuLevel,
+    xp,
+    streakCount,
+    reputationScore,
+    responseRate,
   };
 
   return {

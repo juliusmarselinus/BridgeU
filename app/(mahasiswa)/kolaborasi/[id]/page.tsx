@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { dummyKolaborasi } from "@/lib/dummy-data";
+import { Kolaborasi } from "@/lib/dummy-data";
 import { ApplyModal } from "@/components/ApplyModal";
 
 type StoredUser = {
@@ -20,8 +20,20 @@ export default function DetailKolaborasiPage() {
   const [submitted, setSubmitted] = useState(false);
   const [user, setUser] = useState<StoredUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [data, setData] = useState<Kolaborasi | null>(null);
 
-  const data = dummyKolaborasi.find((k) => k.id === id);
+  useEffect(() => {
+    const storedList = localStorage.getItem("bridgeu_kolaborasi_list");
+    if (storedList) {
+      try {
+        const parsed: Kolaborasi[] = JSON.parse(storedList);
+        const item = parsed.find((k) => k.id === id);
+        if (item) setData(item);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [id]);
 
   useEffect(() => {
     const stored = localStorage.getItem("bridgeu_user");

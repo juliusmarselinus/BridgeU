@@ -11,31 +11,6 @@ async function getAuthUser(token: string) {
   return user;
 }
 
-const defaultRecommendations: RecommendedProject[] = [
-  {
-    id: "rec-1",
-    judul: "Optimasi UI/UX & Redesign E-Commerce Mobile App",
-    perusahaan: "PT Digital Innovate Indonesia",
-    kategori: "UI/UX & System Design",
-    matchScore: 95,
-    tipe: "Studi Kasus Akademik",
-  },
-  {
-    id: "rec-2",
-    judul: "Analisis Sentimen Data Pelanggan Berbasis Machine Learning",
-    perusahaan: "DataTech Nusantara",
-    kategori: "Data Science & Analytics",
-    matchScore: 88,
-    tipe: "Riset Industri",
-  },
-];
-
-const defaultBadges: UserBadge[] = [
-  { iconType: "rocket", title: "Pionir Kolaborasi", desc: "Mengirim pengajuan pertama" },
-  { iconType: "academic", title: "Akademisi Aktif", desc: "Terhubung dengan industri" },
-  { iconType: "lightning", title: "Quick Learner", desc: "Profil terverifikasi 100%" },
-];
-
 export async function GET(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) {
@@ -58,11 +33,16 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
 
     let userData = null;
+    let studentXp = 150;
+    let streakCount = 5;
+    let reputationScore = 98;
+    let responseRate = 98.50;
+
     if (userRow && userRow.role === "mahasiswa") {
       const { data: profile } = await db
         .from("mahasiswa_profiles")
         .select(
-          `nama_lengkap, foto_url,
+          `nama_lengkap, foto_url, xp, streak_count, last_active_at, reputation_score, response_rate,
            universitas:universitas_id ( nama_universitas ),
            prodi:prodi_id ( nama_prodi )`
         )
@@ -80,47 +60,101 @@ export async function GET(req: NextRequest) {
         .eq("mahasiswa_id", authUser.id);
 
       if (profile) {
+        studentXp = (profile as any).xp ?? 0;
+        streakCount = (profile as any).streak_count ?? 0;
+        reputationScore = (profile as any).reputation_score ?? 100;
+        responseRate = (profile as any).response_rate ?? 100.0;
+
         userData = {
           id: authUser.id,
           nama: profile.nama_lengkap,
-          universitas: (profile.universitas as any)?.nama_universitas ?? "Universitas Multimedia Nusantara (UMN)",
-          prodi: (profile.prodi as any)?.nama_prodi ?? "Sistem Informasi",
+          universitas: (profile.universitas as any)?.nama_universitas ?? null,
+          prodi: (profile.prodi as any)?.nama_prodi ?? null,
           fotoUrl: profile.foto_url,
+          xp: studentXp,
+          streakCount,
+          reputationScore,
+          responseRate,
           skills: (skillRows ?? []).map((r: any) => r.skills?.nama_skill).filter(Boolean),
           minatKategori: (minatRows ?? []).map((r: any) => r.kategori_minat?.nama_kategori).filter(Boolean),
+          isProfileComplete: Boolean(profile.nama_lengkap && profile.universitas && profile.prodi),
+        };
+      } else {
+        const fallbackName = authUser.user_metadata?.nama_lengkap || authUser.email?.split("@")[0] || "Mahasiswa";
+        userData = {
+          id: authUser.id,
+          nama: fallbackName,
+          universitas: null,
+          prodi: null,
+          fotoUrl: null,
+          xp: 0,
+          streakCount: 0,
+          reputationScore: 100,
+          responseRate: 100,
+          skills: [],
+          minatKategori: [],
+          isProfileComplete: false,
         };
       }
     }
 
-    // 2. Fetch pengajuan list from DB (fallback to empty if table not yet populated)
+    // 2. Fetch real user applications from pendaftaran_kolaborasi
     let pengajuanList: any[] = [];
-    const { data: dbPengajuan } = await db
-      .from("pengajuan_kolaborasi")
-      .select("id, status, created_at, lowongan:lowongan_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
+    const { data: dbPendaftaran } = await db
+      .from("pendaftaran_kolaborasi")
+      .select("id, status, created_at, updated_at, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
       .eq("mahasiswa_id", authUser.id);
 
-    if (dbPengajuan && dbPengajuan.length > 0) {
-      pengajuanList = dbPengajuan.map((item: any) => ({
+    if (dbPendaftaran && dbPendaftaran.length > 0) {
+      pengajuanList = dbPendaftaran.map((item: any) => ({
         id: item.id,
-        judul: item.lowongan?.judul ?? "Pengajuan Kolaborasi",
-        perusahaan: item.lowongan?.perusahaan?.nama_perusahaan ?? "Mitra Perusahaan",
+        judul: item.kolaborasi?.judul ?? "Pengajuan Kolaborasi",
+        perusahaan: item.kolaborasi?.perusahaan?.nama_perusahaan ?? "Mitra Perusahaan",
         status: item.status ?? "Menunggu",
-        tanggal: item.created_at ?? new Date().toISOString(),
+        tanggal: item.updated_at ?? item.created_at ?? new Date().toISOString(),
       }));
     }
+
+    // 3. Fetch real recommendations from kolaborasi table
+    let recommendedProjects: RecommendedProject[] = [];
+    const { data: dbKolaborasi } = await db
+      .from("kolaborasi")
+      .select("id, judul, tipe, tingkat_kesulitan, perusahaan:perusahaan_id(nama_perusahaan), kategori:kategori_id(nama_kategori)")
+      .limit(4);
+
+    if (dbKolaborasi && dbKolaborasi.length > 0) {
+      recommendedProjects = dbKolaborasi.map((k: any, idx: number) => ({
+        id: k.id,
+        judul: k.judul,
+        perusahaan: k.perusahaan?.nama_perusahaan ?? "Mitra Perusahaan",
+        kategori: k.kategori?.nama_kategori ?? "Kolaborasi",
+        matchScore: Math.max(95 - idx * 7, 75),
+        tipe: k.tipe ?? "Studi Kasus Akademik",
+      }));
+    }
+
+    // Badges calculated dynamically from user metrics
+    const userBadges: UserBadge[] = [
+      { iconType: "rocket", title: "Pionir Kolaborasi", desc: `${pengajuanList.length} Pengajuan dikirim` },
+      { iconType: "academic", title: "Akademisi Aktif", desc: `${streakCount} Hari streak keaktifan` },
+      { iconType: "trophy", title: "Reputasi Tinggi", desc: `Skor reputasi ${reputationScore}/100` },
+    ];
 
     const total = pengajuanList.length;
     const menunggu = pengajuanList.filter((p) => p.status === "Menunggu").length;
     const diterima = pengajuanList.filter((p) => p.status === "Diterima").length;
-    const level = Math.floor(total / 2) + 1;
-    const progressPercent = Math.min(((total % 2) / 2) * 100, 100);
-    const sisaMenujuLevel = total % 2 === 0 ? 2 : 1;
+
+    // Gamification metrics derived from real XP & applications
+    const level = Math.floor(studentXp / 100) + 1;
+    const currentXpProgress = studentXp % 100;
+    const progressPercent = Math.min(currentXpProgress, 100);
+    const sisaMenujuLevel = 100 - currentXpProgress;
 
     const payload: DashboardApiResponse = {
       user: userData,
       pengajuan: pengajuanList,
-      recommendedProjects: defaultRecommendations,
-      userBadges: defaultBadges,
+      recommendedProjects,
+      userBadges,
       stats: {
         total,
         menunggu,
@@ -128,6 +162,10 @@ export async function GET(req: NextRequest) {
         level,
         progressPercent,
         sisaMenujuLevel,
+        xp: studentXp,
+        streakCount,
+        reputationScore,
+        responseRate,
       },
     };
 

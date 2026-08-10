@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import type { StoredUser, DashboardStats } from "../types/dashboard";
-import { IconBook, IconTrophy, IconRocket } from "./DashboardIcons";
+import { IconBook, IconTrophy, IconRocket, IconLightning, IconSparkles } from "./DashboardIcons";
 
 interface DashboardHeroProps {
   loading: boolean;
@@ -12,7 +12,7 @@ interface DashboardHeroProps {
 }
 
 export function DashboardHero({ loading, user, stats }: DashboardHeroProps) {
-  const { level, progressPercent, sisaMenujuLevel, total } = stats;
+  const { level, progressPercent, sisaMenujuLevel, total, xp, streakCount, reputationScore, responseRate } = stats;
 
   return (
     <div className="w-full bg-paper">
@@ -34,40 +34,55 @@ export function DashboardHero({ loading, user, stats }: DashboardHeroProps) {
                 {loading ? (
                   <span className="inline-block h-12 w-64 animate-pulse rounded-xl bg-white/10" />
                 ) : (
-                  user?.nama || "Julius Marselinus"
+                  user?.nama || "Mahasiswa"
                 )}
               </h1>
 
               <p className="text-base font-medium text-paper/90 max-w-xl drop-shadow-sm">
-                {user ? (
-                  `${user.universitas || "Universitas Multimedia Nusantara (UMN)"} — ${user.prodi || "Sistem Informasi"}`
-                ) : (
-                  "Universitas Multimedia Nusantara (UMN) — Sistem Informasi"
-                )}
+                {user?.universitas && user?.prodi
+                  ? `${user.universitas} — ${user.prodi}`
+                  : "Profil Mahasiswa Belum Lengkap"}
               </p>
 
-              {/* HIGH VISIBILITY BADGES / CHIPS */}
+              {/* INCOMPLETE PROFILE WARNING BANNER */}
+              {(!user?.universitas || !user?.prodi) && (
+                <div className="mt-3 p-3.5 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-200 text-xs font-mono flex items-center justify-between gap-3">
+                  <span>Profil kamu belum lengkap. Lengkapi universitas & prodi kamu untuk membuka akses penuh.</span>
+                  <a
+                    href="/profile"
+                    className="shrink-0 rounded-lg bg-bridge-gold px-3 py-1.5 font-bold text-ink hover:bg-amber-300 transition"
+                  >
+                    Lengkapi Profil →
+                  </a>
+                </div>
+              )}
+
+              {/* HIGH VISIBILITY METRIC CHIPS */}
               <div className="mt-5 flex flex-wrap gap-2.5 pt-2">
                 <span className="rounded-xl bg-ink/90 border border-bridge-gold/40 px-4 py-2 text-xs font-bold text-paper shadow-md flex items-center gap-2">
                   <IconBook className="w-3.5 h-3.5 text-bridge-gold" />
-                  {user?.prodi || "Sistem Informasi"}
+                  {user?.prodi || "Belum diatur"}
                 </span>
                 <span className="rounded-xl bg-bridge-gold text-ink font-extrabold px-4 py-2 text-xs shadow-lg flex items-center gap-2">
                   <IconTrophy className="w-3.5 h-3.5 text-ink" />
-                  Level {level} Kolaborator
+                  Level {level} ({xp} XP)
                 </span>
                 <span className="rounded-xl bg-white/15 border border-white/30 backdrop-blur-md px-4 py-2 text-xs font-bold text-paper shadow-md flex items-center gap-2">
-                  <IconRocket className="w-3.5 h-3.5 text-bridge-gold" />
-                  {total} Kolaborasi
+                  <IconLightning className="w-3.5 h-3.5 text-amber-300" />
+                  {streakCount} Hari Active Streak
+                </span>
+                <span className="rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-bold px-4 py-2 text-xs shadow-md flex items-center gap-2">
+                  <IconSparkles className="w-3.5 h-3.5 text-emerald-300" />
+                  Reputasi {reputationScore}/100 ({responseRate}% Respon)
                 </span>
               </div>
             </div>
 
-            {/* LEVEL CARD WIDGET WITH HIGH CONTRAST */}
+            {/* LEVEL & XP WIDGET WITH HIGH CONTRAST */}
             <div className="w-full md:w-80 rounded-2xl border-2 border-bridge-gold/40 bg-ink/90 p-6 backdrop-blur-md shadow-2xl space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold uppercase tracking-wider text-paper/70">
-                  Level Kolaborasi
+                  Level & XP Progress
                 </span>
                 <span className="font-display text-2xl font-black text-bridge-gold">
                   Lv {level}
@@ -83,9 +98,10 @@ export function DashboardHero({ loading, user, stats }: DashboardHeroProps) {
                 />
               </div>
 
-              <p className="font-mono text-xs text-paper/70">
-                Ajukan <span className="text-bridge-gold font-bold">{sisaMenujuLevel}</span> kolaborasi lagi untuk naik ke <span className="text-paper font-bold">Level {level + 1}</span>.
-              </p>
+              <div className="flex items-center justify-between font-mono text-xs text-paper/70">
+                <span>{xp} XP terkumpul</span>
+                <span className="text-bridge-gold font-bold">+{sisaMenujuLevel} XP ke Lv {level + 1}</span>
+              </div>
             </div>
           </div>
         </div>

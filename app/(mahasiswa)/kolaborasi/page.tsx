@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { dummyKolaborasi, Kolaborasi } from "@/lib/dummy-data";
+import { Kolaborasi } from "@/lib/dummy-data";
 import { ApplyModal } from "@/components/ApplyModal";
 
 type StoredUser = {
@@ -47,19 +47,17 @@ export default function KolaborasiPage() {
     const storedUser = localStorage.getItem("bridgeu_user");
     if (storedUser) {
       try { setUser(JSON.parse(storedUser)); } catch (e) { console.error(e); }
-    } else {
-      setUser({ nama: "John Doe", universitas: "Universitas Multimedia Nusantara", prodi: "Sistem Informasi" });
     }
     const storedKolaborasi = localStorage.getItem("bridgeu_kolaborasi_list");
     if (storedKolaborasi) {
       try {
         const parsed: Kolaborasi[] = JSON.parse(storedKolaborasi);
         setKolaborasiList(parsed.filter((item) => item.statusModerasi !== "Ditolak"));
-      } catch (e) { setKolaborasiList(dummyKolaborasi); }
-    } else { setKolaborasiList(dummyKolaborasi); }
+      } catch (e) { console.error(e); }
+    }
   }, []);
 
-  const displayList = kolaborasiList.length > 0 ? kolaborasiList : dummyKolaborasi;
+  const displayList = kolaborasiList;
 
   const smartRecommendations = useMemo(() => {
     const userProdi = user?.prodi || "Sistem Informasi";

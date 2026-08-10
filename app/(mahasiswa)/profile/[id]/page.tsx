@@ -3,7 +3,7 @@
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { getUserProfileById, badgeList, dummyPelamarList } from "@/lib/dummy-data";
+import { getUserProfileById, badgeList } from "@/lib/dummy-data";
 
 /* ------------------------------------------------------------------ */
 /* SVG Icon Components                                                */
@@ -615,11 +615,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
     setActiveTab(key);
   };
 
-  // Riwayat kolaborasi pengguna ini, diambil dari dummyPelamarList berdasarkan nama
-  const pengajuan = useMemo(
-    () => dummyPelamarList.filter((p) => p.namaMahasiswa === publicUser.nama),
-    [publicUser.nama]
-  );
+  const pengajuan: any[] = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    const stored = localStorage.getItem("bridgeu_pengajuan");
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) { return []; }
+    }
+    return [];
+  }, []);
 
   const totalPengajuan = pengajuan.length;
   const diterima = pengajuan.filter((p) => p.status === "Diterima" || p.status === "Selesai").length;

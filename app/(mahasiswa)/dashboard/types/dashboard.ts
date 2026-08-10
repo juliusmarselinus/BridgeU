@@ -4,8 +4,13 @@ export type StoredUser = {
   universitas: string;
   prodi: string;
   fotoUrl?: string;
+  xp?: number;
+  streakCount?: number;
+  reputationScore?: number;
+  responseRate?: number;
   skills?: string[];
   minatKategori?: string[];
+  isProfileComplete?: boolean;
 };
 
 export type PengajuanStatus = "Menunggu" | "Diproses" | "Diterima" | "Ditolak" | "Selesai";
@@ -42,6 +47,10 @@ export type DashboardStats = {
   level: number;
   progressPercent: number;
   sisaMenujuLevel: number;
+  xp: number;
+  streakCount: number;
+  reputationScore: number;
+  responseRate: number;
 };
 
 export type DashboardApiResponse = {

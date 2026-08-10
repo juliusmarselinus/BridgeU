@@ -343,16 +343,26 @@ export function Navbar() {
       return;
     }
 
+    const currentUserId = localStorage.getItem("bridgeu_user_id");
+    if (currentUserId && currentUserId !== session.user.id) {
+      localStorage.removeItem("bridgeu_user");
+      localStorage.removeItem("bridgeu_pengajuan");
+    }
+    localStorage.setItem("bridgeu_user_id", session.user.id);
+
     const res = await fetch("/api/me", {
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      setUser(null);
+      return;
+    }
 
     const data = await res.json();
     setUser({
-      nama: data.nama,
-      universitas: data.universitas,
-      prodi: data.prodi,
+      nama: data.nama || "Mahasiswa",
+      universitas: data.universitas || "",
+      prodi: data.prodi || "",
       foto: data.fotoUrl,
     });
   };

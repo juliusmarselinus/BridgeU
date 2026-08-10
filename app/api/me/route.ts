@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     const { data: profile, error: profileError } = await db
       .from("mahasiswa_profiles")
       .select(
-        `nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url,
+        `nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, streak_count, last_active_at, reputation_score, response_rate,
          universitas:universitas_id ( nama_universitas ),
          prodi:prodi_id ( nama_prodi )`
       )
@@ -44,10 +44,28 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (profileError || !profile) {
-      return NextResponse.json(
-        { error: "Profil mahasiswa belum lengkap", detail: profileError?.message },
-        { status: 404 }
-      );
+      const fallbackName = authUser.user_metadata?.nama_lengkap || authUser.email?.split("@")[0] || "Mahasiswa";
+      return NextResponse.json({
+        id: userRow.id,
+        email: userRow.email,
+        role: userRow.role,
+        username: userRow.username,
+        nama: fallbackName,
+        universitas: null,
+        prodi: null,
+        semester: null,
+        preferensiTipe: "Semua",
+        preferensiLokasi: "Remote",
+        ringkasanSelf: "",
+        fotoUrl: null,
+        xp: 0,
+        streakCount: 0,
+        reputationScore: 100,
+        responseRate: 100.0,
+        minatKategori: [],
+        skills: [],
+        isProfileComplete: false,
+      });
     }
 
     const { data: minatRows } = await db
@@ -59,6 +77,8 @@ export async function GET(req: NextRequest) {
       .from("mahasiswa_skills")
       .select("skills ( nama_skill )")
       .eq("mahasiswa_id", authUser.id);
+
+    const isComplete = Boolean(profile.nama_lengkap && profile.universitas && profile.prodi);
 
     return NextResponse.json({
       id: userRow.id,
@@ -73,8 +93,14 @@ export async function GET(req: NextRequest) {
       preferensiLokasi: profile.preferensi_lokasi,
       ringkasanSelf: profile.ringkasan_self,
       fotoUrl: profile.foto_url,
+      xp: (profile as any).xp ?? 0,
+      streakCount: (profile as any).streak_count ?? 0,
+      lastActiveAt: (profile as any).last_active_at ?? null,
+      reputationScore: (profile as any).reputation_score ?? 100,
+      responseRate: (profile as any).response_rate ?? 100.0,
       minatKategori: (minatRows ?? []).map((r: any) => r.kategori_minat?.nama_kategori).filter(Boolean),
       skills: (skillRows ?? []).map((r: any) => r.skills?.nama_skill).filter(Boolean),
+      isProfileComplete: isComplete,
     });
   }
 
