@@ -7,6 +7,11 @@ export interface KategoriMinatOption {
   nama_kategori: string;
 }
 
+export interface KotaOption {
+  id: number;
+  nama_kota: string;
+}
+
 export interface StoredCompany {
   user_id: string;
   nama_perusahaan: string;
@@ -29,23 +34,15 @@ export interface KolaborasiWithMeta {
   kategori_id: number;
   nama_kategori?: string;
   deskripsi: string;
-  lokasi: string;
+  lokasi_id: number;
+  nama_kota?: string;
   batas_waktu: string;
   status_moderasi: ModerasiStatus;
   tingkat_kesulitan?: TingkatKesulitan;
   gaji_stipend?: string;
+  slot?: number;
   perusahaan_nama?: string;
   pelamar_count?: number;
-}
-
-export interface Pelamar {
-  id: string;
-  kolaborasi_id: string;
-  mahasiswa_id: string;
-  nama_mahasiswa?: string;
-  tanggal_daftar: string;
-  status: "Menunggu" | "Diterima" | "Ditolak" | "Selesai";
-  catatan_perusahaan?: string;
 }
 
 export interface KolaborasiFormData {
@@ -53,8 +50,9 @@ export interface KolaborasiFormData {
   tipe: KolaborasiTipe;
   kategori_id: number;
   deskripsi: string;
-  lokasi: string;
+  lokasi_id: number;
   batas_waktu: string;
   tingkat_kesulitan: TingkatKesulitan;
   gaji_stipend?: string;
+  slot: number;
 }

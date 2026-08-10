@@ -1,16 +1,17 @@
 "use client";
 
-import { useCompanyDashboard } from "../../dashboard/hooks/useCompanyDashboard";
-import { KolaborasiHeader } from "@/components/kolaborasi/KolaborasiHeader";
-import { KolaborasiItemCard } from "@/components/kolaborasi/KolaborasiItemCard";
-import { KolaborasiEmptyState } from "@/components/kolaborasi/KolaborasiEmptyState";
-import { KolaborasiModal } from "@/components/company/KolaborasiModal";
+import { useCompanyDashboard } from "../dashboard/hooks/useCompanyDashboard";
+import { KolaborasiHeader } from "./components/KolaborasiHeader";
+import { KolaborasiItemCard } from "./components/KolaborasiItemCard";
+import { KolaborasiEmptyState } from "./components/KolaborasiEmptyState";
+import { KolaborasiModal } from "./components/KolaborasiModal";
 
 export default function KolaborasiPage() {
   const {
     kolaborasiList,
     filteredKolaborasi,
     kategoriOptions,
+    kotaOptions,
     selectedTab,
     setSelectedTab,
     isLoading,
@@ -33,7 +34,6 @@ export default function KolaborasiPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 pb-16">
-      {/* Header, CTA, & Filter Tab Status Moderasi */}
       <KolaborasiHeader
         selectedTab={selectedTab}
         onSelectTab={setSelectedTab}
@@ -42,7 +42,6 @@ export default function KolaborasiPage() {
         totalCount={kolaborasiList.length}
       />
 
-      {/* Grid Proyek Kolaborasi */}
       {filteredKolaborasi.length === 0 ? (
         <KolaborasiEmptyState
           selectedTab={selectedTab}
@@ -60,11 +59,11 @@ export default function KolaborasiPage() {
         </div>
       )}
 
-      {/* Modal Form Tambah/Pengajuan Proyek Baru */}
       <KolaborasiModal
         isOpen={isModalOpen}
         formData={formData}
         kategoriOptions={kategoriOptions}
+        kotaOptions={kotaOptions}
         onClose={() => setIsModalOpen(false)}
         onChange={setFormData}
         onSubmit={handleSubmitForm}
