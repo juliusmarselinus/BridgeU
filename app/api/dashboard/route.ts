@@ -62,8 +62,8 @@ export async function GET(req: NextRequest) {
       if (profile) {
         studentXp = (profile as any).xp ?? 0;
         streakCount = (profile as any).streak_count ?? 0;
-        reputationScore = (profile as any).reputation_score ?? 100;
-        responseRate = (profile as any).response_rate ?? 100.0;
+        reputationScore = (profile as any).reputation_score ?? 0;
+        responseRate = (profile as any).response_rate ?? 0.0;
 
         userData = {
           id: authUser.id,
@@ -89,8 +89,8 @@ export async function GET(req: NextRequest) {
           fotoUrl: null,
           xp: 0,
           streakCount: 0,
-          reputationScore: 100,
-          responseRate: 100,
+          reputationScore: 0,
+          responseRate: 0.0,
           skills: [],
           minatKategori: [],
           isProfileComplete: false,

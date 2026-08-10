@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BridgeDivider } from "@/components/BridgeDivider";
 import { AuthModal } from "@/components/AuthModal";
 import { ProgramsSection } from "@/components/ProgramsSection";
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/resizable-navbar";
 import { HeroScrollSection } from "@/components/HeroScrollSection";
 import { Hero } from "@/components/Hero";
+import { Footer } from "@/components/Footer";
 
 
 const features = [
@@ -44,11 +46,16 @@ const navItems = [
 ];
 
 export default function LandingPage() {
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"masuk" | "daftar">("masuk");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const openModal = (tab: "masuk" | "daftar") => {
+    if (tab === "daftar") {
+      router.push("/daftar");
+      return;
+    }
     setModalTab(tab);
     setModalOpen(true);
   };
@@ -144,11 +151,7 @@ export default function LandingPage() {
       <ProgramsSection />
 
       {/* FOOTER */}
-      <footer className="border-t border-steel/15 px-6 py-8">
-        <p className="mx-auto max-w-6xl font-mono text-xs text-steel">
-          BridgeU — INSPIRE 2026 · Lotus Biru
-        </p>
-      </footer>
+      <Footer />
 
       <AuthModal
         isOpen={modalOpen}

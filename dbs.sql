@@ -23,18 +23,24 @@ CREATE TABLE public.universitas (
 CREATE TABLE public.program_studi (
   id integer NOT NULL DEFAULT nextval('ref_program_studi_id_seq'::regclass),
   nama_prodi character varying NOT NULL UNIQUE,
-  CONSTRAINT program_studi_pkey PRIMARY KEY (id)
+  jenjang character varying DEFAULT 'S1'::character varying,
+  fakultas_id integer,
+  CONSTRAINT program_studi_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_prodi_fakultas FOREIGN KEY (fakultas_id) REFERENCES public.fakultas(id)
 );
 CREATE TABLE public.kategori_minat (
   id integer NOT NULL DEFAULT nextval('ref_kategori_id_seq'::regclass),
   nama_kategori character varying NOT NULL UNIQUE,
-  deskripsi text,
-  CONSTRAINT kategori_minat_pkey PRIMARY KEY (id)
+  prodi_id integer,
+  CONSTRAINT kategori_minat_pkey PRIMARY KEY (id),
+  CONSTRAINT kategori_minat_prodi_id_fkey FOREIGN KEY (prodi_id) REFERENCES public.program_studi(id)
 );
 CREATE TABLE public.skills (
   id integer NOT NULL DEFAULT nextval('ref_skills_id_seq'::regclass),
   nama_skill character varying NOT NULL UNIQUE,
-  CONSTRAINT skills_pkey PRIMARY KEY (id)
+  prodi_id integer,
+  CONSTRAINT skills_pkey PRIMARY KEY (id),
+  CONSTRAINT skills_prodi_id_fkey FOREIGN KEY (prodi_id) REFERENCES public.program_studi(id)
 );
 CREATE TABLE public.mahasiswa_profiles (
   user_id uuid NOT NULL,
@@ -46,12 +52,12 @@ CREATE TABLE public.mahasiswa_profiles (
   preferensi_lokasi character varying DEFAULT 'Remote'::character varying,
   ringkasan_self text,
   foto_url text,
-  xp integer DEFAULT 0 NOT NULL,
-  streak_count integer DEFAULT 0 NOT NULL,
-  last_active_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  reputation_score integer DEFAULT 100 NOT NULL,
-  response_rate numeric(5,2) DEFAULT 100.00 NOT NULL,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  xp integer NOT NULL DEFAULT 0,
+  streak_count integer NOT NULL DEFAULT 0,
+  last_active_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  reputation_score integer NOT NULL DEFAULT 0,
+  response_rate numeric NOT NULL DEFAULT '0'::numeric,
   CONSTRAINT mahasiswa_profiles_pkey PRIMARY KEY (user_id),
   CONSTRAINT mahasiswa_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT mahasiswa_profiles_universitas_id_fkey FOREIGN KEY (universitas_id) REFERENCES public.universitas(id),
@@ -74,17 +80,25 @@ CREATE TABLE public.mahasiswa_skills (
 CREATE TABLE public.perusahaan_profiles (
   user_id uuid NOT NULL,
   nama_perusahaan character varying NOT NULL,
-  industri character varying NOT NULL,
   nib character varying NOT NULL UNIQUE,
-  lokasi character varying NOT NULL,
   deskripsi_perusahaan text,
   status_verifikasi USER-DEFINED NOT NULL DEFAULT 'Menunggu Verifikasi'::verifikasi_status,
   tanggal_verifikasi timestamp with time zone,
   verified_by_admin_id uuid,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  sektor_id integer NOT NULL,
+  kota_id integer NOT NULL,
+  logo_url character varying,
+  alamat_lengkap text,
+  situs_web character varying,
+  ukuran_perusahaan character varying DEFAULT '1-10'::character varying,
+  tahun_berdiri integer,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT perusahaan_profiles_pkey PRIMARY KEY (user_id),
   CONSTRAINT perusahaan_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT perusahaan_profiles_verified_by_admin_id_fkey FOREIGN KEY (verified_by_admin_id) REFERENCES public.users(id)
+  CONSTRAINT perusahaan_profiles_verified_by_admin_id_fkey FOREIGN KEY (verified_by_admin_id) REFERENCES public.users(id),
+  CONSTRAINT fk_perusahaan_sektor FOREIGN KEY (sektor_id) REFERENCES public.sektor_perusahaan(id),
+  CONSTRAINT fk_perusahaan_kota FOREIGN KEY (kota_id) REFERENCES public.kota(id)
 );
 CREATE TABLE public.kolaborasi (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -151,4 +165,20 @@ CREATE TABLE public.notifikasi (
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT notifikasi_pkey PRIMARY KEY (id),
   CONSTRAINT notifikasi_recipient_user_id_fkey FOREIGN KEY (recipient_user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.fakultas (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  nama_fakultas character varying,
+  CONSTRAINT fakultas_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.sektor_perusahaan (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  nama_sektor character varying NOT NULL,
+  CONSTRAINT sektor_perusahaan_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.kota (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  nama_kota character varying NOT NULL,
+  provinsi character varying,
+  CONSTRAINT kota_pkey PRIMARY KEY (id)
 );

@@ -11,8 +11,8 @@ export async function proxy(req: NextRequest) {
 
   const pathname = req.nextUrl.pathname;
 
-  // Halaman Home '/' bersifat publik
-  const isHome = pathname === "/";
+  // Halaman publik yang dapat diakses pengguna tanpa login (Home & Registration)
+  const isPublicRoute = pathname === "/" || pathname === "/daftar";
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,12 +36,12 @@ export async function proxy(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 1. Jika belum login (tidak punya akun / session)
+  // 1. Jika belum login
   if (!user) {
-    if (isHome) {
+    if (isPublicRoute) {
       return response;
     }
-    // Semua halaman selain home dialihkan ke /?auth=login
+    // Semua halaman selain publik dialihkan ke /?auth=login
     const redirectUrl = new URL("/", req.url);
     redirectUrl.searchParams.set("auth", "login");
     const redirectRes = NextResponse.redirect(redirectUrl);
@@ -92,6 +92,13 @@ export async function proxy(req: NextRequest) {
     if (isPerusahaanRoute || isMahasiswaRoute) {
       redirectTarget = "/admin/dashboard";
     }
+  }
+
+  // Jika sudah login tetapi mencoba akses /daftar
+  if (pathname === "/daftar") {
+    if (lowerRole === "perusahaan") redirectTarget = "/perusahaan/dashboard";
+    else if (lowerRole === "admin") redirectTarget = "/admin/dashboard";
+    else redirectTarget = "/dashboard";
   }
 
   if (redirectTarget && pathname !== redirectTarget) {

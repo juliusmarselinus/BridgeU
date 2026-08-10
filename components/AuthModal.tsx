@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -26,6 +26,13 @@ export function AuthModal({
   const router = useRouter();
   const [tab, setTab] = useState<Tab>(defaultTab);
   const [role, setRole] = useState<Role>("mahasiswa");
+
+  useEffect(() => {
+    if (isOpen && defaultTab === "daftar") {
+      onClose();
+      router.push("/daftar");
+    }
+  }, [isOpen, defaultTab, router, onClose]);
 
   // ===== State Login =====
   const [loginEmail, setLoginEmail] = useState("");
@@ -347,7 +354,10 @@ export function AuthModal({
             </button>
             <button
               type="button"
-              onClick={() => switchTab("daftar")}
+              onClick={() => {
+                onClose();
+                router.push("/daftar");
+              }}
               className={`flex-1 rounded-full py-2.5 px-6 font-semibold transition ${
                 tab === "daftar" ? "bg-ink text-paper shadow-md" : "text-steel hover:text-ink"
               }`}
@@ -772,7 +782,10 @@ export function AuthModal({
                 Belum punya akun?{" "}
                 <button
                   type="button"
-                  onClick={() => switchTab("daftar")}
+                  onClick={() => {
+                    onClose();
+                    router.push("/daftar");
+                  }}
                   className="font-semibold text-bridge-gold hover:underline"
                 >
                   Daftar di sini
