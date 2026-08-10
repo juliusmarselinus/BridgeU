@@ -1,3 +1,4 @@
+// components/CompanyNavbar.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,7 +7,6 @@ import { usePathname } from "next/navigation";
 
 const companyNavLinks = [
   { href: "/perusahaan/dashboard", label: "Dashboard Perusahaan" },
-  { href: "/perusahaan/buat-kolaborasi", label: "+ Buka Peluang" },
   { href: "/perusahaan/pelamar", label: "Kelola Pelamar" },
 ];
 
@@ -32,8 +32,12 @@ export function CompanyNavbar() {
   useEffect(() => {
     const stored = localStorage.getItem("bridgeu_company");
     if (stored) {
-      const parsed = JSON.parse(stored);
-      queueMicrotask(() => setCompany(parsed));
+      try {
+        const parsed = JSON.parse(stored);
+        queueMicrotask(() => setCompany(parsed));
+      } catch {
+        // Fallback jika gagal parse JSON
+      }
     } else {
       queueMicrotask(() =>
         setCompany({
@@ -45,19 +49,25 @@ export function CompanyNavbar() {
     }
   }, []);
 
+  const isProfileActive = pathname === "/perusahaan/profile";
+
   return (
     <div className="sticky top-4 z-40 px-4 sm:px-6">
       <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-bridge-gold/30 bg-ink px-5 py-3 shadow-[0_8px_24px_-6px_rgba(27,39,64,0.45)]">
+        {/* Brand Logo -> Ke Dashboard Perusahaan */}
         <Link
           href="/perusahaan/dashboard"
-          className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-paper"
+          className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-paper hover:opacity-90 transition"
         >
-          <span>Bridge<span className="text-bridge-gold">U</span></span>
+          <span>
+            Bridge<span className="text-bridge-gold">U</span>
+          </span>
           <span className="rounded-full bg-bridge-gold/20 px-2.5 py-0.5 font-mono text-[10px] font-medium tracking-wide text-bridge-gold uppercase">
             Mitra Perusahaan
           </span>
         </Link>
 
+        {/* Navigation Links */}
         <div className="hidden gap-1 font-mono text-xs sm:flex">
           {companyNavLinks.map((link) => {
             const active = pathname === link.href;
@@ -77,15 +87,23 @@ export function CompanyNavbar() {
           })}
         </div>
 
+        {/* User / Company Profile Chip -> Ke Halaman Profile */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2.5 rounded-full bg-white/10 py-1.5 pl-1.5 pr-3.5 border border-white/10">
+          <Link
+            href="/perusahaan/profile"
+            className={`flex items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-3.5 border transition ${
+              isProfileActive
+                ? "bg-bridge-gold/20 border-bridge-gold/50 text-bridge-gold"
+                : "bg-white/10 border-white/10 text-paper hover:bg-white/20"
+            }`}
+          >
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-bridge-gold font-mono text-[11px] font-bold text-ink">
               {company ? companyInitials(company.nama) : "ND"}
             </div>
-            <span className="hidden font-mono text-xs text-paper sm:inline font-medium">
+            <span className="hidden font-mono text-xs sm:inline font-medium">
               {company ? company.nama : "Nexora Digital"}
             </span>
-          </div>
+          </Link>
         </div>
       </nav>
     </div>
