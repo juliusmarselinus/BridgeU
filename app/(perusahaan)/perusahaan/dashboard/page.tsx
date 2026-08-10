@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent, useMemo } from "react";
 import Link from "next/link";
 import { dummyKolaborasi, dummyPelamarList, Kolaborasi, Pelamar } from "@/lib/dummy-data";
 
@@ -18,24 +18,28 @@ interface KolaborasiWithMeta extends Omit<Kolaborasi, "statusPublikasi" | "kuota
   statusPublikasi?: KolaborasiStatus;
 }
 
+const emptyFormData = {
+  judul: "",
+  tipe: "Akademik" as "Akademik" | "Magang",
+  kategori: "Riset & Pengembangan",
+  deskripsi: "",
+  lokasi: "Remote",
+  batasWaktu: "",
+  kuota: 5,
+  statusPublikasi: "Terbit" as KolaborasiStatus,
+};
+
 export default function CompanyDashboardPage() {
   const [company, setCompany] = useState<StoredCompany | null>(null);
   const [kolaborasiList, setKolaborasiList] = useState<KolaborasiWithMeta[]>([]);
   const [pelamarList, setPelamarList] = useState<Pelamar[]>([]);
   const [selectedTab, setSelectedTab] = useState<"Semua" | "Terbit" | "Draft" | "Selesai">("Semua");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // State Modal Form
+  // State Modal Form (dipakai bareng buat Tambah & Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    judul: "",
-    tipe: "Akademik" as "Akademik" | "Magang", // Disesuaikan dengan tipe "Akademik" | "Magang"
-    kategori: "Riset & Pengembangan",
-    deskripsi: "",
-    lokasi: "Remote",
-    batasWaktu: "",
-    kuota: 5,
-    statusPublikasi: "Terbit" as KolaborasiStatus,
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState(emptyFormData);
 
   useEffect(() => {
     // 1. Hydrate Perusahaan
@@ -103,12 +107,25 @@ export default function CompanyDashboardPage() {
   const successRate =
     myKolaborasi.length > 0 ? Math.round((Selesai / myKolaborasi.length) * 100) : 0;
 
-  // Filter Tab
-  const filteredKolaborasi = myKolaborasi.filter((item) => {
-    const status = item.statusPublikasi || "Terbit";
-    if (selectedTab === "Semua") return true;
-    return status === selectedTab;
-  });
+  // Filter Tab + Search
+  const filteredKolaborasi = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    return myKolaborasi.filter((item) => {
+      const status = item.statusPublikasi || "Terbit";
+      const matchesTab = selectedTab === "Semua" || status === selectedTab;
+
+      if (!matchesTab) return false;
+      if (!q) return true;
+
+      const haystack = [item.judul, item.kategori, item.tipe, item.lokasi]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(q);
+    });
+  }, [myKolaborasi, selectedTab, searchQuery]);
 
   // Hapus Proyek
   const handleDeleteKolaborasi = (id: string, judul: string) => {
@@ -119,40 +136,81 @@ export default function CompanyDashboardPage() {
     }
   };
 
-  // Submit Modal Form
+  // Buka Modal buat Tambah Baru
+  const handleOpenCreateModal = () => {
+    setEditingId(null);
+    setFormData(emptyFormData);
+    setIsModalOpen(true);
+  };
+
+  // Buka Modal buat Edit Proyek yang Sudah Ada
+  const handleOpenEditModal = (item: KolaborasiWithMeta) => {
+    setEditingId(item.id);
+    setFormData({
+      judul: item.judul,
+      tipe: item.tipe as "Akademik" | "Magang",
+      kategori: item.kategori,
+      deskripsi: item.deskripsi || "",
+      lokasi: item.lokasi,
+      batasWaktu: item.batasWaktu,
+      kuota: item.kuota || 5,
+      statusPublikasi: item.statusPublikasi || "Terbit",
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    setFormData(emptyFormData);
+  };
+
+  // Submit Modal Form (Tambah ATAU Edit, tergantung editingId)
   const handleSubmitForm = (e: FormEvent) => {
     e.preventDefault();
 
-    const newKolaborasi: KolaborasiWithMeta = {
-      id: Date.now().toString(),
-      judul: formData.judul,
-      perusahaan: companyName,
-      tipe: formData.tipe,
-      kategori: formData.kategori,
-      deskripsi: formData.deskripsi,
-      lokasi: formData.lokasi,
-      batasWaktu: formData.batasWaktu || "30 Des 2026",
-      kuota: Number(formData.kuota),
-      statusPublikasi: formData.statusPublikasi,
-      tags: [formData.kategori, formData.tipe],
-    };
+    if (editingId) {
+      // Mode Edit: update item yang sudah ada, field lain (id, perusahaan) tetap
+      const updatedList = myKolaborasi.map((k) =>
+        k.id === editingId
+          ? {
+              ...k,
+              judul: formData.judul,
+              tipe: formData.tipe,
+              kategori: formData.kategori,
+              deskripsi: formData.deskripsi,
+              lokasi: formData.lokasi,
+              batasWaktu: formData.batasWaktu || k.batasWaktu,
+              kuota: Number(formData.kuota),
+              statusPublikasi: formData.statusPublikasi,
+              tags: [formData.kategori, formData.tipe],
+            }
+          : k
+      );
+      setKolaborasiList(updatedList);
+      localStorage.setItem("bridgeu_company_kolaborasi", JSON.stringify(updatedList));
+    } else {
+      // Mode Tambah Baru
+      const newKolaborasi: KolaborasiWithMeta = {
+        id: Date.now().toString(),
+        judul: formData.judul,
+        perusahaan: companyName,
+        tipe: formData.tipe,
+        kategori: formData.kategori,
+        deskripsi: formData.deskripsi,
+        lokasi: formData.lokasi,
+        batasWaktu: formData.batasWaktu || "30 Des 2026",
+        kuota: Number(formData.kuota),
+        statusPublikasi: formData.statusPublikasi,
+        tags: [formData.kategori, formData.tipe],
+      };
 
-    const updatedList = [newKolaborasi, ...myKolaborasi];
-    setKolaborasiList(updatedList);
-    localStorage.setItem("bridgeu_company_kolaborasi", JSON.stringify(updatedList));
+      const updatedList = [newKolaborasi, ...myKolaborasi];
+      setKolaborasiList(updatedList);
+      localStorage.setItem("bridgeu_company_kolaborasi", JSON.stringify(updatedList));
+    }
 
-    // Reset Form & Tutup Modal
-    setIsModalOpen(false);
-    setFormData({
-      judul: "",
-      tipe: "Akademik",
-      kategori: "Riset & Pengembangan",
-      deskripsi: "",
-      lokasi: "Remote",
-      batasWaktu: "",
-      kuota: 5,
-      statusPublikasi: "Terbit",
-    });
+    handleCloseModal();
   };
 
   // Export CSV
@@ -207,7 +265,7 @@ export default function CompanyDashboardPage() {
 
           <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleOpenCreateModal}
               className="inline-flex items-center justify-center gap-2 rounded-full bg-bridge-gold px-6 py-3.5 font-medium text-ink transition hover:bg-bridge-gold/90 shadow-lg shadow-bridge-gold/20 text-sm font-semibold"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -289,7 +347,7 @@ export default function CompanyDashboardPage() {
               📥 Export CSV
             </button>
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleOpenCreateModal}
               className="font-mono text-xs text-bridge-gold font-medium hover:underline hidden sm:inline"
             >
               + Tambah Baru
@@ -297,8 +355,38 @@ export default function CompanyDashboardPage() {
           </div>
         </div>
 
+        {/* Search Bar */}
+        <div className="mt-6 relative">
+          <svg
+            className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-steel/50 pointer-events-none"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari judul, kategori, tipe, atau lokasi proyek..."
+            className="w-full rounded-full border border-steel/20 bg-white py-2.5 pl-11 pr-9 text-sm outline-none transition focus:border-bridge-gold focus:ring-1 focus:ring-bridge-gold"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-steel/50 hover:text-ink text-xs"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         {/* Tab Filter */}
-        <div className="mt-6 flex items-center gap-2 border-b border-steel/15 pb-3 font-mono text-xs overflow-x-auto">
+        <div className="mt-4 flex items-center gap-2 border-b border-steel/15 pb-3 font-mono text-xs overflow-x-auto">
           {(["Semua", "Terbit", "Draft", "Selesai"] as const).map((tab) => (
             <button
               key={tab}
@@ -321,17 +409,30 @@ export default function CompanyDashboardPage() {
               💼
             </div>
             <h3 className="mt-4 font-display text-lg font-semibold text-ink">
-              Tidak Ada Peluang {selectedTab !== "Semua" ? `dengan Status "${selectedTab}"` : ""}
+              {searchQuery
+                ? `Tidak ada hasil untuk "${searchQuery}"`
+                : `Tidak Ada Peluang ${selectedTab !== "Semua" ? `dengan Status "${selectedTab}"` : ""}`}
             </h3>
             <p className="mt-1 text-sm text-steel">
-              Mulai buat proyek kolaborasi akademik atau magang baru Anda.
+              {searchQuery
+                ? "Coba kata kunci lain atau reset pencarian."
+                : "Mulai buat proyek kolaborasi akademik atau magang baru Anda."}
             </p>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="mt-6 inline-block rounded-full bg-ink px-6 py-2.5 font-mono text-xs font-medium text-paper transition hover:bg-steel"
-            >
-              Buat Kolaborasi Baru
-            </button>
+            {searchQuery ? (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="mt-6 inline-block rounded-full bg-ink px-6 py-2.5 font-mono text-xs font-medium text-paper transition hover:bg-steel"
+              >
+                Reset Pencarian
+              </button>
+            ) : (
+              <button
+                onClick={handleOpenCreateModal}
+                className="mt-6 inline-block rounded-full bg-ink px-6 py-2.5 font-mono text-xs font-medium text-paper transition hover:bg-steel"
+              >
+                Buat Kolaborasi Baru
+              </button>
+            )}
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -406,6 +507,14 @@ export default function CompanyDashboardPage() {
                       </Link>
 
                       <button
+                        onClick={() => handleOpenEditModal(item)}
+                        className="rounded-full bg-steel/10 p-1.5 text-steel hover:bg-steel/20 transition"
+                        title="Edit Kolaborasi"
+                      >
+                        ✎
+                      </button>
+
+                      <button
                         onClick={() => handleDeleteKolaborasi(item.id, item.judul)}
                         className="rounded-full bg-red-50 p-1.5 text-red-500 hover:bg-red-100 transition"
                         title="Hapus Kolaborasi"
@@ -421,21 +530,23 @@ export default function CompanyDashboardPage() {
         )}
       </section>
 
-      {/* MODAL POP-UP FORM */}
+      {/* MODAL POP-UP FORM (Tambah / Edit) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="relative w-full max-w-2xl rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-steel/20 my-8">
             <div className="flex items-center justify-between border-b border-steel/10 pb-4">
               <div>
                 <h3 className="font-display text-xl font-bold text-ink">
-                  Buka Peluang Kolaborasi
+                  {editingId ? "Edit Peluang Kolaborasi" : "Buka Peluang Kolaborasi"}
                 </h3>
                 <p className="font-mono text-xs text-steel">
-                  Isi form di bawah untuk mempublikasikan proyek atau magang
+                  {editingId
+                    ? "Perbarui detail proyek atau posisi magang ini"
+                    : "Isi form di bawah untuk mempublikasikan proyek atau magang"}
                 </p>
               </div>
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={handleCloseModal}
                 className="rounded-full bg-steel/10 p-2 text-steel hover:bg-steel/20 transition"
               >
                 ✕
@@ -534,6 +645,7 @@ export default function CompanyDashboardPage() {
                   >
                     <option value="Terbit">Terbit (Aktif)</option>
                     <option value="Draft">Draft</option>
+                    <option value="Selesai">Selesai</option>
                   </select>
                 </div>
               </div>
@@ -568,7 +680,7 @@ export default function CompanyDashboardPage() {
               <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-steel/10">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleCloseModal}
                   className="rounded-full px-5 py-2.5 font-mono text-xs font-medium text-steel hover:bg-steel/10 transition"
                 >
                   Batal
@@ -577,7 +689,7 @@ export default function CompanyDashboardPage() {
                   type="submit"
                   className="rounded-full bg-bridge-gold px-6 py-2.5 font-mono text-xs font-semibold text-ink hover:bg-bridge-gold/90 shadow-md transition"
                 >
-                  Simpan & Publikasikan
+                  {editingId ? "Simpan Perubahan" : "Simpan & Publikasikan"}
                 </button>
               </div>
             </form>
