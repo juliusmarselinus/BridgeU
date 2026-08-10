@@ -17,6 +17,7 @@ import {
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
 import { HeroScrollSection } from "@/components/HeroScrollSection";
+import { Hero } from "@/components/Hero";
 
 
 const features = [
@@ -116,65 +117,7 @@ export default function LandingPage() {
       </Navbar>
 
       {/* HERO */}
-      <section className="mx-auto max-w-6xl px-6 pb-20 pt-16">
-        <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-bridge-gold">
-          Bridging Technology and Students&apos; Needs
-        </p>
-        <h1 className="max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-          Menjembatani mahasiswa dan perusahaan lewat kolaborasi akademik.
-        </h1>
-        <p className="mt-5 max-w-xl text-base text-steel">
-          Temukan peluang kolaborasi nyata tanpa perlu koneksi pribadi — atau
-          kelola permintaan mahasiswa langsung dari satu dasbor terpusat.
-        </p>
-
-        <Link
-          href="/daftar"
-          className="mt-8 inline-block rounded-full bg-bridge-gold px-7 py-3.5 text-sm font-medium text-ink shadow-sm transition hover:scale-[1.03] hover:shadow-md"
-        >
-          Mulai Sekarang →
-        </Link>
-
-        <div className="mt-14 grid grid-cols-1 gap-0 overflow-hidden rounded-2xl border border-steel/15 shadow-sm sm:grid-cols-2">
-          <div className="bg-ink p-8 text-paper transition sm:p-10">
-            <span className="font-mono text-xs uppercase tracking-widest text-bridge-gold">
-              Untuk Mahasiswa/i
-            </span>
-            <h2 className="mt-3 font-display text-2xl font-semibold">
-              Temukan peluang tanpa perlu koneksi
-            </h2>
-            <p className="mt-3 text-sm text-paper/70">
-              Ajukan kolaborasi ke perusahaan nyata, bangun portofolio, dan
-              dapat rekomendasi berdasarkan skill kamu.
-            </p>
-            <Link
-              href="/daftar"
-              className="mt-6 inline-block font-mono text-sm text-bridge-gold underline underline-offset-4 transition hover:text-paper"
-            >
-              Daftar sebagai mahasiswa →
-            </Link>
-          </div>
-
-          <div className="bg-paper p-8 transition sm:p-10">
-            <span className="font-mono text-xs uppercase tracking-widest text-steel">
-              Untuk Perusahaan
-            </span>
-            <h2 className="mt-3 font-display text-2xl font-semibold text-ink">
-              Kelola kolaborasi dalam satu dasbor
-            </h2>
-            <p className="mt-3 text-sm text-steel">
-              Publikasikan studi kasus, terima permintaan mahasiswa, dan
-              temukan talenta lebih awal.
-            </p>
-            <Link
-              href="/daftar"
-              className="mt-6 inline-block font-mono text-sm text-ink underline underline-offset-4 transition hover:text-bridge-gold"
-            >
-              Daftar sebagai perusahaan →
-            </Link>
-          </div>
-        </div>
-      </section>
+      <Hero />
 
       <HeroScrollSection />
 

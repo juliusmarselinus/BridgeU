@@ -67,7 +67,7 @@ export const Navbar = ({ children, className }: NavbarProps) => {
   return (
     <motion.div
       ref={ref}
-      className={cn("sticky inset-x-0 top-4 z-40 w-full", className)}
+      className={cn("fixed inset-x-0 top-4 z-40 w-full", className)}
     >
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
@@ -85,10 +85,9 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
   return (
     <motion.div
       animate={{
-        backdropFilter: visible ? "blur(10px)" : "none",
         boxShadow: visible
-          ? "0 0 24px rgba(38, 43, 64, 0.08), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(38, 43, 64, 0.04), 0 0 4px rgba(38, 43, 64, 0.08), 0 16px 68px rgba(38, 43, 64, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
-          : "none",
+          ? "0 4px 24px rgba(22, 38, 96, 0.18), 0 1px 1px rgba(0, 0, 0, 0.04)"
+          : "0 2px 12px rgba(22, 38, 96, 0.10)",
         width: visible ? "60%" : "100%",
         y: visible ? 16 : 0,
       }}
@@ -99,8 +98,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
       }}
       style={{ minWidth: "600px" }}
       className={cn(
-        "relative z-[60] mx-auto hidden w-full max-w-6xl flex-row items-center justify-between self-start rounded-full bg-transparent px-4 py-2 lg:flex",
-        visible && "bg-card/90",
+        "relative z-[60] mx-auto hidden w-full max-w-6xl flex-row items-center justify-between self-start rounded-full border border-white/40 bg-white/80 px-4 py-2 backdrop-blur-xl lg:flex",
         className
       )}
     >
@@ -144,28 +142,11 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
   );
 };
 
-export const MobileNav = ({ children, className, visible }: MobileNavProps) => {
+export const MobileNav = ({ children, className }: MobileNavProps) => {
   return (
     <motion.div
-      animate={{
-        backdropFilter: visible ? "blur(10px)" : "none",
-        boxShadow: visible
-          ? "0 0 24px rgba(38, 43, 64, 0.08), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(38, 43, 64, 0.04), 0 0 4px rgba(38, 43, 64, 0.08), 0 16px 68px rgba(38, 43, 64, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
-          : "none",
-        width: visible ? "92%" : "100%",
-        paddingRight: visible ? "12px" : "0px",
-        paddingLeft: visible ? "12px" : "0px",
-        borderRadius: visible ? "16px" : "2rem",
-        y: visible ? 16 : 0,
-      }}
-      transition={{
-        type: "spring",
-        stiffness: 200,
-        damping: 50,
-      }}
       className={cn(
-        "relative z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center justify-between bg-transparent px-0 py-2 lg:hidden",
-        visible && "bg-card/90",
+        "relative z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center justify-between rounded-2xl border border-white/40 bg-white/80 px-4 py-2 backdrop-blur-xl lg:hidden",
         className
       )}
     >
@@ -195,7 +176,7 @@ export const MobileNavMenu = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className={cn(
-            "absolute inset-x-0 top-16 z-50 flex w-full flex-col items-start justify-start gap-4 rounded-lg bg-card px-4 py-8 shadow-[0_0_24px_rgba(38,_43,_64,_0.08)]",
+            "absolute inset-x-0 top-16 z-50 flex w-full flex-col items-start justify-start gap-4 rounded-lg border border-white/40 bg-white/95 px-4 py-8 shadow-[0_8px_32px_rgba(22,38,96,0.18)] backdrop-blur-xl",
             className
           )}
         >
