@@ -3,6 +3,7 @@
 import { useEffect, useState, FormEvent, useMemo } from "react";
 import Link from "next/link";
 import { dummyKolaborasi, dummyPelamarList, Kolaborasi, Pelamar } from "@/lib/dummy-data";
+import { supabase } from "@/lib/supabase";
 
 type StoredCompany = {
   nama: string;
@@ -31,10 +32,12 @@ const emptyFormData = {
 
 export default function CompanyDashboardPage() {
   const [company, setCompany] = useState<StoredCompany | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [kolaborasiList, setKolaborasiList] = useState<KolaborasiWithMeta[]>([]);
   const [pelamarList, setPelamarList] = useState<Pelamar[]>([]);
   const [selectedTab, setSelectedTab] = useState<"Semua" | "Terbit" | "Draft" | "Selesai">("Semua");
   const [searchQuery, setSearchQuery] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // State Modal Form (dipakai bareng buat Tambah & Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,53 +45,87 @@ export default function CompanyDashboardPage() {
   const [formData, setFormData] = useState(emptyFormData);
 
   useEffect(() => {
-    // 1. Hydrate Perusahaan
-    const storedCompany = localStorage.getItem("bridgeu_company");
-    if (storedCompany) {
-      try {
-        const parsed = JSON.parse(storedCompany);
-        queueMicrotask(() => setCompany(parsed));
-      } catch (e) {
-        console.error("Gagal parse data perusahaan", e);
-      }
-    } else {
-      queueMicrotask(() =>
-        setCompany({
-          nama: "Nexora Digital",
-          industri: "Teknologi & Produk Digital",
-          email: "perusahaan@nexora.com",
-        })
-      );
-    }
+    const init = async () => {
+      // 1. Ambil user session
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id ?? null;
+      setUserId(uid);
 
-    // 2. Hydrate Kolaborasi
-    const storedKolaborasi = localStorage.getItem("bridgeu_company_kolaborasi");
-    if (storedKolaborasi) {
-      try {
-        const parsed = JSON.parse(storedKolaborasi);
-        queueMicrotask(() => setKolaborasiList(parsed));
-      } catch (e) {
-        console.error("Gagal parse data kolaborasi", e);
+      // 2. Ambil profil perusahaan dari DB
+      if (uid) {
+        const { data: profile } = await supabase
+          .from("perusahaan_profiles")
+          .select("nama_perusahaan, sektor:sektor_id(nama_sektor)")
+          .eq("user_id", uid)
+          .maybeSingle();
+        if (profile) {
+          setCompany({
+            nama: profile.nama_perusahaan,
+            industri: (profile.sektor as any)?.nama_sektor ?? "-",
+            email: session?.user?.email ?? "-",
+          });
+        }
+      } else {
+        // Fallback: localStorage
+        const storedCompany = localStorage.getItem("bridgeu_company");
+        if (storedCompany) {
+          try { setCompany(JSON.parse(storedCompany)); } catch (e) { console.error(e); }
+        } else {
+          setCompany({ nama: "Nexora Digital", industri: "Teknologi & Produk Digital", email: "perusahaan@nexora.com" });
+        }
       }
-    } else {
-      const nexoraItems = dummyKolaborasi.filter(
-        (k) => k.perusahaan.toLowerCase().includes("nexora") || k.id === "1"
-      );
-      queueMicrotask(() => setKolaborasiList(nexoraItems as KolaborasiWithMeta[]));
-    }
 
-    // 3. Hydrate Pelamar
-    const storedPelamar = localStorage.getItem("bridgeu_pelamar_list");
-    if (storedPelamar) {
-      try {
-        const parsed = JSON.parse(storedPelamar);
-        queueMicrotask(() => setPelamarList(parsed));
-      } catch (e) {
-        console.error("Gagal parse data pelamar", e);
+      // 3. Ambil kolaborasi dari Supabase
+      if (uid) {
+        const { data: rows } = await supabase
+          .from("kolaborasi")
+          .select(`id, judul, tipe, deskripsi, status_moderasi, batas_waktu,
+            kategori:kategori_id(nama_kategori),
+            kota:lokasi_id(nama_kota)`)
+          .eq("perusahaan_id", uid)
+          .order("created_at", { ascending: false });
+
+        if (rows && rows.length > 0) {
+          const mapped: KolaborasiWithMeta[] = rows.map((r: any) => ({
+            id: r.id,
+            judul: r.judul,
+            tipe: r.tipe === "Magang" ? "Magang" : "Akademik",
+            kategori: r.kategori?.nama_kategori ?? "-",
+            deskripsi: r.deskripsi ?? "",
+            perusahaan: company?.nama ?? "",
+            lokasi: r.kota?.nama_kota ?? "-",
+            batasWaktu: r.batas_waktu
+              ? new Date(r.batas_waktu).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+              : "-",
+            statusPublikasi: r.status_moderasi === "Disetujui" ? "Terbit"
+              : r.status_moderasi === "Ditolak" ? "Draft" : "Draft",
+            kuota: r.kuota ?? 5,
+          }));
+          setKolaborasiList(mapped);
+        } else {
+          setKolaborasiList([]);
+        }
+      } else {
+        // Fallback localStorage
+        const storedKolaborasi = localStorage.getItem("bridgeu_company_kolaborasi");
+        if (storedKolaborasi) {
+          try { setKolaborasiList(JSON.parse(storedKolaborasi)); } catch (e) { console.error(e); }
+        } else {
+          setKolaborasiList(dummyKolaborasi.filter((k) => k.perusahaan.toLowerCase().includes("nexora")) as KolaborasiWithMeta[]);
+        }
       }
-    } else {
-      queueMicrotask(() => setPelamarList(dummyPelamarList));
-    }
+
+      // 4. Pelamar
+      const storedPelamar = localStorage.getItem("bridgeu_pelamar_list");
+      if (storedPelamar) {
+        try { setPelamarList(JSON.parse(storedPelamar)); } catch (e) { console.error(e); }
+      } else {
+        setPelamarList(dummyPelamarList);
+      }
+    };
+
+    init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const companyName = company?.nama || "Nexora Digital";
@@ -128,12 +165,14 @@ export default function CompanyDashboardPage() {
   }, [myKolaborasi, selectedTab, searchQuery]);
 
   // Hapus Proyek
-  const handleDeleteKolaborasi = (id: string, judul: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus proyek "${judul}"?`)) {
-      const updated = myKolaborasi.filter((k) => k.id !== id);
-      setKolaborasiList(updated);
-      localStorage.setItem("bridgeu_company_kolaborasi", JSON.stringify(updated));
+  const handleDeleteKolaborasi = async (id: string, judul: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus proyek "${judul}"?`)) return;
+    // Hapus dari Supabase jika ada session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase.from("kolaborasi").delete().eq("id", id).eq("perusahaan_id", session.user.id);
     }
+    setKolaborasiList((prev) => prev.filter((k) => k.id !== id));
   };
 
   // Buka Modal buat Tambah Baru
@@ -165,52 +204,160 @@ export default function CompanyDashboardPage() {
     setFormData(emptyFormData);
   };
 
-  // Submit Modal Form (Tambah ATAU Edit, tergantung editingId)
-  const handleSubmitForm = (e: FormEvent) => {
+  // Submit Modal Form (Tambah ATAU Edit)
+  const handleSubmitForm = async (e: FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
 
-    if (editingId) {
-      // Mode Edit: update item yang sudah ada, field lain (id, perusahaan) tetap
-      const updatedList = myKolaborasi.map((k) =>
-        k.id === editingId
-          ? {
-              ...k,
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session) {
+        // Resolve kategori_id dari kategori_minat
+        let kategoriId: number | null = null;
+        const { data: katRow } = await supabase
+          .from("kategori_minat")
+          .select("id")
+          .eq("nama_kategori", formData.kategori)
+          .maybeSingle();
+        if (katRow) {
+          kategoriId = katRow.id;
+        } else {
+          // Buat baru jika belum ada
+          const { data: newKat } = await supabase
+            .from("kategori_minat")
+            .insert([{ nama_kategori: formData.kategori }])
+            .select("id")
+            .single();
+          if (newKat) kategoriId = newKat.id;
+        }
+
+        // Resolve lokasi_id dari kota
+        let lokasiId: number | null = null;
+        const { data: kotaRow } = await supabase
+          .from("kota")
+          .select("id")
+          .eq("nama_kota", formData.lokasi)
+          .maybeSingle();
+        if (kotaRow) {
+          lokasiId = kotaRow.id;
+        } else {
+          const { data: newKota } = await supabase
+            .from("kota")
+            .insert([{ nama_kota: formData.lokasi }])
+            .select("id")
+            .single();
+          if (newKota) lokasiId = newKota.id;
+        }
+
+        if (!kategoriId || !lokasiId) {
+          alert("Gagal menyimpan: kategori atau lokasi tidak dapat diselesaikan.");
+          setSubmitting(false);
+          return;
+        }
+
+        const batasWaktuDate = formData.batasWaktu ? new Date(formData.batasWaktu).toISOString() : null;
+
+        if (editingId) {
+          // Mode Edit — UPDATE di Supabase
+          await supabase.from("kolaborasi").update({
+            judul: formData.judul,
+            tipe: formData.tipe,
+            kategori_id: kategoriId,
+            deskripsi: formData.deskripsi,
+            lokasi_id: lokasiId,
+            batas_waktu: batasWaktuDate,
+            status_moderasi: formData.statusPublikasi === "Terbit" ? "Menunggu" : "Menunggu",
+          }).eq("id", editingId).eq("perusahaan_id", session.user.id);
+
+          setKolaborasiList((prev) =>
+            prev.map((k) =>
+              k.id === editingId
+                ? { ...k, judul: formData.judul, tipe: formData.tipe, kategori: formData.kategori,
+                    deskripsi: formData.deskripsi, lokasi: formData.lokasi,
+                    batasWaktu: formData.batasWaktu, statusPublikasi: formData.statusPublikasi }
+                : k
+            )
+          );
+        } else {
+          // Mode Tambah Baru — INSERT ke Supabase
+          const { data: inserted, error: insertError } = await supabase
+            .from("kolaborasi")
+            .insert([{
+              perusahaan_id: session.user.id,
               judul: formData.judul,
               tipe: formData.tipe,
-              kategori: formData.kategori,
+              kategori_id: kategoriId,
               deskripsi: formData.deskripsi,
-              lokasi: formData.lokasi,
-              batasWaktu: formData.batasWaktu || k.batasWaktu,
-              kuota: Number(formData.kuota),
-              statusPublikasi: formData.statusPublikasi,
-              tags: [formData.kategori, formData.tipe],
-            }
-          : k
-      );
-      setKolaborasiList(updatedList);
-      localStorage.setItem("bridgeu_company_kolaborasi", JSON.stringify(updatedList));
-    } else {
-      // Mode Tambah Baru
-      const newKolaborasi: KolaborasiWithMeta = {
-        id: Date.now().toString(),
-        judul: formData.judul,
-        perusahaan: companyName,
-        tipe: formData.tipe,
-        kategori: formData.kategori,
-        deskripsi: formData.deskripsi,
-        lokasi: formData.lokasi,
-        batasWaktu: formData.batasWaktu || "30 Des 2026",
-        kuota: Number(formData.kuota),
-        statusPublikasi: formData.statusPublikasi,
-        tags: [formData.kategori, formData.tipe],
-      };
+              lokasi_id: lokasiId,
+              batas_waktu: batasWaktuDate,
+              status_moderasi: "Menunggu",
+            }])
+            .select("id")
+            .single();
 
-      const updatedList = [newKolaborasi, ...myKolaborasi];
-      setKolaborasiList(updatedList);
-      localStorage.setItem("bridgeu_company_kolaborasi", JSON.stringify(updatedList));
+          if (insertError) {
+            console.error("Gagal menyimpan kolaborasi:", insertError.message);
+            alert(`Gagal menyimpan: ${insertError.message}`);
+            setSubmitting(false);
+            return;
+          }
+
+          const newItem: KolaborasiWithMeta = {
+            id: inserted?.id ?? Date.now().toString(),
+            judul: formData.judul,
+            perusahaan: companyName,
+            tipe: formData.tipe,
+            kategori: formData.kategori,
+            deskripsi: formData.deskripsi,
+            lokasi: formData.lokasi,
+            batasWaktu: formData.batasWaktu || "-",
+            kuota: Number(formData.kuota),
+            statusPublikasi: "Draft", // menunggu persetujuan admin
+            tags: [formData.kategori, formData.tipe],
+          };
+          setKolaborasiList((prev) => [newItem, ...prev]);
+        }
+      } else {
+        // Fallback localStorage (tidak ada session)
+        if (editingId) {
+          const updatedList = myKolaborasi.map((k) =>
+            k.id === editingId
+              ? { ...k, judul: formData.judul, tipe: formData.tipe, kategori: formData.kategori,
+                  deskripsi: formData.deskripsi, lokasi: formData.lokasi,
+                  batasWaktu: formData.batasWaktu || k.batasWaktu,
+                  kuota: Number(formData.kuota), statusPublikasi: formData.statusPublikasi,
+                  tags: [formData.kategori, formData.tipe] }
+              : k
+          );
+          setKolaborasiList(updatedList);
+          localStorage.setItem("bridgeu_company_kolaborasi", JSON.stringify(updatedList));
+        } else {
+          const newItem: KolaborasiWithMeta = {
+            id: Date.now().toString(),
+            judul: formData.judul,
+            perusahaan: companyName,
+            tipe: formData.tipe,
+            kategori: formData.kategori,
+            deskripsi: formData.deskripsi,
+            lokasi: formData.lokasi,
+            batasWaktu: formData.batasWaktu || "30 Des 2026",
+            kuota: Number(formData.kuota),
+            statusPublikasi: formData.statusPublikasi,
+            tags: [formData.kategori, formData.tipe],
+          };
+          const updatedList = [newItem, ...myKolaborasi];
+          setKolaborasiList(updatedList);
+          localStorage.setItem("bridgeu_company_kolaborasi", JSON.stringify(updatedList));
+        }
+      }
+    } catch (err: any) {
+      console.error("Error submit kolaborasi:", err);
+      alert(`Terjadi kesalahan: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+      handleCloseModal();
     }
-
-    handleCloseModal();
   };
 
   // Export CSV

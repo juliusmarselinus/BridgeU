@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { Kolaborasi } from "@/lib/dummy-data";
 import { ApplyModal } from "@/components/ApplyModal";
+import { supabase } from "@/lib/supabase";
 
 type StoredUser = {
   nama: string;
@@ -18,36 +19,89 @@ export default function DetailKolaborasiPage() {
   const router = useRouter();
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<StoredUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [data, setData] = useState<Kolaborasi | null>(null);
 
   useEffect(() => {
-    const storedList = localStorage.getItem("bridgeu_kolaborasi_list");
-    if (storedList) {
-      try {
-        const parsed: Kolaborasi[] = JSON.parse(storedList);
-        const item = parsed.find((k) => k.id === id);
-        if (item) setData(item);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, [id]);
-
-  useEffect(() => {
     const stored = localStorage.getItem("bridgeu_user");
     if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setUser(parsed);
-      } catch (e) {
-        console.error(e);
-      }
+      try { setUser(JSON.parse(stored)); } catch (e) { console.error(e); }
     }
   }, []);
 
+  useEffect(() => {
+    if (!id) return;
+    supabase
+      .from("kolaborasi")
+      .select(`
+        id, judul, tipe, deskripsi, lokasi_id, batas_waktu, status_moderasi,
+        tingkat_kesulitan, gaji_stipend, perusahaan_id,
+        perusahaan:perusahaan_id ( nama_perusahaan ),
+        kategori:kategori_id ( nama_kategori ),
+        kota:lokasi_id ( nama_kota ),
+        kolaborasi_skills ( skills ( nama_skill ) ),
+        kolaborasi_target_prodi ( program_studi:prodi_id ( nama_prodi ) )
+      `)
+      .eq("id", id as string)
+      .maybeSingle()
+      .then(({ data: row, error }) => {
+        if (error) {
+          console.error("Gagal memuat detail kolaborasi:", error.message);
+        } else if (row) {
+          setData({
+            id: row.id,
+            perusahaan: (row.perusahaan as any)?.nama_perusahaan ?? "Mitra Perusahaan",
+            perusahaanId: row.perusahaan_id,
+            judul: row.judul,
+            tipe: row.tipe === "Magang" ? "Magang" : "Akademik",
+            kategori: (row.kategori as any)?.nama_kategori ?? "Kolaborasi",
+            deskripsi: row.deskripsi,
+            lokasi: (row.kota as any)?.nama_kota ?? "-",
+            batasWaktu: row.batas_waktu
+              ? new Date(row.batas_waktu).toLocaleDateString("id-ID", {
+                  day: "numeric", month: "long", year: "numeric",
+                })
+              : "-",
+            statusModerasi: row.status_moderasi === "Disetujui" ? "Disetujui"
+              : row.status_moderasi === "Ditolak" ? "Ditolak" : "Menunggu",
+            tags: (row.kolaborasi_skills as any[])
+              ?.map((ks: any) => ks.skills?.nama_skill)
+              .filter(Boolean) ?? [],
+            matchScore: 85,
+            tingkatKesulitan:
+              row.tingkat_kesulitan === "Pemula" ? "Pemula"
+              : row.tingkat_kesulitan === "Lanjutan" ? "Lanjutan"
+              : "Menengah",
+            rekomendasiProdi: (row.kolaborasi_target_prodi as any[])
+              ?.map((kp: any) => kp.program_studi?.nama_prodi)
+              .filter(Boolean) ?? [],
+            gajiStipend: row.gaji_stipend ?? undefined,
+            kuota: (row as any).kuota ?? 0,
+            kuotaTerisi: (row as any).kuota_terisi ?? 0,
+            statusPublikasi: "Terbit",
+          });
+        }
+        setLoading(false);
+      });
+  }, [id]);
+
+
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-paper flex flex-col justify-center items-center px-6 text-center">
+        <div className="rounded-2xl border border-steel/20 bg-white p-8 max-w-md shadow-xl">
+          <div className="h-6 w-48 bg-steel/10 rounded-lg animate-pulse mx-auto mb-3" />
+          <div className="h-3 w-32 bg-steel/10 rounded animate-pulse mx-auto" />
+        </div>
+      </main>
+    );
+  }
+
   if (!data) {
+
     return (
       <main className="min-h-screen bg-paper flex flex-col justify-center items-center px-6 text-center">
         <div className="rounded-2xl border border-steel/20 bg-white p-8 max-w-md shadow-xl">

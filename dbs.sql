@@ -107,7 +107,7 @@ CREATE TABLE public.kolaborasi (
   tipe USER-DEFINED NOT NULL,
   kategori_id integer NOT NULL,
   deskripsi text NOT NULL,
-  lokasi character varying NOT NULL,
+  lokasi_id bigint NOT NULL,
   batas_waktu date NOT NULL,
   status_moderasi USER-DEFINED NOT NULL DEFAULT 'Menunggu'::moderasi_status,
   tingkat_kesulitan USER-DEFINED DEFAULT 'Menengah'::tingkat_kesulitan,
@@ -118,7 +118,8 @@ CREATE TABLE public.kolaborasi (
   CONSTRAINT kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT kolaborasi_perusahaan_id_fkey FOREIGN KEY (perusahaan_id) REFERENCES public.perusahaan_profiles(user_id),
   CONSTRAINT kolaborasi_kategori_id_fkey FOREIGN KEY (kategori_id) REFERENCES public.kategori_minat(id),
-  CONSTRAINT kolaborasi_moderated_by_admin_id_fkey FOREIGN KEY (moderated_by_admin_id) REFERENCES public.users(id)
+  CONSTRAINT kolaborasi_moderated_by_admin_id_fkey FOREIGN KEY (moderated_by_admin_id) REFERENCES public.users(id),
+  CONSTRAINT kolaborasi_lokasi_id_fkey FOREIGN KEY (lokasi_id) REFERENCES public.kota(id)
 );
 CREATE TABLE public.kolaborasi_target_prodi (
   kolaborasi_id uuid NOT NULL,

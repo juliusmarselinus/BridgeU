@@ -120,6 +120,8 @@ export async function GET(req: NextRequest) {
     const { data: dbKolaborasi } = await db
       .from("kolaborasi")
       .select("id, judul, tipe, tingkat_kesulitan, perusahaan:perusahaan_id(nama_perusahaan), kategori:kategori_id(nama_kategori)")
+      .eq("status_moderasi", "Disetujui")
+      .order("created_at", { ascending: false })
       .limit(4);
 
     if (dbKolaborasi && dbKolaborasi.length > 0) {
