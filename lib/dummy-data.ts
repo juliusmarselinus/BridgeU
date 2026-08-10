@@ -14,12 +14,25 @@ export const dummyUser = {
 };
 
 export const dummyPerusahaan = {
+  id: "comp-1",
   email: "perusahaan@nexora.com",
   password: "password123",
   nama: "Nexora Digital",
   industri: "Teknologi & Produk Digital",
   lokasi: "Jakarta Selatan",
   role: "perusahaan",
+  nib: "9120003418921",
+  deskripsi: "Perusahaan teknologi terdepan yang berfokus pada pengembangan produk digital modern dan solusi perangkat lunak enterprise.",
+  website: "https://nexora.com",
+  logo: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80",
+  kontakPIC: {
+    nama: "Budi Pratama",
+    email: "hr@nexora.com",
+    telepon: "081234567890",
+  },
+  statusVerifikasi: "Terverifikasi" as const,
+  tierAkun: "Free" as const,
+  tanggalDaftar: "2024-01-15"
 };
 
 export const dummyAdmin = {
@@ -30,7 +43,7 @@ export const dummyAdmin = {
 };
 
 /* ==========================================================================
-   2. REGISTERED COMPANIES (ADMIN MANAGEMENT)
+   2. REGISTERED COMPANIES (ADMIN & PROFILE MANAGEMENT)
    ========================================================================== */
 
 export type RegisteredCompany = {
@@ -41,7 +54,16 @@ export type RegisteredCompany = {
   nib: string;
   lokasi: string;
   tanggalDaftar: string;
-  statusVerifikasi: "Terverifikasi" | "Menunggu Verifikasi" | "Ditolak";
+  statusVerifikasi: "Terverifikasi" | "Menunggu Verifikasi" | "Menunggu Verifikasi Ulang" | "Ditolak";
+  deskripsi?: string;
+  website?: string;
+  logo?: string;
+  kontakPIC?: {
+    nama: string;
+    email: string;
+    telepon: string;
+  };
+  tierAkun?: "Free" | "Premium";
 };
 
 export const dummyRegisteredCompanies: RegisteredCompany[] = [
@@ -54,6 +76,14 @@ export const dummyRegisteredCompanies: RegisteredCompany[] = [
     lokasi: "Jakarta Selatan",
     tanggalDaftar: "12 Januari 2026",
     statusVerifikasi: "Terverifikasi",
+    deskripsi: "Perusahaan teknologi terdepan yang berfokus pada pengembangan produk digital modern dan solusi perangkat lunak enterprise.",
+    website: "https://nexora.com",
+    kontakPIC: {
+      nama: "Budi Pratama",
+      email: "hr@nexora.com",
+      telepon: "081234567890",
+    },
+    tierAkun: "Free",
   },
   {
     id: "comp-2",
@@ -87,8 +117,17 @@ export const dummyRegisteredCompanies: RegisteredCompany[] = [
   },
 ];
 
+/* Buffer Edit Profil yang Butuh Re-Approval Admin (Fitur #1) */
+export type CompanyPendingEdit = {
+  perusahaanId: string;
+  namaPerusahaan: string;
+  industri: string;
+  nib: string;
+  tanggalDiajukan: string;
+};
+
 /* ==========================================================================
-   3. MANAGED USERS (ADMIN & SEARCH MANAGEMENT)
+   3. MANAGED USERS
    ========================================================================== */
 
 export type ManagedUser = {
@@ -96,7 +135,7 @@ export type ManagedUser = {
   nama: string;
   email: string;
   role: "Mahasiswa" | "Perusahaan";
-  detail: string; // Universitas & Prodi or Industri & Lokasi
+  detail: string;
   status: "Aktif" | "Suspended";
   tanggalGabung: string;
 };
@@ -120,127 +159,10 @@ export const dummyManagedUsers: ManagedUser[] = [
     status: "Aktif",
     tanggalGabung: "12 Januari 2026",
   },
-  {
-    id: "usr-3",
-    nama: "Siti Rahma",
-    email: "siti.rahma@itb.ac.id",
-    role: "Mahasiswa",
-    detail: "Institut Teknologi Bandung • DKV",
-    status: "Aktif",
-    tanggalGabung: "15 Februari 2026",
-  },
-  {
-    id: "usr-4",
-    nama: "Budi Santoso",
-    email: "budi.s@ui.ac.id",
-    role: "Mahasiswa",
-    detail: "Universitas Indonesia • Ilmu Komputer",
-    status: "Aktif",
-    tanggalGabung: "01 Maret 2026",
-  },
-  {
-    id: "usr-5",
-    nama: "Vertex Logistics",
-    email: "hr@vertexlogistics.co.id",
-    role: "Perusahaan",
-    detail: "Logistik & Supply Chain • Jakarta Barat",
-    status: "Aktif",
-    tanggalGabung: "01 Februari 2026",
-  },
-  {
-    id: "usr-6",
-    nama: "Andi Pratama",
-    email: "andi.pratama@ugm.ac.id",
-    role: "Mahasiswa",
-    detail: "Universitas Gadjah Mada • Teknik Informatika",
-    status: "Aktif",
-    tanggalGabung: "10 Maret 2026",
-  },
-  {
-    id: "usr-7",
-    nama: "Maya Anggraini",
-    email: "maya.a@its.ac.id",
-    role: "Mahasiswa",
-    detail: "Institut Teknologi Sepuluh Nopember • Data Science",
-    status: "Aktif",
-    tanggalGabung: "18 Maret 2026",
-  },
-  {
-    id: "usr-8",
-    nama: "Rizky Febrian",
-    email: "rizky.f@unair.ac.id",
-    role: "Mahasiswa",
-    detail: "Universitas Airlangga • Manajemen",
-    status: "Aktif",
-    tanggalGabung: "22 Maret 2026",
-  },
-  {
-    id: "usr-9",
-    nama: "Nadia Putri",
-    email: "nadia.p@unpad.ac.id",
-    role: "Mahasiswa",
-    detail: "Universitas Padjadjaran • Akuntansi",
-    status: "Aktif",
-    tanggalGabung: "05 April 2026",
-  },
-  {
-    id: "usr-10",
-    nama: "Dimas Setyo",
-    email: "dimas.s@undip.ac.id",
-    role: "Mahasiswa",
-    detail: "Universitas Diponegoro • Teknik Industri",
-    status: "Aktif",
-    tanggalGabung: "12 April 2026",
-  },
-  {
-    id: "usr-11",
-    nama: "Aurelia Clarissa",
-    email: "aurelia.c@binus.ac.id",
-    role: "Mahasiswa",
-    detail: "Universitas Bina Nusantara • Bisnis Digital",
-    status: "Aktif",
-    tanggalGabung: "19 April 2026",
-  },
-  {
-    id: "usr-12",
-    nama: "Farhan Ramadhan",
-    email: "farhan.r@telkomuniversity.ac.id",
-    role: "Mahasiswa",
-    detail: "Telkom University • Cyber Security",
-    status: "Aktif",
-    tanggalGabung: "02 Mei 2026",
-  },
-  {
-    id: "usr-13",
-    nama: "Dewa Kusuma",
-    email: "dewa.k@ub.ac.id",
-    role: "Mahasiswa",
-    detail: "Universitas Brawijaya • Ilmu Komputer",
-    status: "Aktif",
-    tanggalGabung: "15 Mei 2026",
-  },
-  {
-    id: "usr-14",
-    nama: "Jessica Tan",
-    email: "jessica.t@uph.edu",
-    role: "Mahasiswa",
-    detail: "Universitas Pelita Harapan • Desain Produk",
-    status: "Aktif",
-    tanggalGabung: "28 Mei 2026",
-  },
-  {
-    id: "usr-15",
-    nama: "Kevin Wijaya",
-    email: "kevin.w@atmajaya.ac.id",
-    role: "Mahasiswa",
-    detail: "Universitas Katolik Indonesia Atma Jaya • Hukum",
-    status: "Aktif",
-    tanggalGabung: "10 Juni 2026",
-  },
 ];
 
 /* ==========================================================================
-   4. APPLICANTS (PELAMAR LOG)
+   4. APPLICANTS (PELAMAR LOG & SHORTLIST)
    ========================================================================== */
 
 export type Pelamar = {
@@ -252,8 +174,9 @@ export type Pelamar = {
   prodi: string;
   emailMahasiswa: string;
   tujuan: string;
-  status: "Menunggu" | "Diterima" | "Ditolak" | "Selesai";
+  status: "Menunggu" | "Shortlisted" | "Diterima" | "Ditolak" | "Selesai";
   tanggal: string;
+  direkrutSetelahnya?: boolean; // Fitur #8 analytics
 };
 
 export const dummyPelamarList: Pelamar[] = [
@@ -278,7 +201,7 @@ export const dummyPelamarList: Pelamar[] = [
     prodi: "Desain Komunikasi Visual",
     emailMahasiswa: "siti.rahma@itb.ac.id",
     tujuan: "Fokus pada pembuatan perancangan visual antarmuka mobile banking yang inklusif.",
-    status: "Menunggu",
+    status: "Shortlisted",
     tanggal: "05 Agustus 2026",
   },
   {
@@ -296,7 +219,163 @@ export const dummyPelamarList: Pelamar[] = [
 ];
 
 /* ==========================================================================
-   5. DROPDOWN & FORM OPTIONS LISTS
+   5. SUBMISSIONS (REVIEW & PENILAIAN SOLUSI MAHASISWA - Fitur #6)
+   ========================================================================== */
+
+export type Submission = {
+  id: string;
+  pelamarId: string;
+  kolaborasiId: string;
+  kolaborasiJudul: string;
+  namaMahasiswa: string;
+  fileUrl?: string;
+  linkEksternal?: string;
+  catatanMahasiswa: string;
+  tanggalSubmit: string;
+  status: "Menunggu Review" | "Direview" | "Revisi Diminta";
+  feedbackPerusahaan?: string;
+  rating?: number; // 1-5
+  skillDinilai?: string[];
+};
+
+export const dummySubmissionsList: Submission[] = [
+  {
+    id: "sub-1",
+    pelamarId: "pelamar-3",
+    kolaborasiId: "3",
+    kolaborasiJudul: "Magang: Frontend Developer",
+    namaMahasiswa: "Budi Santoso",
+    linkEksternal: "https://github.com/budisantoso/nexora-dashboard-ui",
+    catatanMahasiswa: "Berikut hasil implementasi 5 komponen dashboard responsif menggunakan Next.js App Router dan Tailwind CSS.",
+    tanggalSubmit: "08 Agustus 2026",
+    status: "Menunggu Review",
+  },
+];
+
+/* ==========================================================================
+   6. MESSAGING & INTERVIEWS (Fitur #7 & Fitur #12)
+   ========================================================================== */
+
+export type Message = {
+  id: string;
+  kolaborasiId: string;
+  pelamarId: string;
+  pengirim: "perusahaan" | "mahasiswa";
+  isi: string;
+  timestamp: string;
+  dibaca: boolean;
+};
+
+export const dummyMessagesList: Message[] = [
+  {
+    id: "msg-1",
+    kolaborasiId: "1",
+    pelamarId: "pelamar-1",
+    pengirim: "perusahaan",
+    isi: "Halo John, terima kasih sudah apply! Bisakah Anda mengirimkan link sampel portofolio Figma yang pernah dibuat?",
+    timestamp: "04 Aug 2026, 14:30",
+    dibaca: true,
+  },
+  {
+    id: "msg-2",
+    kolaborasiId: "1",
+    pelamarId: "pelamar-1",
+    pengirim: "mahasiswa",
+    isi: "Tentu pak, berikut link portofolio saya: figma.com/@johndoe. Mohon masukkannya!",
+    timestamp: "04 Aug 2026, 15:10",
+    dibaca: false,
+  },
+];
+
+export type Interview = {
+  id: string;
+  pelamarId: string;
+  namaMahasiswa: string;
+  kolaborasiJudul: string;
+  tanggalWaktu: string;
+  metode: "Online" | "Offline";
+  linkMeeting?: string;
+  lokasi?: string;
+  catatan?: string;
+  statusKonfirmasi: "Diajukan" | "Dikonfirmasi Mahasiswa" | "Dibatalkan";
+};
+
+/* ==========================================================================
+   7. IN-APP NOTIFICATIONS (Fitur #9)
+   ========================================================================== */
+
+export type CompanyNotification = {
+  id: string;
+  judul: string;
+  pesan: string;
+  timestamp: string;
+  dibaca: boolean;
+  tipe: "pelamar" | "submission" | "deadline" | "verifikasi" | "pesan";
+  link?: string;
+};
+
+export const dummyCompanyNotifications: CompanyNotification[] = [
+  {
+    id: "notif-1",
+    judul: "Pelamar Baru Masuk 🎓",
+    pesan: "John Doe mengajukan lamaran untuk 'Studi Kasus: Optimasi UX Aplikasi Perbankan'.",
+    timestamp: "2 jam yang lalu",
+    dibaca: false,
+    tipe: "pelamar",
+    link: "/perusahaan/pelamar",
+  },
+  {
+    id: "notif-2",
+    judul: "Hasil Solusi Di-upload 🚀",
+    pesan: "Budi Santoso mengunggah laporan hasil solusi untuk 'Magang: Frontend Developer'.",
+    timestamp: "5 jam yang lalu",
+    dibaca: false,
+    tipe: "submission",
+    link: "/perusahaan/pelamar?tab=submission",
+  },
+  {
+    id: "notif-3",
+    judul: "Verifikasi Akun Berhasil ✓",
+    pesan: "Profil perusahaan Nexora Digital telah disetujui oleh Administrator BridgeU.",
+    timestamp: "1 hari yang lalu",
+    dibaca: true,
+    tipe: "verifikasi",
+    link: "/perusahaan/profil",
+  },
+];
+
+/* ==========================================================================
+   8. REVIEWS & RATINGS PERUSAHAAN (Fitur #13)
+   ========================================================================== */
+
+export type CompanyReview = {
+  id: string;
+  perusahaanId: string;
+  mahasiswaId: string;
+  namaMahasiswa: string;
+  kolaborasiId: string;
+  kolaborasiJudul: string;
+  rating: number; // 1-5
+  komentar: string;
+  tanggal: string;
+};
+
+export const dummyCompanyReviews: CompanyReview[] = [
+  {
+    id: "rev-1",
+    perusahaanId: "comp-1",
+    mahasiswaId: "usr-4",
+    namaMahasiswa: "Budi Santoso",
+    kolaborasiId: "3",
+    kolaborasiJudul: "Magang: Frontend Developer",
+    rating: 5,
+    komentar: "Lingkungan kerja sangat suportif! Mentor dari tim eng Nexora memberikan feedback riset yang relevan.",
+    tanggal: "10 Agustus 2026",
+  },
+];
+
+/* ==========================================================================
+   9. DROPDOWN & OPTIONS LISTS
    ========================================================================== */
 
 export const universitasList = [
@@ -325,43 +404,18 @@ export const universitasList = [
 ];
 
 export const prodiList = [
-  // Ekonomi & Bisnis
   { label: "Manajemen & Bisnis", value: "Manajemen", group: "Ekonomi & Bisnis" },
   { label: "Akuntansi & Keuangan", value: "Akuntansi", group: "Ekonomi & Bisnis" },
   { label: "Bisnis Digital", value: "Bisnis Digital", group: "Ekonomi & Bisnis" },
-  { label: "Ekonomi Pembangunan", value: "Ekonomi Pembangunan", group: "Ekonomi & Bisnis" },
-  { label: "Manajemen Pemasaran", value: "Pemasaran", group: "Ekonomi & Bisnis" },
-
-  // Seni, Desain & Komunikasi
   { label: "Desain Komunikasi Visual (DKV)", value: "Desain Komunikasi Visual", group: "Desain & Komunikasi" },
   { label: "Ilmu Komunikasi", value: "Ilmu Komunikasi", group: "Desain & Komunikasi" },
-  { label: "Hubungan Masyarakat (PR)", value: "Hubungan Masyarakat", group: "Desain & Komunikasi" },
-  { label: "Desain Produk", value: "Desain Produk", group: "Desain & Komunikasi" },
-  { label: "Broadcasting & Film", value: "Broadcasting", group: "Desain & Komunikasi" },
-
-  // Teknologi & Komputer
   { label: "Sistem Informasi", value: "Sistem Informasi", group: "Teknologi & Komputer" },
   { label: "Teknik Informatika", value: "Teknik Informatika", group: "Teknologi & Komputer" },
   { label: "Data Science & Analitik", value: "Data Science", group: "Teknologi & Komputer" },
-  { label: "Cyber Security", value: "Cyber Security", group: "Teknologi & Komputer" },
   { label: "Ilmu Komputer", value: "Ilmu Komputer", group: "Teknologi & Komputer" },
-
-  // Teknik & Arsitektur
   { label: "Teknik Industri", value: "Teknik Industri", group: "Teknik & Arsitektur" },
-  { label: "Arsitektur", value: "Arsitektur", group: "Teknik & Arsitektur" },
-  { label: "Teknik Sipil", value: "Teknik Sipil", group: "Teknik & Arsitektur" },
-  { label: "Teknik Elektro", value: "Teknik Elektro", group: "Teknik & Arsitektur" },
-
-  // Hukum & Humaniora
-  { label: "Hukum Bisnis & Keperdataan", value: "Hukum", group: "Hukum & Humaniora" },
+  { label: "Hukum Bisnis", value: "Hukum", group: "Hukum & Humaniora" },
   { label: "Psikologi Organisasi", value: "Psikologi", group: "Hukum & Humaniora" },
-  { label: "Hubungan Internasional", value: "Hubungan Internasional", group: "Hukum & Humaniora" },
-  { label: "Sastra & Bahasa Inggris", value: "Sastra Inggris", group: "Hukum & Humaniora" },
-
-  // Kesehatan & Sains
-  { label: "Kesehatan Masyarakat", value: "Kesehatan Masyarakat", group: "Kesehatan & Sains" },
-  { label: "Farmasi", value: "Farmasi", group: "Kesehatan & Sains" },
-  { label: "Bioteknologi", value: "Bioteknologi", group: "Kesehatan & Sains" },
 ];
 
 export const allCategoriesList = [
@@ -378,27 +432,23 @@ export const allCategoriesList = [
 ];
 
 export const allSkillsList = [
-  // Design & Media
   "Figma",
   "Adobe Photoshop",
   "Premiere Pro",
   "Copywriting",
   "Branding",
-  // Business & Finance
   "Business Planning",
   "Financial Modeling",
   "Market Research",
   "Excel / Sheets",
   "Public Speaking",
   "Social Media Marketing",
-  // Tech & Data
   "Python",
   "SQL",
   "React / Next.js",
   "TypeScript",
   "Tableau",
   "SPSS",
-  // Management & Legal
   "Project Management",
   "Legal Drafting",
   "HR Analytics",
@@ -406,16 +456,18 @@ export const allSkillsList = [
 ];
 
 /* ==========================================================================
-   6. COLLABORATIONS DATA
+   10. COLLABORATIONS DATA (WITH MAGANG & KUOTA FIELDS)
    ========================================================================== */
 
 export type Kolaborasi = {
   id: string;
   perusahaan: string;
+  perusahaanId?: string;
   judul: string;
   tipe: "Akademik" | "Magang";
   kategori: string;
   deskripsi: string;
+  persyaratan?: string;
   lokasi: string;
   batasWaktu: string;
   statusModerasi?: "Disetujui" | "Menunggu" | "Ditolak";
@@ -424,17 +476,37 @@ export type Kolaborasi = {
   tingkatKesulitan?: "Pemula" | "Menengah" | "Lanjutan";
   rekomendasiProdi?: string[];
   gajiStipend?: string;
+  
+  // Fitur #3: Field Kuota Peserta
+  kuota: number;
+  kuotaTerisi?: number;
+
+  // Fitur #4: Field Magang vs Akademik
+  durasiKerja?: string;
+  kompensasi?: {
+    tipe: "Berbayar" | "Uang Saku" | "Tidak Berbayar" | "Sertifikat Saja";
+    jumlah?: number | null;
+  };
+  jamKerja?: string;
+  durasiPengerjaan?: string;
+  insentif?: string;
+
+  // Fitur #5 & #15: Mode Publikasi & Draft
+  statusPublikasi?: "Draft" | "Terbit";
+  tipePublikasi?: "Publik" | "Harus Diajukan";
+  updated_at?: string;
 };
 
 export const dummyKolaborasi: Kolaborasi[] = [
   {
     id: "1",
     perusahaan: "Nexora Digital",
+    perusahaanId: "comp-1",
     judul: "Studi Kasus: Optimasi UX Aplikasi Perbankan",
     tipe: "Akademik",
     kategori: "UI/UX & Product Design",
-    deskripsi:
-      "Analisis dan usulkan perbaikan alur onboarding serta aksesibilitas pada aplikasi mobile banking berbasis data pengujian pengguna.",
+    deskripsi: "Analisis dan usulkan perbaikan alur onboarding serta aksesibilitas pada aplikasi mobile banking berbasis data pengujian pengguna.",
+    persyaratan: "Mahasiswa semester 3+, menguasai dasar Figma & Usability Testing.",
     lokasi: "Remote",
     batasWaktu: "20 Agustus 2026",
     statusModerasi: "Disetujui",
@@ -443,15 +515,21 @@ export const dummyKolaborasi: Kolaborasi[] = [
     tingkatKesulitan: "Menengah",
     rekomendasiProdi: ["Sistem Informasi", "Desain Komunikasi Visual", "Teknik Informatika"],
     gajiStipend: "E-Sertifikat + Insentif Riset Rp 1.500.000",
+    kuota: 3,
+    kuotaTerisi: 0,
+    durasiPengerjaan: "1 Semester",
+    insentif: "E-Sertifikat + Insentif Riset Rp 1.500.000",
+    statusPublikasi: "Terbit",
+    tipePublikasi: "Publik",
   },
   {
     id: "2",
     perusahaan: "Vertex Logistics",
+    perusahaanId: "comp-2",
     judul: "Riset: Prediksi Permintaan Gudang Berbasis AI",
     tipe: "Akademik",
     kategori: "Data Science & Analytics",
-    deskripsi:
-      "Membangun model Machine Learning prediktif sederhana untuk kebutuhan pengalokasian stok gudang logistik regional.",
+    deskripsi: "Membangun model Machine Learning prediktif sederhana untuk kebutuhan pengalokasian stok gudang logistik regional.",
     lokasi: "Jakarta",
     batasWaktu: "25 Agustus 2026",
     statusModerasi: "Disetujui",
@@ -460,49 +538,20 @@ export const dummyKolaborasi: Kolaborasi[] = [
     tingkatKesulitan: "Lanjutan",
     rekomendasiProdi: ["Sistem Informasi", "Data Science", "Teknik Informatika", "Teknik Industri"],
     gajiStipend: "Insentif Proyek Rp 2.500.000",
+    kuota: 2,
+    kuotaTerisi: 0,
+    statusPublikasi: "Terbit",
+    tipePublikasi: "Publik",
   },
   {
     id: "3",
-    perusahaan: "Harmoni Retail Group",
-    judul: "Studi Kasus: Strategi Branding & Campaign Media Sosial",
-    tipe: "Akademik",
-    kategori: "Content & Brand Communications",
-    deskripsi:
-      "Merancang konsep pesan komunikasi digital dan perencanaan konten pemasaran omnichannel untuk memperluas jangkauan brand ritel ke Gen-Z.",
-    lokasi: "Remote",
-    batasWaktu: "18 Agustus 2026",
-    statusModerasi: "Disetujui",
-    tags: ["Branding", "Copywriting", "Social Media Marketing", "Public Speaking"],
-    matchScore: 96,
-    tingkatKesulitan: "Pemula",
-    rekomendasiProdi: ["Ilmu Komunikasi", "Desain Komunikasi Visual", "Pemasaran", "Hubungan Masyarakat"],
-    gajiStipend: "E-Sertifikat + Hadiah Produk Retail & Insentif",
-  },
-  {
-    id: "4",
-    perusahaan: "Nusantara Capital Partners",
-    judul: "Magang: Business Strategy & Financial Analyst",
-    tipe: "Magang",
-    kategori: "Finance & Financial Modeling",
-    deskripsi:
-      "Membantu tim investasi menyusun analisis kelayakan finansial dan riset persaingan industri pasar berkembang.",
-    lokasi: "Jakarta Pusat",
-    batasWaktu: "31 Agustus 2026",
-    statusModerasi: "Disetujui",
-    tags: ["Financial Modeling", "Business Planning", "Excel / Sheets", "Market Research"],
-    matchScore: 97,
-    tingkatKesulitan: "Menengah",
-    rekomendasiProdi: ["Manajemen", "Akuntansi", "Ekonomi Pembangunan", "Bisnis Digital"],
-    gajiStipend: "Rp 4.000.000 / bulan",
-  },
-  {
-    id: "5",
-    perusahaan: "Skyline Fintech",
+    perusahaan: "Nexora Digital",
+    perusahaanId: "comp-1",
     judul: "Magang: Frontend Developer (Next.js & Tailwind)",
     tipe: "Magang",
     kategori: "Software Development",
-    deskripsi:
-      "Membantu tim engineer memproduksi komponen UI dashboard transaksi finansial secara responsif dan performan.",
+    deskripsi: "Membantu tim engineer memproduksi komponen UI dashboard transaksi finansial secara responsif dan performan.",
+    persyaratan: "Paham React, Next.js App Router, Tailwind CSS, & TypeScript.",
     lokasi: "Hybrid",
     batasWaktu: "30 Agustus 2026",
     statusModerasi: "Disetujui",
@@ -511,117 +560,21 @@ export const dummyKolaborasi: Kolaborasi[] = [
     tingkatKesulitan: "Menengah",
     rekomendasiProdi: ["Sistem Informasi", "Teknik Informatika", "Ilmu Komputer"],
     gajiStipend: "Rp 3.500.000 / bulan",
-  },
-  {
-    id: "6",
-    perusahaan: "Cakra Health Tech",
-    judul: "Magang: Data Analyst Telemedisin",
-    tipe: "Magang",
-    kategori: "Data Science & Analytics",
-    deskripsi:
-      "Mengolah data rekam konsul medis anonim untuk mendukung insight peningkatan layanan aplikasi kesehatan internal.",
-    lokasi: "Jakarta",
-    batasWaktu: "28 Agustus 2026",
-    statusModerasi: "Disetujui",
-    tags: ["SQL", "Tableau", "Data Analysis", "Healthcare Tech"],
-    matchScore: 91,
-    tingkatKesulitan: "Menengah",
-    rekomendasiProdi: ["Sistem Informasi", "Data Science", "Kesehatan Masyarakat", "Farmasi"],
-    gajiStipend: "Rp 3.000.000 / bulan",
-  },
-  {
-    id: "7",
-    perusahaan: "LegalTech Mitra Utama",
-    judul: "Studi Kasus: Analisis Regulasi Pelindungan Data Pribadi (UU PDP)",
-    tipe: "Akademik",
-    kategori: "Legal & Regulatory Affairs",
-    deskripsi:
-      "Menyusun draf rekomendasi kepatuhan tata kelola data perusahaan startup terhadap ketentuan UU PDP Indonesia.",
-    lokasi: "Remote",
-    batasWaktu: "08 September 2026",
-    statusModerasi: "Disetujui",
-    tags: ["Legal Drafting", "Cyber Law", "Compliance", "UU PDP"],
-    matchScore: 93,
-    tingkatKesulitan: "Menengah",
-    rekomendasiProdi: ["Hukum", "Hubungan Internasional", "Sistem Informasi"],
-    gajiStipend: "Insentif Riset Rp 2.000.000",
-  },
-  {
-    id: "8",
-    perusahaan: "Kreatif Studio Indonesia",
-    judul: "Studi Kasus: Redesign Packaging & Visual Identity Produk Lokal",
-    tipe: "Akademik",
-    kategori: "UI/UX & Product Design",
-    deskripsi:
-      "Merancang ulang identitas visual, kemasan produk, dan ilustrasi digital untuk brand kuliner lokal Nusantara.",
-    lokasi: "Remote",
-    batasWaktu: "12 September 2026",
-    statusModerasi: "Disetujui",
-    tags: ["Adobe Photoshop", "Branding", "Desain Produk", "Illustration"],
-    matchScore: 94,
-    tingkatKesulitan: "Pemula",
-    rekomendasiProdi: ["Desain Komunikasi Visual", "Desain Produk", "Pemasaran"],
-    gajiStipend: "E-Sertifikat + Award Portofolio Terbaik",
-  },
-  {
-    id: "9",
-    perusahaan: "TalentFlow Consulting",
-    judul: "Riset: Evaluasi Budaya Kerja Hybrid & Employee Engagement",
-    tipe: "Akademik",
-    kategori: "Human Resources & Psychology",
-    deskripsi:
-      "Melakukan survei dan analisis indikator kepuasan karyawan pada skema kerja hybrid pasca-pandemi.",
-    lokasi: "Remote",
-    batasWaktu: "15 September 2026",
-    statusModerasi: "Disetujui",
-    tags: ["HR Analytics", "Psikologi", "Survey Research", "SPSS"],
-    matchScore: 92,
-    tingkatKesulitan: "Pemula",
-    rekomendasiProdi: ["Psikologi", "Manajemen", "Ilmu Komunikasi"],
-    gajiStipend: "Insentif Riset Rp 1.800.000",
+    kuota: 2,
+    kuotaTerisi: 1,
+    durasiKerja: "6 bulan",
+    kompensasi: {
+      tipe: "Uang Saku",
+      jumlah: 3500000,
+    },
+    jamKerja: "Full-time (40 jam/minggu)",
+    statusPublikasi: "Terbit",
+    tipePublikasi: "Publik",
   },
 ];
 
 /* ==========================================================================
-   7. BADGES LIST
-   ========================================================================== */
-
-export type Badge = {
-  id: string;
-  nama: string;
-  deskripsi: string;
-  check: (totalPengajuan: number, totalDiterima: number) => boolean;
-};
-
-export const badgeList: Badge[] = [
-  {
-    id: "first-collab",
-    nama: "First Collaboration",
-    deskripsi: "Mengajukan kolaborasi pertama kali",
-    check: (total) => total >= 1,
-  },
-  {
-    id: "rising-star",
-    nama: "Rising Star",
-    deskripsi: "Pengajuan pertama diterima perusahaan",
-    check: (_, diterima) => diterima >= 1,
-  },
-  {
-    id: "quick-learner",
-    nama: "Quick Learner",
-    deskripsi: "Mengajukan 3 kolaborasi berbeda",
-    check: (total) => total >= 3,
-  },
-  {
-    id: "consistent-contributor",
-    nama: "Consistent Contributor",
-    deskripsi: "2 kolaborasi diterima oleh perusahaan",
-    check: (_, diterima) => diterima >= 2,
-  },
-];
-
-/* ==========================================================================
-   8. PUBLIC USER PROFILES & PROFILE SEARCH LOOKUP
+   11. PUBLIC USER PROFILES
    ========================================================================== */
 
 export type PublicUserProfile = {
@@ -655,20 +608,6 @@ export const dummyPublicUsers: Record<string, PublicUserProfile> = {
     minatKategori: ["UI/UX & Product Design", "Software Development"],
     level: 1,
   },
-  julius: {
-    id: "wijaya",
-    nama: "andi wijaya ",
-    email: "andi.wijaya@student.umn.ac.id",
-    universitas: "Universitas Multimedia Nusantara",
-    prodi: "Sistem Informasi",
-    semester: "Semester 3",
-    sistemKerja: "Remote",
-    preferensiTipe: "Akademik & Proyek",
-    ringkasan: "Passionate Data Analyst & Tech Enthusiast.",
-    skills: ["Premiere Pro", "Public Speaking", "SQL", "Python"],
-    minatKategori: ["Legal & Regulatory Affairs", "Content & Brand Communications"],
-    level: 1,
-  },
   siti: {
     id: "siti",
     nama: "Siti Rahma",
@@ -697,151 +636,8 @@ export const dummyPublicUsers: Record<string, PublicUserProfile> = {
     minatKategori: ["Software Development", "Cyber Security & Cloud"],
     level: 2,
   },
-  andi: {
-    id: "andi",
-    nama: "Andi Pratama",
-    email: "andi.pratama@ugm.ac.id",
-    universitas: "Universitas Gadjah Mada",
-    prodi: "Teknik Informatika",
-    semester: "Semester 5",
-    sistemKerja: "Remote",
-    preferensiTipe: "Akademik & Magang",
-    ringkasan: "Backend Developer & AI Practitioner.",
-    skills: ["Python", "SQL", "Project Management"],
-    minatKategori: ["Software Development", "Data Science & Analytics"],
-    level: 1,
-  },
-  maya: {
-    id: "maya",
-    nama: "Maya Anggraini",
-    email: "maya.a@its.ac.id",
-    universitas: "Institut Teknologi Sepuluh Nopember",
-    prodi: "Data Science",
-    semester: "Semester 3",
-    sistemKerja: "Remote",
-    preferensiTipe: "Akademik",
-    ringkasan: "Data Enthusiast specializing in Machine Learning.",
-    skills: ["Python", "Tableau", "SPSS", "SQL"],
-    minatKategori: ["Data Science & Analytics"],
-    level: 1,
-  },
-  rizky: {
-    id: "rizky",
-    nama: "Rizky Febrian",
-    email: "rizky.f@unair.ac.id",
-    universitas: "Universitas Airlangga",
-    prodi: "Manajemen",
-    semester: "Semester 5",
-    sistemKerja: "Onsite / Hybrid",
-    preferensiTipe: "Magang",
-    ringkasan: "Marketing Strategy & Business Development Student.",
-    skills: ["Business Planning", "Market Research", "Social Media Marketing"],
-    minatKategori: ["Business Strategy & Marketing", "Finance & Financial Modeling"],
-    level: 1,
-  },
-  nadia: {
-    id: "nadia",
-    nama: "Nadia Putri",
-    email: "nadia.p@unpad.ac.id",
-    universitas: "Universitas Padjadjaran",
-    prodi: "Akuntansi",
-    semester: "Semester 5",
-    sistemKerja: "Hybrid",
-    preferensiTipe: "Magang & Akademik",
-    ringkasan: "Financial Modeling & Corporate Accounting Student.",
-    skills: ["Financial Modeling", "Excel / Sheets", "Market Research"],
-    minatKategori: ["Finance & Financial Modeling"],
-    level: 1,
-  },
-  dimas: {
-    id: "dimas",
-    nama: "Dimas Setyo",
-    email: "dimas.s@undip.ac.id",
-    universitas: "Universitas Diponegoro",
-    prodi: "Teknik Industri",
-    semester: "Semester 7",
-    sistemKerja: "Remote",
-    preferensiTipe: "Akademik",
-    ringkasan: "Supply Chain & Operations Enthusiast.",
-    skills: ["Supply Chain Ops", "Project Management", "Excel / Sheets"],
-    minatKategori: ["Supply Chain & Logistics", "Business Strategy & Marketing"],
-    level: 2,
-  },
-  aurelia: {
-    id: "aurelia",
-    nama: "Aurelia Clarissa",
-    email: "aurelia.c@binus.ac.id",
-    universitas: "Universitas Bina Nusantara",
-    prodi: "Bisnis Digital",
-    semester: "Semester 3",
-    sistemKerja: "Remote",
-    preferensiTipe: "Magang",
-    ringkasan: "Digital Marketer & E-Commerce Strategist.",
-    skills: ["Social Media Marketing", "Copywriting", "Branding"],
-    minatKategori: ["Business Strategy & Marketing", "Content & Brand Communications"],
-    level: 1,
-  },
-  farhan: {
-    id: "farhan",
-    nama: "Farhan Ramadhan",
-    email: "farhan.r@telkomuniversity.ac.id",
-    universitas: "Telkom University",
-    prodi: "Cyber Security",
-    semester: "Semester 5",
-    sistemKerja: "Remote",
-    preferensiTipe: "Proyek & Magang",
-    ringkasan: "Cybersecurity Analyst & Ethical Hacking Trainee.",
-    skills: ["Python", "SQL", "Project Management"],
-    minatKategori: ["Cyber Security & Cloud", "Software Development"],
-    level: 2,
-  },
-  dewa: {
-    id: "dewa",
-    nama: "Dewa Kusuma",
-    email: "dewa.k@ub.ac.id",
-    universitas: "Universitas Brawijaya",
-    prodi: "Ilmu Komputer",
-    semester: "Semester 5",
-    sistemKerja: "Hybrid",
-    preferensiTipe: "Magang",
-    ringkasan: "Fullstack Web & Mobile App Developer.",
-    skills: ["React / Next.js", "TypeScript", "Python"],
-    minatKategori: ["Software Development"],
-    level: 1,
-  },
-  jessica: {
-    id: "jessica",
-    nama: "Jessica Tan",
-    email: "jessica.t@uph.edu",
-    universitas: "Universitas Pelita Harapan",
-    prodi: "Desain Produk",
-    semester: "Semester 3",
-    sistemKerja: "Remote",
-    preferensiTipe: "Akademik & Proyek",
-    ringkasan: "Industrial & Visual Product Designer.",
-    skills: ["Adobe Photoshop", "Branding", "Figma"],
-    minatKategori: ["UI/UX & Product Design"],
-    level: 1,
-  },
-  kevin: {
-    id: "kevin",
-    nama: "Kevin Wijaya",
-    email: "kevin.w@atmajaya.ac.id",
-    universitas: "Universitas Katolik Indonesia Atma Jaya",
-    prodi: "Hukum",
-    semester: "Semester 7",
-    sistemKerja: "Remote",
-    preferensiTipe: "Akademik",
-    ringkasan: "Corporate & Cyber Law Researcher.",
-    skills: ["Legal Drafting", "Public Speaking"],
-    minatKategori: ["Legal & Regulatory Affairs"],
-    level: 2,
-  },
 };
 
-/**
- * Helper untuk mengambil profil pengguna berdasarkan ID / Nama pencarian URL slug.
- */
 export function getUserProfileById(id: string): PublicUserProfile {
   const normalizedId = id.toLowerCase().trim();
 
@@ -849,7 +645,6 @@ export function getUserProfileById(id: string): PublicUserProfile {
     return dummyPublicUsers[normalizedId];
   }
 
-  // Fallback pencarian parsial berdasarkan nama jika slug tidak persis sama
   const matchedKey = Object.keys(dummyPublicUsers).find((key) =>
     dummyPublicUsers[key].nama.toLowerCase().includes(normalizedId)
   );
@@ -858,7 +653,6 @@ export function getUserProfileById(id: string): PublicUserProfile {
     return dummyPublicUsers[matchedKey];
   }
 
-  // Fallback default jika ID acak dimasukkan
   return {
     id: normalizedId,
     nama: normalizedId.charAt(0).toUpperCase() + normalizedId.slice(1),
