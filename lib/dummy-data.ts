@@ -668,3 +668,53 @@ export function getUserProfileById(id: string): PublicUserProfile {
     level: 1,
   };
 }
+
+/* ==========================================================================
+   BADGE LIST
+   ========================================================================== */
+
+export type Badge = {
+  id: string;
+  nama: string;
+  deskripsi: string;
+  check: (totalPengajuan: number, diterima: number) => boolean;
+};
+
+export const badgeList: Badge[] = [
+  {
+    id: "first-step",
+    nama: "First Step",
+    deskripsi: "Berhasil mengajukan kolaborasi pertama kali di BridgeU.",
+    check: (total) => total >= 1,
+  },
+  {
+    id: "rising-star",
+    nama: "Rising Star",
+    deskripsi: "Telah mengajukan 5 kolaborasi — terus semangat!",
+    check: (total) => total >= 5,
+  },
+  {
+    id: "consistent-contributor",
+    nama: "Consistent Contributor",
+    deskripsi: "Aktif mengajukan 10 kolaborasi di berbagai perusahaan.",
+    check: (total) => total >= 10,
+  },
+  {
+    id: "accepted-pro",
+    nama: "Accepted Pro",
+    deskripsi: "Berhasil diterima atau menyelesaikan 1 kolaborasi.",
+    check: (_total, diterima) => diterima >= 1,
+  },
+  {
+    id: "triple-winner",
+    nama: "Triple Winner",
+    deskripsi: "Sudah diterima atau menyelesaikan 3 kolaborasi berbeda.",
+    check: (_total, diterima) => diterima >= 3,
+  },
+  {
+    id: "bridge-champion",
+    nama: "Bridge Champion",
+    deskripsi: "Menyelesaikan atau diterima di 5 kolaborasi — kamu adalah champion!",
+    check: (_total, diterima) => diterima >= 5,
+  },
+];
