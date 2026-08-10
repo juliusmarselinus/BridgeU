@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Navbar } from "@/components/Navbar";
 
 type Pengajuan = {
   id: string;
@@ -34,10 +33,7 @@ export default function StatusPage() {
 
   return (
     <main>
-      {/* NAVBAR */}
-      <Navbar />
-
-      <div className="mx-auto max-w-4xl px-6 py-12">
+      <div className="mx-auto max-w-4xl px-6 pt-24 pb-12">
         <h1 className="font-display text-2xl font-semibold text-ink">
           Status Pengajuan
         </h1>

@@ -71,7 +71,8 @@ export async function proxy(req: NextRequest) {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/status") ||
     pathname.startsWith("/kolaborasi") ||
-    pathname.startsWith("/portfolio");
+    pathname.startsWith("/portfolio") ||
+    pathname.startsWith("/profile");
 
   let redirectTarget: string | null = null;
 

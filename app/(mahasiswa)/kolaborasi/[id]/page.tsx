@@ -6,7 +6,6 @@ import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { dummyKolaborasi } from "@/lib/dummy-data";
 import { ApplyModal } from "@/components/ApplyModal";
-import { Navbar } from "@/components/Navbar";
 
 type StoredUser = {
   nama: string;
@@ -56,11 +55,7 @@ export default function DetailKolaborasiPage() {
   }
 
   return (
-    <main className="min-h-screen bg-paper pb-32 text-ink font-sans">
-      {/* NAVBAR */}
-      <div className="sticky top-0 z-50 bg-paper/90 backdrop-blur-md border-b border-steel/10">
-        <Navbar />
-      </div>
+    <main className="min-h-screen bg-paper pt-24 pb-32 text-ink font-sans">
 
       {/* TOP HEADER CONTAINER */}
       <div className="mx-auto max-w-4xl px-6 pt-10 pb-6">

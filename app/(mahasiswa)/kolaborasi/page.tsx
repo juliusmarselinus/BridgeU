@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { dummyKolaborasi, Kolaborasi } from "@/lib/dummy-data";
-import { Navbar } from "@/components/Navbar";
 import { ApplyModal } from "@/components/ApplyModal";
 
 type StoredUser = {
@@ -141,9 +140,8 @@ export default function KolaborasiPage() {
 
   return (
     <main className="min-h-screen bg-paper pb-24 font-sans text-ink">
-      <div className="-mt-20 w-full bg-paper">
-        <div className="relative w-full bg-gradient-to-b from-ink via-ink/90 to-paper pt-28 pb-8">
-          <div className="relative z-40"><Navbar /></div>
+      <div className="w-full bg-paper">
+        <div className="relative w-full bg-gradient-to-b from-ink via-ink/90 to-paper pt-10 pb-8">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-4 space-y-2">
             <div className="inline-flex items-center gap-2 rounded-full bg-bridge-gold/20 px-3.5 py-1 text-xs font-mono font-bold text-bridge-gold border border-bridge-gold/40 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-bridge-gold animate-ping" />
