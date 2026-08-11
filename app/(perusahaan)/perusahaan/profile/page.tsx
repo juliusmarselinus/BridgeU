@@ -2,8 +2,11 @@
 
 import Image from "next/image";
 import { useCompanyProfile } from "./hooks/useCompanyProfile";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePerusahaanPage() {
+  const router = useRouter();
   const {
     profile,
     formData,
@@ -13,10 +16,26 @@ export default function ProfilePerusahaanPage() {
     isLoading,
     isSubmitting,
     showSuccessToast,
+    setShowSuccessToast,
     sektorOptions,
     kotaOptions,
     handleSubmit,
   } = useCompanyProfile();
+
+  const handleLogout = async () => {
+    const confirmLogout = confirm("Apakah Anda yakin ingin keluar dari akun?");
+    if (!confirmLogout) return;
+
+    localStorage.removeItem("bridgeu_company_profile");
+    localStorage.removeItem("bridgeu_company_kolaborasi");
+
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      router.push("/");
+    } else {
+      alert("Gagal keluar: " + error.message);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -36,12 +55,13 @@ export default function ProfilePerusahaanPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
-      {/* Toast Notifikasi Sukses */}
-      {showSuccessToast && (
-        <div className="p-4 mb-4 text-sm text-emerald-800 rounded-xl bg-emerald-50 border border-emerald-200 font-mono">
-          <span className="font-bold">Berhasil!</span> Profil perusahaan berhasil diperbarui.
-        </div>
-      )}
+      {/* Toast Notifikasi Sukses -> Diganti dengan Modal Popup Sukses */}
+      <SuccessModal
+        isOpen={showSuccessToast}
+        title="Profil Diperbarui"
+        message="Profil perusahaan Anda telah berhasil diperbarui."
+        onClose={() => setShowSuccessToast(false)}
+      />
 
       {/* Header Profile */}
       <div className="bg-white rounded-2xl border border-steel/15 p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -304,9 +324,54 @@ export default function ProfilePerusahaanPage() {
                 Akun terverifikasi resmi oleh administrator dapat mempublikasikan peluang proyek kolaborasi ke mahasiswa secara langsung.
               </p>
             </div>
+
+            <button
+              onClick={handleLogout}
+              className="w-full py-3 px-5 text-xs font-mono font-bold text-red-600 border border-red-200 rounded-full bg-red-50 hover:bg-red-100 transition shadow-sm flex items-center justify-center gap-2"
+            >
+              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Keluar dari Akun
+            </button>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+interface SuccessModalProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onClose: () => void;
+}
+
+function SuccessModal({ isOpen, title, message, onClose }: SuccessModalProps) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-sans text-xs">
+      <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-steel/20 text-center space-y-4 animate-fade-in animate-duration-200">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="space-y-1">
+          <h3 className="font-display text-base font-bold text-ink">{title}</h3>
+          <p className="font-mono text-[11px] text-steel leading-relaxed">{message}</p>
+        </div>
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-full bg-ink py-2.5 font-mono text-[10px] font-bold text-white hover:bg-steel transition"
+          >
+            Selesai
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

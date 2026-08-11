@@ -88,6 +88,7 @@ export function useCompanyProfile() {
     isLoading,
     isSubmitting,
     showSuccessToast,
+    setShowSuccessToast,
     sektorOptions,
     kotaOptions,
     handleSubmit,

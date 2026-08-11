@@ -13,7 +13,7 @@ export const pelamarService = {
         deskripsi,
         status_moderasi,
         slot,
-        kategori_minat ( nama_kategori ),
+        kategori_minat:kategori_id ( nama_kategori ),
         pendaftaran_kolaborasi (
           id,
           kolaborasi_id,

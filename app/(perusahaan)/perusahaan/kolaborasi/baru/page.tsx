@@ -1,154 +1,105 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { companyService, companyServiceExtended } from "../../dashboard/services/companyServices";
-import { KategoriMinatOption, KotaOption } from "../../dashboard/types/company";
-
-interface ProdiOption {
-  id: number;
-  nama_prodi: string;
-  jenjang: string;
-}
-
-interface SkillOption {
-  id: number;
-  nama_skill: string;
-}
+import { useKolaborasiBaru } from "./hooks/useKolaborasiBaru";
+import { SuccessModal } from "./components/SuccessModal";
 
 export default function TambahKolaborasiPage() {
-  const router = useRouter();
-  const [perusahaanId, setPerusahaanId] = useState<string | null>(null);
-  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Master Options
-  const [kategoriList, setKategoriList] = useState<KategoriMinatOption[]>([]);
-  const [kotaList, setKotaList] = useState<KotaOption[]>([]);
-  const [prodiList, setProdiList] = useState<ProdiOption[]>([]);
-  const [skillList, setSkillList] = useState<SkillOption[]>([]);
-
-  // Form State
-  const [formData, setFormData] = useState({
-    judul: "",
-    tipe: "Akademik" as "Akademik" | "Magang",
-    kategori_id: 1,
-    lokasi_id: 1,
-    tingkat_kesulitan: "Menengah" as "Pemula" | "Menengah" | "Lanjut",
-    slot: 5,
-    batas_waktu: "",
-    gaji_stipend: "",
-    deskripsi: "",
-    selectedProdiIds: [] as number[],
-    selectedSkillIds: [] as number[],
-  });
-
-  useEffect(() => {
-    async function loadOptions() {
-      setIsLoadingOptions(true);
-      try {
-        const [profile, categories, kotas, prodis, skills] = await Promise.all([
-          companyService.fetchCompanyProfile(),
-          companyService.fetchKategoriMinat(),
-          companyService.fetchKotaList(),
-          companyServiceExtended.fetchProdiList(),
-          companyServiceExtended.fetchSkillsList(),
-        ]);
-
-        if (profile) {
-          setPerusahaanId(profile.user_id);
-        }
-
-        setKategoriList(categories);
-        setKotaList(kotas);
-        setProdiList(prodis);
-        setSkillList(skills);
-
-        if (categories.length > 0) {
-          setFormData((prev) => ({ ...prev, kategori_id: categories[0].id }));
-        }
-        if (kotas.length > 0) {
-          setFormData((prev) => ({ ...prev, lokasi_id: kotas[0].id }));
-        }
-      } catch (err) {
-        console.error("Gagal memuat opsi form:", err);
-      } finally {
-        setIsLoadingOptions(false);
-      }
-    }
-
-    loadOptions();
-  }, []);
-
-  // Checkbox Target Prodi Toggle
-  const toggleProdi = (id: number) => {
-    setFormData((prev) => {
-      const exists = prev.selectedProdiIds.includes(id);
-      return {
-        ...prev,
-        selectedProdiIds: exists
-          ? prev.selectedProdiIds.filter((pId) => pId !== id)
-          : [...prev.selectedProdiIds, id],
-      };
-    });
-  };
-
-  // Checkbox Skill Toggle
-  const toggleSkill = (id: number) => {
-    setFormData((prev) => {
-      const exists = prev.selectedSkillIds.includes(id);
-      return {
-        ...prev,
-        selectedSkillIds: exists
-          ? prev.selectedSkillIds.filter((sId) => sId !== id)
-          : [...prev.selectedSkillIds, id],
-      };
-    });
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-
-    if (!perusahaanId) {
-      alert("Sesi profil perusahaan tidak ditemukan. Silakan login kembali.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    const success = await companyServiceExtended.createFullKolaborasi(
-      {
-        judul: formData.judul,
-        tipe: formData.tipe,
-        kategori_id: formData.kategori_id,
-        deskripsi: formData.deskripsi,
-        lokasi_id: formData.lokasi_id,
-        batas_waktu: formData.batas_waktu,
-        tingkat_kesulitan: formData.tingkat_kesulitan,
-        gaji_stipend: formData.gaji_stipend,
-        slot: formData.slot,
-        target_prodi_ids: formData.selectedProdiIds,
-        skill_ids: formData.selectedSkillIds,
-      },
-      perusahaanId
-    );
-
-    setIsSubmitting(false);
-
-    if (success) {
-      alert("Proyek kolaborasi berhasil diajukan dan sedang dalam proses moderasi admin.");
-      router.push("/perusahaan/kolaborasi");
-    } else {
-      alert("Gagal mempublikasikan proyek. Periksa kembali kelengkapan data.");
-    }
-  };
+  const {
+    perusahaanId,
+    isLoadingOptions,
+    isSubmitting,
+    statusVerifikasi,
+    successModal,
+    setSuccessModal,
+    kategoriList,
+    kotaList,
+    prodiList,
+    skillList,
+    isKotaModalOpen,
+    setIsKotaModalOpen,
+    isProdiModalOpen,
+    setIsProdiModalOpen,
+    isSkillModalOpen,
+    setIsSkillModalOpen,
+    isKategoriModalOpen,
+    setIsKategoriModalOpen,
+    kotaSearch,
+    setKotaSearch,
+    prodiSearch,
+    setProdiSearch,
+    skillSearch,
+    setSkillSearch,
+    kategoriSearch,
+    setKategoriSearch,
+    isCreatingCustom,
+    formData,
+    setFormData,
+    kategoriLimit,
+    setKategoriLimit,
+    prodiLimit,
+    setProdiLimit,
+    skillLimit,
+    setSkillLimit,
+    handleSubmit,
+    toggleProdi,
+    toggleSkill,
+    toggleKategori,
+    handleAddCustomKategori,
+    handleAddCustomProdi,
+    handleAddCustomSkill,
+    visibleKategoris,
+    visibleProdis,
+    visibleSkills,
+    searchedKotaOptions,
+    searchedKategoriOptions,
+    isKategoriSearchEmpty,
+    searchedProdiOptions,
+    isProdiSearchEmpty,
+    searchedSkillOptions,
+    isSkillSearchEmpty,
+    recKategoriIds,
+    router,
+    selectedKotaObj,
+    sortedKategoris,
+    sortedProdis,
+    sortedSkills,
+    top10RecProdiIds,
+    top10RecSkillIds,
+  } = useKolaborasiBaru();
 
   if (isLoadingOptions) {
     return (
       <div className="flex h-96 items-center justify-center font-mono text-xs text-steel">
         Memuat formulir pengajuan kolaborasi...
       </div>
+    );
+  }
+
+  if (statusVerifikasi !== "Terverifikasi") {
+    return (
+      <main className="mx-auto max-w-2xl px-4 pt-16 pb-16 text-center font-sans">
+        <div className="rounded-2xl border border-dashed border-red-300 bg-red-50/50 p-8 shadow-sm">
+          <svg className="mx-auto h-12 w-12 text-red-500/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <h2 className="mt-4 font-display text-lg font-bold text-ink">
+            Akses Terkunci
+          </h2>
+          <p className="mt-2 font-mono text-xs text-steel max-w-md mx-auto leading-relaxed">
+            Akun perusahaan Anda belum diverifikasi oleh administrator. Untuk mengelola kolaborasi, melihat pelamar, atau mengubah pengaturan, akun Anda harus berada dalam status <span className="text-emerald-700 font-bold">Terverifikasi</span> (Status saat ini: <strong className="text-red-700">{statusVerifikasi}</strong>). Harap tunggu proses verifikasi oleh administrator.
+          </p>
+          <div className="mt-6">
+            <Link
+              href="/perusahaan/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-full bg-ink px-6 py-2.5 font-mono text-xs font-bold text-paper hover:bg-steel transition shadow-sm"
+            >
+              Kembali ke Dashboard
+            </Link>
+          </div>
+        </div>
+      </main>
     );
   }
 
@@ -160,7 +111,9 @@ export default function TambahKolaborasiPage() {
           <Link href="/perusahaan/kolaborasi" className="hover:text-ink transition">
             Kelola Kolaborasi
           </Link>
-          <span>/</span>
+          <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
           <span className="text-ink font-medium">Buka Kolaborasi Baru</span>
         </div>
         <h1 className="mt-2 font-display text-3xl font-bold text-ink">
@@ -189,7 +142,7 @@ export default function TambahKolaborasiPage() {
               value={formData.judul}
               onChange={(e) => setFormData({ ...formData, judul: e.target.value })}
               placeholder="Contoh: Riset Implementasi AI untuk Optimasi Logistik"
-              className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans"
+              className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans bg-white"
             />
           </div>
 
@@ -212,19 +165,71 @@ export default function TambahKolaborasiPage() {
 
             <div>
               <label className="block font-mono text-xs font-medium text-ink mb-1">
-                Kategori Minat *
+                Kota Lokasi *
               </label>
-              <select
-                value={formData.kategori_id}
-                onChange={(e) => setFormData({ ...formData, kategori_id: Number(e.target.value) })}
-                className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm bg-white outline-none focus:border-bridge-gold font-sans"
+              <button
+                type="button"
+                onClick={() => setIsKotaModalOpen(true)}
+                className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm bg-white outline-none focus:border-bridge-gold font-sans text-left flex items-center justify-between hover:bg-steel/5 transition"
               >
-                {kategoriList.map((kat) => (
-                  <option key={kat.id} value={kat.id}>
-                    {kat.nama_kategori}
-                  </option>
-                ))}
-              </select>
+                <span className="truncate">{selectedKotaObj?.nama_kota || "Pilih Kota Lokasi"}</span>
+                <svg className="h-4 w-4 text-steel/50 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Kategori Minat (Multi-select / Top 10 with scrolling) */}
+          <div>
+            <label className="block font-mono text-xs font-medium text-ink mb-2">
+              Kategori Minat (Pilih minimal satu) *
+            </label>
+            <div className="p-3 border border-steel/15 rounded-xl bg-steel/5 space-y-3">
+              <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
+                {visibleKategoris.map((kat) => {
+                  const isSelected = formData.selectedKategoriIds.includes(kat.id);
+                  const isRec = recKategoriIds.includes(kat.id);
+                  return (
+                    <button
+                      type="button"
+                      key={kat.id}
+                      onClick={() => toggleKategori(kat.id)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition border ${
+                        isSelected
+                          ? "bg-ink text-paper font-semibold border-ink"
+                          : isRec
+                          ? "bg-emerald-50/30 text-emerald-800 border-emerald-500/20 hover:bg-emerald-50/50"
+                          : "bg-white text-steel hover:bg-steel/10 border-steel/20"
+                      }`}
+                    >
+                      {kat.nama_kategori} {isSelected ? "✓" : isRec ? "+" : "+"}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {sortedKategoris.length > kategoriLimit && (
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setKategoriLimit(prev => prev + 10)}
+                    className="font-mono text-[10px] text-steel hover:text-ink font-bold transition"
+                  >
+                    Tampilkan lebih banyak (+10)
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setIsKategoriModalOpen(true)}
+                className="font-mono text-[10px] text-bridge-gold font-bold hover:underline"
+              >
+                Tidak ada di list? Cari Kategori Minat
+              </button>
             </div>
           </div>
 
@@ -238,35 +243,18 @@ export default function TambahKolaborasiPage() {
               value={formData.deskripsi}
               onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
               placeholder="Jelaskan gambaran umum proyek, tanggung jawab mahasiswa, serta luaran yang diharapkan..."
-              className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans leading-relaxed"
+              className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans leading-relaxed bg-white"
             />
           </div>
         </div>
 
-        {/* Section 2: Ketentuan & Lokasi */}
+        {/* Section 2: Ketentuan */}
         <div className="rounded-2xl border border-steel/15 bg-white p-6 shadow-sm space-y-4">
           <h2 className="font-display text-lg font-bold text-ink border-b border-steel/10 pb-3">
-            2. Ketentuan & Lokasi Kerja
+            2. Ketentuan Proyek
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block font-mono text-xs font-medium text-ink mb-1">
-                Kota Lokasi *
-              </label>
-              <select
-                value={formData.lokasi_id}
-                onChange={(e) => setFormData({ ...formData, lokasi_id: Number(e.target.value) })}
-                className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm bg-white outline-none focus:border-bridge-gold font-sans"
-              >
-                {kotaList.map((k) => (
-                  <option key={k.id} value={k.id}>
-                    {k.nama_kota}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div>
               <label className="block font-mono text-xs font-medium text-ink mb-1">
                 Tingkat Kesulitan
@@ -297,12 +285,10 @@ export default function TambahKolaborasiPage() {
                 required
                 value={formData.slot}
                 onChange={(e) => setFormData({ ...formData, slot: Number(e.target.value) })}
-                className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans"
+                className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans bg-white"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-mono text-xs font-medium text-ink mb-1">
                 Batas Waktu Pendaftaran *
@@ -312,110 +298,541 @@ export default function TambahKolaborasiPage() {
                 required
                 value={formData.batas_waktu}
                 onChange={(e) => setFormData({ ...formData, batas_waktu: e.target.value })}
-                className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans"
-              />
-            </div>
-
-            <div>
-              <label className="block font-mono text-xs font-medium text-ink mb-1">
-                Gaji / Stipend (Opsional)
-              </label>
-              <input
-                type="text"
-                value={formData.gaji_stipend}
-                onChange={(e) => setFormData({ ...formData, gaji_stipend: e.target.value })}
-                placeholder="Contoh: Rp 2.000.000 / bulan"
-                className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans"
+                className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans bg-white"
               />
             </div>
           </div>
+
+          <div>
+            <label className="block font-mono text-xs font-medium text-ink mb-1">
+              Gaji / Stipend (Opsional)
+            </label>
+            <input
+              type="text"
+              value={formData.gaji_stipend}
+              onChange={(e) => setFormData({ ...formData, gaji_stipend: e.target.value })}
+              placeholder="Contoh: Rp 2.000.000 / bulan"
+              className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans bg-white"
+            />
+          </div>
         </div>
 
-        {/* Section 3: Target Prodi & Required Skills */}
+        {/* Section 3: Target Prodi & Skills */}
         <div className="rounded-2xl border border-steel/15 bg-white p-6 shadow-sm space-y-6">
           <h2 className="font-display text-lg font-bold text-ink border-b border-steel/10 pb-3">
-            3. Target Mahasiswa & Kualifikasi
+            3. Kualifikasi Mahasiswa
           </h2>
 
           {/* Target Prodi */}
           <div>
-            <label className="block font-mono text-xs font-medium text-ink mb-2">
-              Target Program Studi (Opsional)
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto p-2 border border-steel/15 rounded-xl bg-steel/5">
-              {prodiList.map((prodi) => {
-                const isSelected = formData.selectedProdiIds.includes(prodi.id);
-                return (
+            <div className="flex items-center justify-between mb-2">
+              <label className="block font-mono text-xs font-medium text-ink">
+                Target Program Studi
+              </label>
+              {top10RecProdiIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      selectedProdiIds: Array.from(new Set([...prev.selectedProdiIds, ...top10RecProdiIds]))
+                    }));
+                  }}
+                  className="font-mono text-[10px] font-bold text-emerald-700 hover:text-emerald-800 transition"
+                >
+                  + Pilih Semua Rekomendasi ({top10RecProdiIds.length})
+                </button>
+              )}
+            </div>
+
+            <div className="p-2.5 border border-steel/15 rounded-xl bg-steel/5 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                {visibleProdis.length === 0 ? (
+                  <div className="col-span-full py-4 text-center font-mono text-[11px] text-steel">
+                    Tidak ada rekomendasi program studi otomatis untuk judul ini.
+                  </div>
+                ) : (
+                  visibleProdis.map((prodi) => {
+                    const isSelected = formData.selectedProdiIds.includes(prodi.id);
+                    const isRec = top10RecProdiIds.includes(prodi.id);
+                    return (
+                      <button
+                        type="button"
+                        key={prodi.id}
+                        onClick={() => toggleProdi(prodi.id)}
+                        className={`flex items-center justify-between p-2 rounded-lg text-xs text-left transition font-mono ${
+                          isSelected
+                            ? "bg-ink text-paper font-medium"
+                            : isRec
+                            ? "bg-emerald-50/20 text-ink border border-emerald-500/20 hover:bg-emerald-50/40"
+                            : "bg-white text-ink hover:bg-steel/10 border border-steel/10"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span
+                            className={`h-3.5 w-3.5 rounded border flex items-center justify-center text-[10px] ${
+                              isSelected ? "bg-bridge-gold border-bridge-gold text-ink" : "border-steel/40 bg-white"
+                            }`}
+                          >
+                            {isSelected ? "✓" : ""}
+                          </span>
+                          <span className="truncate text-[11px]">
+                            {prodi.nama_prodi} {prodi.jenjang !== "Umum" ? `(${prodi.jenjang})` : ""}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {sortedProdis.length > prodiLimit && (
+                <div className="pt-1">
                   <button
                     type="button"
-                    key={prodi.id}
-                    onClick={() => toggleProdi(prodi.id)}
-                    className={`flex items-center gap-2 p-2 rounded-lg text-xs text-left transition font-mono ${
-                      isSelected
-                        ? "bg-ink text-paper font-medium"
-                        : "bg-white text-ink hover:bg-steel/10 border border-steel/10"
-                    }`}
+                    onClick={() => setProdiLimit(prev => prev + 10)}
+                    className="font-mono text-[10px] text-steel hover:text-ink font-bold transition"
                   >
-                    <span
-                      className={`h-3.5 w-3.5 rounded border flex items-center justify-center text-[10px] ${
-                        isSelected ? "bg-bridge-gold border-bridge-gold text-ink" : "border-steel/40"
-                      }`}
-                    >
-                      {isSelected ? "✓" : ""}
-                    </span>
-                    <span className="truncate">
-                      {prodi.nama_prodi} ({prodi.jenjang})
-                    </span>
+                    Tampilkan lebih banyak (+10)
                   </button>
-                );
-              })}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setIsProdiModalOpen(true)}
+                className="font-mono text-[10px] text-bridge-gold font-bold hover:underline"
+              >
+                Tidak ada di list? Cari Program Studi
+              </button>
             </div>
           </div>
 
           {/* Required Skills */}
           <div>
-            <label className="block font-mono text-xs font-medium text-ink mb-2">
-              Keahlian / Skills yang Dibutuhkan (Opsional)
-            </label>
-            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-3 border border-steel/15 rounded-xl bg-steel/5">
-              {skillList.map((skill) => {
-                const isSelected = formData.selectedSkillIds.includes(skill.id);
-                return (
+            <div className="flex items-center justify-between mb-2">
+              <label className="block font-mono text-xs font-medium text-ink">
+                Keahlian / Skills yang Dibutuhkan
+              </label>
+              {top10RecSkillIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      selectedSkillIds: Array.from(new Set([...prev.selectedSkillIds, ...top10RecSkillIds]))
+                    }));
+                  }}
+                  className="font-mono text-[10px] font-bold text-emerald-700 hover:text-emerald-800 transition"
+                >
+                  + Pilih Semua Rekomendasi ({top10RecSkillIds.length})
+                </button>
+              )}
+            </div>
+
+            <div className="p-3 border border-steel/15 rounded-xl bg-steel/5 space-y-3 font-mono text-xs">
+              <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto pr-1">
+                {visibleSkills.length === 0 ? (
+                  <div className="w-full py-4 text-center font-mono text-[11px] text-steel">
+                    Tidak ada rekomendasi keahlian otomatis untuk judul ini.
+                  </div>
+                ) : (
+                  visibleSkills.map((skill) => {
+                    const isSelected = formData.selectedSkillIds.includes(skill.id);
+                    const isRec = top10RecSkillIds.includes(skill.id);
+                    return (
+                      <button
+                        type="button"
+                        key={skill.id}
+                        onClick={() => toggleSkill(skill.id)}
+                        className={`px-3 py-1.5 rounded-full transition border ${
+                          isSelected
+                            ? "bg-bridge-gold text-ink font-semibold border-bridge-gold"
+                            : isRec
+                            ? "bg-emerald-50/20 text-emerald-800 border-emerald-500/20 hover:bg-emerald-50/40"
+                            : "bg-white text-steel hover:bg-steel/10 border-steel/20"
+                        }`}
+                      >
+                        {skill.nama_skill} {isSelected ? "✓" : isRec ? "+" : "+"}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {sortedSkills.length > skillLimit && (
+                <div className="pt-1">
                   <button
                     type="button"
-                    key={skill.id}
-                    onClick={() => toggleSkill(skill.id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-mono transition border ${
-                      isSelected
-                        ? "bg-bridge-gold text-ink font-semibold border-bridge-gold"
-                        : "bg-white text-steel hover:bg-steel/10 border-steel/20"
-                    }`}
+                    onClick={() => setSkillLimit(prev => prev + 10)}
+                    className="font-mono text-[10px] text-steel hover:text-ink font-bold transition"
                   >
-                    {skill.nama_skill} {isSelected ? "✓" : "+"}
+                    Tampilkan lebih banyak (+10)
                   </button>
-                );
-              })}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setIsSkillModalOpen(true)}
+                className="font-mono text-[10px] text-bridge-gold font-bold hover:underline"
+              >
+                Tidak ada di list? Cari Keahlian / Skill
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Submit Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-steel/15">
-          <Link
-            href="/perusahaan/kolaborasi"
-            className="rounded-full px-6 py-3 font-mono text-xs font-medium text-steel hover:bg-steel/10 transition"
-          >
-            Batal
-          </Link>
+        {/* Submit Button */}
+        <div className="flex justify-end pt-4">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-full bg-bridge-gold px-8 py-3 font-mono text-xs font-bold text-ink hover:bg-bridge-gold/90 transition shadow-md disabled:opacity-50"
+            className="rounded-full bg-bridge-gold px-8 py-3.5 font-mono text-xs font-bold text-ink hover:bg-bridge-gold/90 transition shadow-md disabled:opacity-50"
           >
-            {isSubmitting ? "Memproses..." : "Ajukan Proyek Kolaborasi"}
+            {isSubmitting ? "Mengajukan..." : "Ajukan Proyek Kolaborasi"}
           </button>
         </div>
       </form>
+
+      {/* ==================== MODAL PICKER: KOTA LOKASI ==================== */}
+      {isKotaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto font-sans text-xs">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-steel/20 flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between pb-3 border-b border-steel/10">
+              <h3 className="font-display text-base font-bold text-ink">Cari Kota Lokasi</h3>
+              <button
+                onClick={() => {
+                  setIsKotaModalOpen(false);
+                  setKotaSearch("");
+                }}
+                className="text-steel hover:text-ink transition"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="my-3 relative">
+              <input
+                type="text"
+                value={kotaSearch}
+                onChange={(e) => setKotaSearch(e.target.value)}
+                placeholder="Ketik nama kota..."
+                className="w-full rounded-xl border border-steel/20 pl-10 pr-4 py-2.5 text-xs outline-none focus:border-bridge-gold bg-white"
+              />
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-steel/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-1 max-h-60 pr-1 py-1 font-mono text-xs">
+              {searchedKotaOptions.length === 0 ? (
+                <div className="py-4 text-center text-[11px] text-steel">
+                  Kota tidak ditemukan.
+                </div>
+              ) : (
+                searchedKotaOptions.map((k) => {
+                  const isSelected = formData.lokasi_id === k.id;
+                  return (
+                    <button
+                      type="button"
+                      key={k.id}
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, lokasi_id: k.id }));
+                        setIsKotaModalOpen(false);
+                        setKotaSearch("");
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition ${
+                        isSelected ? "bg-ink text-paper font-semibold" : "bg-steel/5 text-ink hover:bg-steel/15"
+                      }`}
+                    >
+                      <span>{k.nama_kota}</span>
+                      {isSelected && <span>✓</span>}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL PICKER: KATEGORI MINAT ==================== */}
+      {isKategoriModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto font-sans text-xs">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-steel/20 flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between pb-3 border-b border-steel/10">
+              <h3 className="font-display text-base font-bold text-ink">Cari Kategori Minat</h3>
+              <button
+                onClick={() => {
+                  setIsKategoriModalOpen(false);
+                  setKategoriSearch("");
+                }}
+                className="text-steel hover:text-ink transition"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="my-3 relative">
+              <input
+                type="text"
+                value={kategoriSearch}
+                onChange={(e) => setKategoriSearch(e.target.value)}
+                placeholder="Cari atau tambahkan kategori..."
+                className="w-full rounded-xl border border-steel/20 pl-10 pr-4 py-2.5 text-xs outline-none focus:border-bridge-gold bg-white"
+              />
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-steel/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-1 max-h-60 pr-1 py-1 font-mono text-xs">
+              {isKategoriSearchEmpty && (
+                <button
+                  type="button"
+                  disabled={isCreatingCustom}
+                  onClick={() => handleAddCustomKategori(kategoriSearch)}
+                  className="w-full text-left p-3 rounded-xl border border-dashed border-emerald-500 bg-emerald-50/20 text-emerald-800 font-bold hover:bg-emerald-50/40 transition block text-[11px]"
+                >
+                  {isCreatingCustom ? "Menambahkan..." : `+ Tambahkan "${kategoriSearch}" sebagai kustom`}
+                </button>
+              )}
+
+              {searchedKategoriOptions.length === 0 && !isKategoriSearchEmpty ? (
+                <div className="py-4 text-center text-[11px] text-steel">
+                  Tidak ada kategori minat yang cocok.
+                </div>
+              ) : (
+                searchedKategoriOptions.map((k) => {
+                  const isSelected = formData.selectedKategoriIds.includes(k.id);
+                  return (
+                    <button
+                      type="button"
+                      key={k.id}
+                      onClick={() => toggleKategori(k.id)}
+                      className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition ${
+                        isSelected ? "bg-ink text-paper font-semibold" : "bg-steel/5 text-ink hover:bg-steel/15"
+                      }`}
+                    >
+                      <span>{k.nama_kategori}</span>
+                      {isSelected && <span>✓</span>}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <div className="mt-4 pt-3 border-t border-steel/10 text-right">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsKategoriModalOpen(false);
+                  setKategoriSearch("");
+                }}
+                className="rounded-full bg-ink px-5 py-2 font-mono text-[10px] font-bold text-white hover:bg-steel"
+              >
+                Selesai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL PICKER: PROGRAM STUDI ==================== */}
+      {isProdiModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto font-sans text-xs">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-steel/20 flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between pb-3 border-b border-steel/10">
+              <h3 className="font-display text-base font-bold text-ink">Cari Program Studi</h3>
+              <button
+                onClick={() => {
+                  setIsProdiModalOpen(false);
+                  setProdiSearch("");
+                }}
+                className="text-steel hover:text-ink transition"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="my-3 relative">
+              <input
+                type="text"
+                value={prodiSearch}
+                onChange={(e) => setProdiSearch(e.target.value)}
+                placeholder="Cari atau tambahkan program studi..."
+                className="w-full rounded-xl border border-steel/20 pl-10 pr-4 py-2.5 text-xs outline-none focus:border-bridge-gold bg-white"
+              />
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-steel/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-1 max-h-60 pr-1 py-1 font-mono text-xs">
+              {isProdiSearchEmpty && (
+                <button
+                  type="button"
+                  disabled={isCreatingCustom}
+                  onClick={() => handleAddCustomProdi(prodiSearch)}
+                  className="w-full text-left p-3 rounded-xl border border-dashed border-emerald-500 bg-emerald-50/20 text-emerald-800 font-bold hover:bg-emerald-50/40 transition block text-[11px]"
+                >
+                  {isCreatingCustom ? "Menambahkan..." : `+ Tambahkan "${prodiSearch}" sebagai kustom`}
+                </button>
+              )}
+
+              {searchedProdiOptions.length === 0 && !isProdiSearchEmpty ? (
+                <div className="py-4 text-center text-[11px] text-steel">
+                  Tidak ada program studi yang cocok.
+                </div>
+              ) : (
+                searchedProdiOptions.map((p) => {
+                  const isSelected = formData.selectedProdiIds.includes(p.id);
+                  return (
+                    <button
+                      type="button"
+                      key={p.id}
+                      onClick={() => {
+                        if (p.id === -999) {
+                          alert("Pilih program studi spesifik atau buat baru dengan mengetik di kolom pencarian.");
+                          return;
+                        }
+                        toggleProdi(p.id);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition ${
+                        isSelected ? "bg-ink text-paper font-semibold" : "bg-steel/5 text-ink hover:bg-steel/15"
+                      }`}
+                    >
+                      <span>
+                        {p.nama_prodi} {p.jenjang && p.jenjang !== "Umum" ? `(${p.jenjang})` : ""}
+                      </span>
+                      {isSelected && <span>✓</span>}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <div className="mt-4 pt-3 border-t border-steel/10 text-right">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProdiModalOpen(false);
+                  setProdiSearch("");
+                }}
+                className="rounded-full bg-ink px-5 py-2 font-mono text-[10px] font-bold text-white hover:bg-steel"
+              >
+                Selesai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL PICKER: SKILLS / KEALIAN ==================== */}
+      {isSkillModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto font-sans text-xs">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-steel/20 flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between pb-3 border-b border-steel/10">
+              <h3 className="font-display text-base font-bold text-ink">Cari Keahlian / Skill</h3>
+              <button
+                onClick={() => {
+                  setIsSkillModalOpen(false);
+                  setSkillSearch("");
+                }}
+                className="text-steel hover:text-ink transition"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="my-3 relative">
+              <input
+                type="text"
+                value={skillSearch}
+                onChange={(e) => setSkillSearch(e.target.value)}
+                placeholder="Cari atau tambahkan skill..."
+                className="w-full rounded-xl border border-steel/20 pl-10 pr-4 py-2.5 text-xs outline-none focus:border-bridge-gold bg-white"
+              />
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-steel/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-1 max-h-60 pr-1 py-1 font-mono text-xs">
+              {isSkillSearchEmpty && (
+                <button
+                  type="button"
+                  disabled={isCreatingCustom}
+                  onClick={() => handleAddCustomSkill(skillSearch)}
+                  className="w-full text-left p-3 rounded-xl border border-dashed border-emerald-500 bg-emerald-50/20 text-emerald-800 font-bold hover:bg-emerald-50/40 transition block text-[11px]"
+                >
+                  {isCreatingCustom ? "Menambahkan..." : `+ Tambahkan "${skillSearch}" sebagai kustom`}
+                </button>
+              )}
+
+              {searchedSkillOptions.length === 0 && !isSkillSearchEmpty ? (
+                <div className="py-4 text-center text-[11px] text-steel">
+                  Tidak ada keahlian yang cocok.
+                </div>
+              ) : (
+                searchedSkillOptions.map((s) => {
+                  const isSelected = formData.selectedSkillIds.includes(s.id);
+                  return (
+                    <button
+                      type="button"
+                      key={s.id}
+                      onClick={() => toggleSkill(s.id)}
+                      className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition ${
+                        isSelected ? "bg-bridge-gold text-ink font-semibold" : "bg-steel/5 text-ink hover:bg-steel/15"
+                      }`}
+                    >
+                      <span>{s.nama_skill}</span>
+                      {isSelected && <span>✓</span>}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <div className="mt-4 pt-3 border-t border-steel/10 text-right">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSkillModalOpen(false);
+                  setSkillSearch("");
+                }}
+                className="rounded-full bg-ink px-5 py-2 font-mono text-[10px] font-bold text-white hover:bg-steel"
+              >
+                Selesai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={successModal.isOpen}
+        title={successModal.title}
+        message={successModal.message}
+        onClose={() => {
+          setSuccessModal(prev => ({ ...prev, isOpen: false }));
+          router.push("/perusahaan/kolaborasi");
+        }}
+      />
     </main>
   );
 }

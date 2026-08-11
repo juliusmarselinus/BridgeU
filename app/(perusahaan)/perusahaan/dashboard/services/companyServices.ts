@@ -80,7 +80,7 @@ export const companyService = {
       .from("kolaborasi")
       .select(`
         *,
-        kategori_minat ( nama_kategori ),
+        kategori_minat:kategori_id ( nama_kategori ),
         kota ( nama_kota ),
         perusahaan_profiles ( nama_perusahaan ),
         pendaftaran_kolaborasi ( id )
@@ -137,7 +137,7 @@ export const companyService = {
       .insert([payload])
       .select(`
         *,
-        kategori_minat ( nama_kategori ),
+        kategori_minat:kategori_id ( nama_kategori ),
         kota ( nama_kota )
       `)
       .single();
@@ -193,6 +193,7 @@ export interface CreateFullKolaborasiPayload {
   slot: number;
   target_prodi_ids: number[];
   skill_ids: number[];
+  target_kategori_ids: number[];
 }
 
 // Tambahkan metode ini ke objek companyService:
@@ -225,7 +226,7 @@ export const companyServiceExtended = {
     return data || [];
   },
 
-  // Insert Proyek Kolaborasi Lengkap dengan Target Prodi & Skills
+  // Insert Proyek Kolaborasi Lengkap dengan Target Prodi, Skills, & Multi-Kategori
   async createFullKolaborasi(payload: CreateFullKolaborasiPayload, perusahaanId: string) {
     // 1. Insert ke tabel kolaborasi
     const { data: newProyek, error: proyekError } = await supabase
@@ -283,6 +284,121 @@ export const companyServiceExtended = {
       if (skillError) {
         console.error("Gagal memasukkan skills:", skillError.message);
       }
+    }
+
+    // 4. Insert relasi kategori_minat (kolaborasi_kategori_minat) dengan fallback
+    if (payload.target_kategori_ids && payload.target_kategori_ids.length > 0) {
+      try {
+        const kategoriInserts = payload.target_kategori_ids.map((katId) => ({
+          kolaborasi_id: kolaborasiId,
+          kategori_id: katId,
+        }));
+        const { error: katError } = await supabase
+          .from("kolaborasi_kategori_minat")
+          .insert(kategoriInserts);
+        if (katError) {
+          console.error("Gagal menyimpan kolaborasi_kategori_minat:", katError.message);
+        }
+      } catch (err) {
+        console.error("Gagal menyimpan kolaborasi_kategori_minat (mungkin tabel belum dibuat):", err);
+      }
+    }
+
+    return true;
+  },
+
+  // Update Proyek Kolaborasi Lengkap dengan Target Prodi, Skills, & Multi-Kategori
+  async updateFullKolaborasi(
+    id: string,
+    payload: CreateFullKolaborasiPayload
+  ): Promise<boolean> {
+    // 1. Update tabel kolaborasi
+    const { error: proyekError } = await supabase
+      .from("kolaborasi")
+      .update({
+        judul: payload.judul,
+        tipe: payload.tipe,
+        kategori_id: payload.kategori_id,
+        deskripsi: payload.deskripsi,
+        lokasi_id: payload.lokasi_id,
+        batas_waktu: payload.batas_waktu,
+        tingkat_kesulitan: payload.tingkat_kesulitan,
+        gaji_stipend: payload.gaji_stipend || null,
+        slot: payload.slot,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (proyekError) {
+      console.error("Gagal memperbarui proyek kolaborasi:", proyekError.message);
+      return false;
+    }
+
+    // 2. Update relasi target prodi (hapus & insert)
+    const { error: deleteProdiError } = await supabase
+      .from("kolaborasi_target_prodi")
+      .delete()
+      .eq("kolaborasi_id", id);
+
+    if (deleteProdiError) {
+      console.error("Gagal menghapus target prodi lama:", deleteProdiError.message);
+    }
+
+    if (payload.target_prodi_ids.length > 0) {
+      const prodiInserts = payload.target_prodi_ids.map((prodiId) => ({
+        kolaborasi_id: id,
+        prodi_id: prodiId,
+      }));
+      const { error: prodiError } = await supabase
+        .from("kolaborasi_target_prodi")
+        .insert(prodiInserts);
+
+      if (prodiError) {
+        console.error("Gagal memasukkan target prodi baru:", prodiError.message);
+      }
+    }
+
+    // 3. Update relasi skills (hapus & insert)
+    const { error: deleteSkillError } = await supabase
+      .from("kolaborasi_skills")
+      .delete()
+      .eq("kolaborasi_id", id);
+
+    if (deleteSkillError) {
+      console.error("Gagal menghapus skills lama:", deleteSkillError.message);
+    }
+
+    if (payload.skill_ids.length > 0) {
+      const skillInserts = payload.skill_ids.map((skillId) => ({
+        kolaborasi_id: id,
+        skill_id: skillId,
+      }));
+      const { error: skillError } = await supabase
+        .from("kolaborasi_skills")
+        .insert(skillInserts);
+
+      if (skillError) {
+        console.error("Gagal memasukkan skills baru:", skillError.message);
+      }
+    }
+
+    // 4. Update relasi kategori_minat (hapus & insert) dengan fallback
+    try {
+      await supabase.from("kolaborasi_kategori_minat").delete().eq("kolaborasi_id", id);
+      if (payload.target_kategori_ids && payload.target_kategori_ids.length > 0) {
+        const kategoriInserts = payload.target_kategori_ids.map((katId) => ({
+          kolaborasi_id: id,
+          kategori_id: katId,
+        }));
+        const { error: katError } = await supabase
+          .from("kolaborasi_kategori_minat")
+          .insert(kategoriInserts);
+        if (katError) {
+          console.error("Gagal menyimpan kolaborasi_kategori_minat baru:", katError.message);
+        }
+      }
+    } catch (err) {
+      console.error("Gagal memperbarui kolaborasi_kategori_minat (mungkin tabel belum dibuat):", err);
     }
 
     return true;

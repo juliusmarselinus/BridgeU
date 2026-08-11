@@ -9,6 +9,7 @@ type StoredCompany = {
   nama: string;
   industri: string;
   email: string;
+  status_verifikasi?: string;
 };
 
 type KolaborasiStatus = "Terbit" | "Draft" | "Selesai";
@@ -37,7 +38,13 @@ export default function CompanyDashboardPage() {
   const [pelamarList, setPelamarList] = useState<Pelamar[]>([]);
   const [selectedTab, setSelectedTab] = useState<"Semua" | "Terbit" | "Draft" | "Selesai">("Semua");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [successModal, setSuccessModal] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
 
   // State Modal Form (dipakai bareng buat Tambah & Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,6 +53,7 @@ export default function CompanyDashboardPage() {
 
   useEffect(() => {
     const init = async () => {
+      setIsLoading(true);
       // 1. Ambil user session
       const { data: { session } } = await supabase.auth.getSession();
       const uid = session?.user?.id ?? null;
@@ -57,7 +65,7 @@ export default function CompanyDashboardPage() {
       if (uid) {
         const { data: profile } = await supabase
           .from("perusahaan_profiles")
-          .select("nama_perusahaan, sektor:sektor_id(nama_sektor)")
+          .select("nama_perusahaan, status_verifikasi, sektor:sektor_id(nama_sektor)")
           .eq("user_id", uid)
           .maybeSingle();
         if (profile) {
@@ -66,6 +74,7 @@ export default function CompanyDashboardPage() {
             nama: profile.nama_perusahaan,
             industri: (profile.sektor as any)?.nama_sektor ?? "-",
             email: session?.user?.email ?? "-",
+            status_verifikasi: profile.status_verifikasi,
           });
         }
       } else {
@@ -78,20 +87,24 @@ export default function CompanyDashboardPage() {
             resolvedCompanyName = parsed.nama;
           } catch (e) { console.error(e); }
         } else {
-          setCompany({ nama: "Nexora Digital", industri: "Teknologi & Produk Digital", email: "perusahaan@nexora.com" });
+          setCompany({ nama: "Nexora Digital", industri: "Teknologi & Produk Digital", email: "perusahaan@nexora.com", status_verifikasi: "Terverifikasi" });
         }
       }
 
       // 3. Ambil kolaborasi dari Supabase
       let currentKolaborasiList: KolaborasiWithMeta[] = [];
       if (uid) {
-        const { data: rows } = await supabase
+        const { data: rows, error: colabError } = await supabase
           .from("kolaborasi")
           .select(`id, judul, tipe, deskripsi, status_moderasi, batas_waktu, slot,
-            kategori:kategori_id(nama_kategori),
+            kategori:kategori_minat!kolaborasi_kategori_id_fkey(nama_kategori),
             kota:lokasi_id(nama_kota)`)
           .eq("perusahaan_id", uid)
           .order("created_at", { ascending: false });
+
+        if (colabError) {
+          console.error("Gagal mengambil kolaborasi di dashboard:", colabError.message);
+        }
 
         if (rows && rows.length > 0) {
           currentKolaborasiList = rows.map((r: any) => ({
@@ -122,14 +135,12 @@ export default function CompanyDashboardPage() {
             setKolaborasiList(currentKolaborasiList);
           } catch (e) { console.error(e); }
         } else {
-          currentKolaborasiList = dummyKolaborasi.filter((k) => k.perusahaan.toLowerCase().includes("nexora")) as KolaborasiWithMeta[];
-          setKolaborasiList(currentKolaborasiList);
+          setKolaborasiList([]);
         }
       }
 
       // 4. Pelamar
-      if (uid && currentKolaborasiList.length > 0) {
-        const colabIds = currentKolaborasiList.map((k) => k.id);
+      if (uid) {
         const { data: pelamarRows, error: pelamarError } = await supabase
           .from("pendaftaran_kolaborasi")
           .select(`
@@ -144,9 +155,9 @@ export default function CompanyDashboardPage() {
               prodi:prodi_id(nama_prodi),
               users:users!user_id(email)
             ),
-            kolaborasi:kolaborasi_id(judul)
+            kolaborasi!inner(judul, perusahaan_id)
           `)
-          .in("kolaborasi_id", colabIds);
+          .eq("kolaborasi.perusahaan_id", uid);
 
         if (pelamarError) {
           console.error("Gagal mengambil pendaftaran_kolaborasi:", pelamarError.message);
@@ -176,9 +187,10 @@ export default function CompanyDashboardPage() {
         if (storedPelamar) {
           try { setPelamarList(JSON.parse(storedPelamar)); } catch (e) { console.error(e); }
         } else {
-          setPelamarList(dummyPelamarList);
+          setPelamarList([]);
         }
       }
+      setIsLoading(false);
     };
 
     init();
@@ -186,12 +198,8 @@ export default function CompanyDashboardPage() {
   }, []);
 
   const companyName = company?.nama || "Nexora Digital";
-  const myKolaborasi =
-    kolaborasiList.length > 0
-      ? kolaborasiList
-      : (dummyKolaborasi.filter(
-          (k) => k.perusahaan === companyName || k.id === "1"
-        ) as KolaborasiWithMeta[]);
+  const myKolaborasi = kolaborasiList;
+  const isVerified = company?.status_verifikasi === "Terverifikasi";
 
   // Statistik
   const totalPelamar = pelamarList.length;
@@ -230,6 +238,11 @@ export default function CompanyDashboardPage() {
       await supabase.from("kolaborasi").delete().eq("id", id).eq("perusahaan_id", session.user.id);
     }
     setKolaborasiList((prev) => prev.filter((k) => k.id !== id));
+    setSuccessModal({
+      isOpen: true,
+      title: "Proyek Dihapus",
+      message: `Proyek kolaborasi "${judul}" telah berhasil dihapus dari database.`,
+    });
   };
 
   // Buka Modal buat Tambah Baru
@@ -442,6 +455,12 @@ export default function CompanyDashboardPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    setSuccessModal({
+      isOpen: true,
+      title: "Ekspor Berhasil",
+      message: "Data kolaborasi berhasil diekspor ke file CSV.",
+    });
   };
 
   return (
@@ -471,21 +490,63 @@ export default function CompanyDashboardPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={handleOpenCreateModal}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-bridge-gold px-6 py-3.5 font-medium text-ink transition hover:bg-bridge-gold/90 shadow-lg shadow-bridge-gold/20 text-sm font-semibold"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              + Buka Peluang Baru
-            </button>
-            <Link
-              href="/perusahaan/pelamar"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3.5 font-mono text-xs font-medium text-paper transition hover:bg-white/10"
-            >
-              Kelola Pelamar ({MenungguReview})
-            </Link>
+            {!isVerified ? (
+              <button
+                disabled
+                title="Fitur terkunci. Harap tunggu verifikasi akun perusahaan oleh administrator."
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-steel/30 px-6 py-3.5 font-mono text-xs font-semibold text-paper/50 cursor-not-allowed border border-white/10"
+              >
+                <svg className="h-4 w-4 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                + Buka Peluang Baru (Menunggu Verifikasi)
+              </button>
+            ) : (
+              <Link
+                href="/perusahaan/kolaborasi/baru"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-bridge-gold px-6 py-3.5 font-medium text-ink transition hover:bg-bridge-gold/90 shadow-lg shadow-bridge-gold/20 text-sm font-semibold animate-fade-in"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                + Buka Peluang Baru
+              </Link>
+            )}
+
+            {!isVerified ? (
+              <button
+                disabled
+                title="Fitur terkunci. Harap tunggu verifikasi akun perusahaan oleh administrator."
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3.5 font-mono text-xs font-medium text-paper/30 cursor-not-allowed flex items-center gap-1.5"
+              >
+                <svg className="h-3.5 w-3.5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Kelola Pelamar (Menunggu Verifikasi)
+              </button>
+            ) : (
+              (() => {
+                const firstColabWithPelamar = myKolaborasi.find(c => {
+                  const pCount = pelamarList.filter(p => p.kolaborasiId === c.id && p.status === "Menunggu").length;
+                  return pCount > 0;
+                }) || myKolaborasi[0];
+
+                const kelolaPelamarHref = firstColabWithPelamar 
+                  ? `/perusahaan/kolaborasi/${firstColabWithPelamar.id}?tab=pelamar` 
+                  : "/perusahaan/kolaborasi";
+
+                return (
+                  <Link
+                    href={kelolaPelamarHref}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3.5 font-mono text-xs font-medium text-paper transition hover:bg-white/10"
+                  >
+                    Kelola Pelamar ({MenungguReview})
+                  </Link>
+                );
+              })()
+            )}
           </div>
         </div>
 
@@ -495,41 +556,61 @@ export default function CompanyDashboardPage() {
             <p className="font-mono text-[10px] sm:text-xs text-paper/60 uppercase tracking-wider">
               Total Peluang
             </p>
-            <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-paper">
-              {myKolaborasi.length}
-            </p>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-white/10 rounded animate-pulse mt-1" />
+            ) : (
+              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-paper animate-fade-in">
+                {myKolaborasi.length}
+              </p>
+            )}
           </div>
           <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
             <p className="font-mono text-[10px] sm:text-xs text-paper/60 uppercase tracking-wider">
               Total Pelamar
             </p>
-            <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-bridge-gold">
-              {totalPelamar}
-            </p>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-white/10 rounded animate-pulse mt-1" />
+            ) : (
+              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-bridge-gold animate-fade-in">
+                {totalPelamar}
+              </p>
+            )}
           </div>
           <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
             <p className="font-mono text-[10px] sm:text-xs text-paper/60 uppercase tracking-wider">
               Menunggu Review
             </p>
-            <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-yellow-400">
-              {MenungguReview}
-            </p>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-white/10 rounded animate-pulse mt-1" />
+            ) : (
+              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-yellow-400 animate-fade-in">
+                {MenungguReview}
+              </p>
+            )}
           </div>
           <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
             <p className="font-mono text-[10px] sm:text-xs text-paper/60 uppercase tracking-wider">
               Diterima
             </p>
-            <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-emerald-400">
-              {Diterima}
-            </p>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-white/10 rounded animate-pulse mt-1" />
+            ) : (
+              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-emerald-400 animate-fade-in">
+                {Diterima}
+              </p>
+            )}
           </div>
           <div className="rounded-2xl bg-white/5 p-4 border border-white/5 col-span-2 sm:col-span-1">
             <p className="font-mono text-[10px] sm:text-xs text-paper/60 uppercase tracking-wider">
               Success Rate
             </p>
-            <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-blue-400">
-              {successRate}%
-            </p>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-white/10 rounded animate-pulse mt-1" />
+            ) : (
+              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-blue-400 animate-fade-in">
+                {successRate}%
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -556,12 +637,25 @@ export default function CompanyDashboardPage() {
               </svg>
               Export CSV
             </button>
-            <button
-              onClick={handleOpenCreateModal}
-              className="font-mono text-xs text-bridge-gold font-medium hover:underline hidden sm:inline"
-            >
-              + Tambah Baru
-            </button>
+            {!isVerified ? (
+              <span
+                title="Fitur terkunci. Harap tunggu verifikasi akun perusahaan oleh administrator."
+                className="font-mono text-xs text-steel/40 cursor-not-allowed hidden sm:inline flex items-center gap-1 select-none"
+              >
+                <svg className="h-3.5 w-3.5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                + Tambah Baru (Menunggu Verifikasi)
+              </span>
+            ) : (
+              <Link
+                href="/perusahaan/kolaborasi/baru"
+                className="font-mono text-xs text-bridge-gold font-medium hover:underline hidden sm:inline"
+              >
+                + Tambah Baru
+              </Link>
+            )}
           </div>
         </div>
 
@@ -613,8 +707,27 @@ export default function CompanyDashboardPage() {
         </div>
 
         {/* Card Proyek */}
-        {filteredKolaborasi.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-dashed border-steel/30 bg-white/40 p-12 text-center">
+        {isLoading ? (
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-steel/10 bg-white/40 p-6 flex flex-col justify-between h-48"
+              >
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="h-5 w-24 bg-steel/15 rounded-full" />
+                    <div className="h-5 w-16 bg-steel/15 rounded-full" />
+                  </div>
+                  <div className="h-6 w-3/4 bg-steel/15 rounded" />
+                  <div className="h-4 w-full bg-steel/15 rounded" />
+                </div>
+                <div className="h-8 w-full bg-steel/15 rounded mt-4" />
+              </div>
+            ))}
+          </div>
+        ) : filteredKolaborasi.length === 0 ? (
+          <div className="mt-6 rounded-2xl border border-dashed border-steel/30 bg-white/40 p-12 text-center animate-fade-in">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-bridge-gold/20 text-bridge-gold">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
@@ -639,19 +752,19 @@ export default function CompanyDashboardPage() {
                 Reset Pencarian
               </button>
             ) : (
-              <button
-                onClick={handleOpenCreateModal}
+              <Link
+                href="/perusahaan/kolaborasi/baru"
                 className="mt-6 inline-block rounded-full bg-ink px-6 py-2.5 font-mono text-xs font-medium text-paper transition hover:bg-steel"
               >
                 Buat Kolaborasi Baru
-              </button>
+              </Link>
             )}
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
             {filteredKolaborasi.map((item) => {
               const pelamarCount = pelamarList.filter(
-                (p) => p.kolaborasiId === item.id || item.id === "1"
+                (p) => p.kolaborasiId === item.id
               ).length;
               const status = item.statusPublikasi || "Terbit";
               const kuota = item.kuota || 5;
@@ -697,8 +810,10 @@ export default function CompanyDashboardPage() {
                       </div>
                     </div>
 
-                    <h3 className="mt-4 font-display text-lg font-bold text-ink leading-snug">
-                      {item.judul}
+                    <h3 className="mt-4 font-display text-lg font-bold text-ink leading-snug hover:text-bridge-gold transition">
+                      <Link href={`/perusahaan/kolaborasi/${item.id}`}>
+                        {item.judul}
+                      </Link>
                     </h3>
                     <p className="mt-2 text-xs text-steel line-clamp-2 leading-relaxed">
                       {item.deskripsi}
@@ -725,29 +840,67 @@ export default function CompanyDashboardPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <Link
-                        href={`/perusahaan/pelamar?kolaborasiId=${item.id}`}
-                        className="rounded-full bg-ink/10 px-3 py-1.5 font-medium text-ink hover:bg-ink hover:text-paper transition text-xs"
-                      >
-                        Pelamar ({pelamarCount})
-                      </Link>
+                    <div className="flex items-center gap-1.5 font-sans">
+                      {!isVerified ? (
+                        <>
+                          <span
+                            title="Akses terkunci. Harap tunggu verifikasi akun perusahaan oleh administrator."
+                            className="rounded-full bg-steel/5 px-3 py-1.5 font-medium text-steel/30 cursor-not-allowed text-xs font-mono select-none flex items-center gap-1.5 border border-dashed border-steel/20"
+                          >
+                            <svg className="h-3 w-3 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            Pelamar (Menunggu Verifikasi)
+                          </span>
 
-                      <button
-                        onClick={() => handleOpenEditModal(item)}
-                        className="rounded-full bg-steel/10 p-1.5 text-steel hover:bg-steel/20 transition"
-                        title="Edit Kolaborasi"
-                      >
-                        ✎
-                      </button>
+                          <span
+                            title="Edit terkunci. Harap tunggu verifikasi akun perusahaan oleh administrator."
+                            className="rounded-full bg-steel/5 p-1.5 text-steel/30 cursor-not-allowed inline-flex items-center justify-center h-7 w-7 select-none border border-dashed border-steel/20"
+                          >
+                            <svg className="h-3 w-3 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                          </span>
 
-                      <button
-                        onClick={() => handleDeleteKolaborasi(item.id, item.judul)}
-                        className="rounded-full bg-red-50 p-1.5 text-red-500 hover:bg-red-100 transition"
-                        title="Hapus Kolaborasi"
-                      >
-                        ✕
-                      </button>
+                          <button
+                            disabled
+                            title="Hapus terkunci. Harap tunggu verifikasi akun perusahaan oleh administrator."
+                            className="rounded-full bg-steel/5 p-1.5 text-steel/30 cursor-not-allowed select-none border border-dashed border-steel/20"
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Link
+                            href={`/perusahaan/kolaborasi/${item.id}`}
+                            className="rounded-full bg-ink/10 px-3 py-1.5 font-medium text-ink hover:bg-ink hover:text-paper transition text-xs"
+                          >
+                            Pelamar ({pelamarCount})
+                          </Link>
+
+                          <Link
+                            href={`/perusahaan/kolaborasi/${item.id}?tab=settings`}
+                            className="rounded-full bg-steel/10 p-1.5 text-steel hover:bg-steel/20 transition inline-flex items-center justify-center h-7 w-7"
+                            title="Edit Kolaborasi"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </Link>
+
+                          <button
+                            onClick={() => handleDeleteKolaborasi(item.id, item.judul)}
+                            className="rounded-full bg-red-50 p-1.5 text-red-500 hover:bg-red-100 transition"
+                            title="Hapus Kolaborasi"
+                          >
+                            ✕
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -923,6 +1076,48 @@ export default function CompanyDashboardPage() {
           </div>
         </div>
       )}
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={successModal.isOpen}
+        title={successModal.title}
+        message={successModal.message}
+        onClose={() => setSuccessModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </main>
+  );
+}
+
+interface SuccessModalProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onClose: () => void;
+}
+
+function SuccessModal({ isOpen, title, message, onClose }: SuccessModalProps) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-sans text-xs">
+      <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-steel/20 text-center space-y-4 animate-fade-in animate-duration-200">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="space-y-1">
+          <h3 className="font-display text-base font-bold text-ink">{title}</h3>
+          <p className="font-mono text-[11px] text-steel leading-relaxed">{message}</p>
+        </div>
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-full bg-ink py-2.5 font-mono text-[10px] font-bold text-white hover:bg-steel transition"
+          >
+            Selesai
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

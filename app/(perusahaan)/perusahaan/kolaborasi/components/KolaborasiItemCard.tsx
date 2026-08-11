@@ -47,8 +47,10 @@ export function KolaborasiItemCard({ item, onDelete }: KolaborasiItemCardProps) 
           </div>
         </div>
 
-        <h3 className="mt-4 font-display text-lg font-bold text-ink leading-snug">
-          {item.judul}
+        <h3 className="mt-4 font-display text-lg font-bold text-ink leading-snug hover:text-bridge-gold transition">
+          <Link href={`/perusahaan/kolaborasi/${item.id}`}>
+            {item.judul}
+          </Link>
         </h3>
         <p className="mt-2 text-xs text-steel line-clamp-3 leading-relaxed">
           {item.deskripsi}
@@ -77,14 +79,14 @@ export function KolaborasiItemCard({ item, onDelete }: KolaborasiItemCardProps) 
 
         <div className="flex items-center gap-2">
           <Link
-            href={`/perusahaan/pelamar?kolaborasiId=${item.id}`}
+            href={`/perusahaan/kolaborasi/${item.id}`}
             className="inline-flex items-center gap-1.5 rounded-full bg-ink/5 px-3 py-1.5 font-medium text-ink hover:bg-ink hover:text-paper transition text-xs"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
             </svg>
-            Pelamar ({item.pelamar_count || 0})
+            Detail & Pelamar ({item.pelamar_count || 0})
           </Link>
 
           <button
