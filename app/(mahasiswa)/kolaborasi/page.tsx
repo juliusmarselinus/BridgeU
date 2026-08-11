@@ -4,8 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { Kolaborasi } from "@/lib/dummy-data";
 import { ApplyModal } from "@/components/ApplyModal";
+import { Kolaborasi } from "@/lib/types";
+import {
+  fetchMahasiswaMatchProfile,
+  rankKolaborasiByMatch,
+  MahasiswaMatchProfile,
+} from "@/lib/matching";
 
 type StoredUser = {
   nama: string;
@@ -18,7 +23,7 @@ function initials(name: string) {
   return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
 
-/** Map raw Supabase kolaborasi row → Kolaborasi type used by the UI */
+/** Map raw Supabase row -> Kolaborasi (termasuk raw id buat matching) */
 function mapDbRow(row: any): Kolaborasi {
   return {
     id: row.id,
@@ -31,40 +36,57 @@ function mapDbRow(row: any): Kolaborasi {
     lokasi: row.kota?.nama_kota ?? "-",
     batasWaktu: row.batas_waktu
       ? new Date(row.batas_waktu).toLocaleDateString("id-ID", {
-          day: "numeric", month: "long", year: "numeric",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
         })
       : "-",
-    statusModerasi: row.status_moderasi === "Disetujui" ? "Disetujui"
-      : row.status_moderasi === "Ditolak" ? "Ditolak" : "Menunggu",
+    statusModerasi:
+      row.status_moderasi === "Disetujui"
+        ? "Disetujui"
+        : row.status_moderasi === "Ditolak"
+        ? "Ditolak"
+        : "Menunggu",
     tags: row.kolaborasi_skills
       ? row.kolaborasi_skills.map((ks: any) => ks.skills?.nama_skill).filter(Boolean)
       : [],
-    matchScore: 85,
     tingkatKesulitan:
-      row.tingkat_kesulitan === "Pemula" ? "Pemula"
-      : row.tingkat_kesulitan === "Lanjutan" ? "Lanjutan"
-      : "Menengah",
+      row.tingkat_kesulitan === "Pemula"
+        ? "Pemula"
+        : row.tingkat_kesulitan === "Lanjutan"
+        ? "Lanjutan"
+        : "Menengah",
     rekomendasiProdi: row.kolaborasi_target_prodi
       ? row.kolaborasi_target_prodi.map((kp: any) => kp.program_studi?.nama_prodi).filter(Boolean)
       : [],
     gajiStipend: row.gaji_stipend ?? undefined,
-    kuota: row.kuota ?? 0,
-    kuotaTerisi: row.kuota_terisi ?? 0,
-    statusPublikasi: "Terbit",
+    slot: row.slot ?? null,
+
+    skillIds: row.kolaborasi_skills
+      ? row.kolaborasi_skills.map((ks: any) => ks.skill_id).filter((v: any) => v != null)
+      : [],
+    kategoriMinatIds: row.kolaborasi_kategori_minat
+      ? row.kolaborasi_kategori_minat.map((km: any) => km.kategori_id).filter((v: any) => v != null)
+      : [],
+    prodiIds: row.kolaborasi_target_prodi
+      ? row.kolaborasi_target_prodi.map((kp: any) => kp.prodi_id).filter((v: any) => v != null)
+      : [],
   };
 }
 
+/** Fetch semua kolaborasi yang sudah disetujui, lengkap dengan relasi skill/minat/prodi */
 async function fetchKolaborasiFromSupabase(): Promise<Kolaborasi[]> {
   const { data, error } = await supabase
     .from("kolaborasi")
     .select(`
       id, judul, tipe, deskripsi, lokasi_id, batas_waktu, status_moderasi,
-      tingkat_kesulitan, gaji_stipend, perusahaan_id,
+      tingkat_kesulitan, gaji_stipend, perusahaan_id, slot,
       perusahaan:perusahaan_id ( nama_perusahaan ),
       kategori:kategori_id ( nama_kategori ),
       kota:lokasi_id ( nama_kota ),
-      kolaborasi_skills ( skills ( nama_skill ) ),
-      kolaborasi_target_prodi ( program_studi:prodi_id ( nama_prodi ) )
+      kolaborasi_skills ( skill_id, skills ( nama_skill ) ),
+      kolaborasi_kategori_minat ( kategori_id ),
+      kolaborasi_target_prodi ( prodi_id, program_studi:prodi_id ( nama_prodi ) )
     `)
     .eq("status_moderasi", "Disetujui")
     .order("created_at", { ascending: false });
@@ -81,6 +103,7 @@ export default function KolaborasiPage() {
   const [kolaborasiList, setKolaborasiList] = useState<Kolaborasi[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<StoredUser | null>(null);
+  const [mahasiswaProfile, setMahasiswaProfile] = useState<MahasiswaMatchProfile | null>(null);
   const [search, setSearch] = useState("");
   const [tipeFilter, setTipeFilter] = useState<"Semua" | "Akademik" | "Magang">("Semua");
   const [kategoriFilter, setKategoriFilter] = useState<string>("Semua");
@@ -94,9 +117,7 @@ export default function KolaborasiPage() {
 
   useEffect(() => {
     const measure = () => {
-      if (carouselRef.current) {
-        setContainerW(carouselRef.current.offsetWidth);
-      }
+      if (carouselRef.current) setContainerW(carouselRef.current.offsetWidth);
     };
     measure();
     window.addEventListener("resize", measure);
@@ -104,36 +125,39 @@ export default function KolaborasiPage() {
   }, []);
 
   useEffect(() => {
-    // Load user profile from localStorage / API
+    // Nama/universitas/prodi buat tampilan header - boleh tetap dari localStorage
     const storedUser = localStorage.getItem("bridgeu_user");
     if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch (e) { console.error(e); }
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error(e);
+      }
     }
 
-    // Fetch kolaborasi from Supabase
+    // Profil buat SCORING (skills, minat, prodi_id) WAJIB dari Supabase, by session login
+    fetchMahasiswaMatchProfile().then(setMahasiswaProfile);
+
     fetchKolaborasiFromSupabase().then((rows) => {
       setKolaborasiList(rows);
       setLoading(false);
     });
   }, []);
 
+  // Semua kolaborasi + skor, TANPA filter threshold (dipakai buat katalog/search di bawah)
   const kolaborasiWithScores = useMemo(() => {
-    const userProdi = user?.prodi || "Sistem Informasi";
-    return kolaborasiList.map((item) => {
-      const matchesProdi = item.rekomendasiProdi?.some((p) =>
-        p.toLowerCase().includes(userProdi.toLowerCase())
-      );
-      const baseScore = 85;
-      const matchScore = matchesProdi ? Math.min(baseScore + 5, 99) : baseScore - 10;
-      return { ...item, matchScore };
+    return rankKolaborasiByMatch(kolaborasiList, mahasiswaProfile, {
+      onlyPassingThreshold: false,
     });
-  }, [kolaborasiList, user]);
+  }, [kolaborasiList, mahasiswaProfile]);
 
+  // Rekomendasi utama buat carousel: HANYA yang lolos threshold kemiripan, top 4
   const smartRecommendations = useMemo(() => {
-    return [...kolaborasiWithScores]
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 4);
-  }, [kolaborasiWithScores]);
+    return rankKolaborasiByMatch(kolaborasiList, mahasiswaProfile, {
+      onlyPassingThreshold: true,
+      topN: 4,
+    });
+  }, [kolaborasiList, mahasiswaProfile]);
 
   const totalRecs = smartRecommendations.length;
 
@@ -173,12 +197,11 @@ export default function KolaborasiPage() {
   const prevCarousel = () => setCarouselIndex((prev) => (prev - 1 + totalRecs) % totalRecs);
 
   const GAP = 16;
-  const centerW = containerW > 0 ? Math.floor(containerW * 0.50) - GAP : 400;
-  const sideW   = containerW > 0 ? Math.floor(containerW * 0.25) - GAP : 180;
+  const centerW = containerW > 0 ? Math.floor(containerW * 0.5) - GAP : 400;
+  const sideW = containerW > 0 ? Math.floor(containerW * 0.25) - GAP : 180;
   const slotW = sideW;
-  const trackOffset = containerW > 0
-    ? (containerW - centerW) / 2 - carouselIndex * (slotW + GAP)
-    : 0;
+  const trackOffset =
+    containerW > 0 ? (containerW - centerW) / 2 - carouselIndex * (slotW + GAP) : 0;
 
   return (
     <main className="min-h-screen bg-paper pb-24 font-sans text-ink">
@@ -193,7 +216,8 @@ export default function KolaborasiPage() {
               Peluang Kolaborasi &amp; Magang
             </h1>
             <p className="text-sm text-paper/80 max-w-2xl leading-relaxed">
-              Jelajahi studi kasus akademik &amp; posisi magang dari perusahaan mitra terverifikasi, direkomendasikan secara pintar sesuai dengan profil latar belakang kamu.
+              Jelajahi studi kasus akademik &amp; posisi magang dari perusahaan mitra terverifikasi,
+              direkomendasikan secara pintar sesuai dengan profil skill dan minat kamu.
             </p>
           </div>
         </div>
@@ -213,8 +237,7 @@ export default function KolaborasiPage() {
       </AnimatePresence>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 space-y-8 -mt-2 relative z-20">
-
-        {/* ═══════ CAROUSEL ═══════ */}
+        {/* ═══════ CAROUSEL — hanya kolaborasi yang lolos threshold kemiripan ═══════ */}
         <section
           className="rounded-3xl bg-ink p-5 sm:p-7 text-paper shadow-2xl border-2 border-bridge-gold/40 relative overflow-hidden"
           onMouseEnter={() => setIsPaused(true)}
@@ -225,39 +248,57 @@ export default function KolaborasiPage() {
 
           <div className="flex items-center justify-between border-b border-white/15 pb-3 mb-5 relative z-20">
             <div className="flex items-center gap-2.5">
-              <span className="p-2 rounded-xl bg-bridge-gold/20 text-bridge-gold text-xs font-bold">AI</span>
+              <span className="p-2 rounded-xl bg-bridge-gold/20 text-bridge-gold text-xs font-bold">
+                AI
+              </span>
               <div>
                 <div className="flex items-center gap-2 font-mono text-xs text-bridge-gold font-bold uppercase tracking-wider">
                   <span>AI Smart Match Showcase</span>
                   {isPaused && (
-                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-paper/70 font-normal">Paused</span>
+                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-paper/70 font-normal">
+                      Paused
+                    </span>
                   )}
                 </div>
                 <h2 className="font-display text-base sm:text-xl font-extrabold text-paper mt-0.5">
-                  Rekomendasi Utama Spesialisasi {user?.prodi || "Sistem Informasi"}
+                  Rekomendasi Utama {user?.prodi ? `untuk ${user.prodi}` : ""}
                 </h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-1.5 font-mono text-xs text-bridge-gold font-bold bg-white/10 px-3 py-1 rounded-full border border-white/10">
-                <span>0{carouselIndex + 1}</span>
+                <span>{totalRecs > 0 ? `0${carouselIndex + 1}` : "00"}</span>
                 <span className="text-paper/40">/</span>
                 <span className="text-paper/60">0{totalRecs}</span>
               </div>
-              <button onClick={prevCarousel} className="h-9 w-9 rounded-full border border-white/20 bg-white/10 hover:bg-bridge-gold hover:text-ink text-paper font-mono font-bold text-xs flex items-center justify-center transition hover:scale-105 active:scale-95">←</button>
-              <button onClick={nextCarousel} className="h-9 w-9 rounded-full border border-white/20 bg-white/10 hover:bg-bridge-gold hover:text-ink text-paper font-mono font-bold text-xs flex items-center justify-center transition hover:scale-105 active:scale-95">→</button>
+              <button
+                onClick={prevCarousel}
+                className="h-9 w-9 rounded-full border border-white/20 bg-white/10 hover:bg-bridge-gold hover:text-ink text-paper font-mono font-bold text-xs flex items-center justify-center transition hover:scale-105 active:scale-95"
+              >
+                ←
+              </button>
+              <button
+                onClick={nextCarousel}
+                className="h-9 w-9 rounded-full border border-white/20 bg-white/10 hover:bg-bridge-gold hover:text-ink text-paper font-mono font-bold text-xs flex items-center justify-center transition hover:scale-105 active:scale-95"
+              >
+                →
+              </button>
             </div>
           </div>
 
-          {/* Viewport + Track */}
           <div ref={carouselRef} className="relative overflow-hidden" style={{ minHeight: 240 }}>
             {loading ? (
               <div className="flex items-center justify-center h-48 text-paper/50 font-mono text-sm">
                 Memuat rekomendasi...
               </div>
+            ) : !mahasiswaProfile ? (
+              <div className="flex items-center justify-center h-48 text-paper/50 font-mono text-sm text-center px-6">
+                Login sebagai mahasiswa untuk melihat rekomendasi yang dipersonalisasi.
+              </div>
             ) : totalRecs === 0 ? (
-              <div className="flex items-center justify-center h-48 text-paper/50 font-mono text-sm">
-                Belum ada kolaborasi yang tersedia saat ini.
+              <div className="flex items-center justify-center h-48 text-paper/50 font-mono text-sm text-center px-6">
+                Belum ada kolaborasi yang cukup cocok dengan skill/minat kamu saat ini. Lengkapi
+                profil kamu supaya rekomendasi makin akurat.
               </div>
             ) : (
               containerW > 0 && (
@@ -269,8 +310,8 @@ export default function KolaborasiPage() {
                 >
                   {smartRecommendations.map((rec, i) => {
                     const isActive = i === carouselIndex;
-                    const isPrev   = i === (carouselIndex - 1 + totalRecs) % totalRecs;
-                    const isNext   = i === (carouselIndex + 1) % totalRecs;
+                    const isPrev = i === (carouselIndex - 1 + totalRecs) % totalRecs;
+                    const isNext = i === (carouselIndex + 1) % totalRecs;
                     const isVisible = isActive || isPrev || isNext;
 
                     return (
@@ -287,9 +328,10 @@ export default function KolaborasiPage() {
                         }}
                         transition={{ type: "spring", stiffness: 300, damping: 35, mass: 0.8 }}
                         className={`flex-shrink-0 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden
-                          ${isActive
-                            ? "border-2 border-bridge-gold/80 bg-gradient-to-br from-white/15 via-white/10 to-white/5 backdrop-blur-xl shadow-[0_0_35px_rgba(201,168,76,0.3)] cursor-default"
-                            : "border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors"
+                          ${
+                            isActive
+                              ? "border-2 border-bridge-gold/80 bg-gradient-to-br from-white/15 via-white/10 to-white/5 backdrop-blur-xl shadow-[0_0_35px_rgba(201,168,76,0.3)] cursor-default"
+                              : "border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors"
                           }`}
                         style={{ minHeight: isActive ? 220 : 180 }}
                       >
@@ -302,10 +344,10 @@ export default function KolaborasiPage() {
                             <div>
                               <div className="flex items-center justify-between gap-2 mb-3">
                                 <span className="rounded-full bg-bridge-gold px-3.5 py-1 font-mono text-xs font-black text-ink shadow-md flex items-center gap-1">
-                                  {rec.matchScore}% Match
+                                  {rec.match.scorePercent}% Match
                                 </span>
                                 <div className="flex items-center gap-2">
-                                  {rec.rekomendasiProdi && rec.rekomendasiProdi.length > 0 && (
+                                  {rec.match.prodiCocok && (
                                     <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-0.5 rounded-full font-mono text-[10px] font-bold">
                                       Sesuai Prodi
                                     </span>
@@ -327,7 +369,10 @@ export default function KolaborasiPage() {
                               {rec.tags && rec.tags.length > 0 && (
                                 <div className="mt-3.5 flex flex-wrap gap-1.5">
                                   {rec.tags.slice(0, 4).map((tag) => (
-                                    <span key={tag} className="rounded-md bg-white/10 px-2.5 py-0.5 font-mono text-[10px] text-paper/90 border border-white/10">
+                                    <span
+                                      key={tag}
+                                      className="rounded-md bg-white/10 px-2.5 py-0.5 font-mono text-[10px] text-paper/90 border border-white/10"
+                                    >
                                       #{tag}
                                     </span>
                                   ))}
@@ -359,7 +404,9 @@ export default function KolaborasiPage() {
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between text-[10px] font-mono text-paper/60">
                                 <span>{isPrev ? "Sebelumnya" : "Selanjutnya"}</span>
-                                <span className="text-bridge-gold/80 font-bold">{rec.matchScore}%</span>
+                                <span className="text-bridge-gold/80 font-bold">
+                                  {rec.match.scorePercent}%
+                                </span>
                               </div>
                               <h4 className="font-display text-sm font-bold text-paper line-clamp-3 leading-snug">
                                 {rec.judul}
@@ -382,7 +429,7 @@ export default function KolaborasiPage() {
           </div>
         </section>
 
-        {/* ═══════ CATALOG LIST ═══════ */}
+        {/* ═══════ CATALOG LIST — semua kolaborasi, tetap tampil skor, tanpa filter threshold ═══════ */}
         <section className="space-y-6 pt-2">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b-2 border-steel/15 pb-6">
             <div className="flex-1 max-w-md">
@@ -435,7 +482,10 @@ export default function KolaborasiPage() {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="rounded-3xl border-2 border-steel/15 bg-white/60 p-5 h-64 animate-pulse" />
+                <div
+                  key={i}
+                  className="rounded-3xl border-2 border-steel/15 bg-white/60 p-5 h-64 animate-pulse"
+                />
               ))}
             </div>
           ) : (
@@ -463,22 +513,41 @@ export default function KolaborasiPage() {
                             {initials(k.perusahaan)}
                           </div>
                           <div className="min-w-0">
-                            <span className="font-mono text-xs font-bold text-ink truncate block max-w-[110px]">{k.perusahaan}</span>
-                            {k.matchScore && <div className="text-[10px] font-mono font-bold text-emerald-700">{k.matchScore}% Match</div>}
+                            <span className="font-mono text-xs font-bold text-ink truncate block max-w-[110px]">
+                              {k.perusahaan}
+                            </span>
+                            {mahasiswaProfile && (
+                              <div className="text-[10px] font-mono font-bold text-emerald-700">
+                                {k.match.scorePercent}% Match
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <span className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-extrabold shrink-0 ${k.tipe === "Akademik" ? "bg-slate-100 text-slate-800 border border-slate-300" : "bg-bridge-gold text-ink font-black"}`}>
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-extrabold shrink-0 ${
+                            k.tipe === "Akademik"
+                              ? "bg-slate-100 text-slate-800 border border-slate-300"
+                              : "bg-bridge-gold text-ink font-black"
+                          }`}
+                        >
                           {k.tipe}
                         </span>
                       </div>
                       <h3 className="mt-3.5 font-display text-lg font-bold text-ink leading-snug group-hover:text-bridge-gold transition-colors duration-200 line-clamp-2">
                         {k.judul}
                       </h3>
-                      <p className="mt-2 text-xs font-medium text-steel line-clamp-3 leading-relaxed">{k.deskripsi}</p>
+                      <p className="mt-2 text-xs font-medium text-steel line-clamp-3 leading-relaxed">
+                        {k.deskripsi}
+                      </p>
                       {k.tags && k.tags.length > 0 && (
                         <div className="mt-3.5 flex flex-wrap gap-1.5">
                           {k.tags.slice(0, 3).map((tag) => (
-                            <span key={tag} className="rounded-md bg-slate-100/80 border border-slate-200 px-2 py-0.5 font-mono text-[10px] text-steel font-bold">#{tag}</span>
+                            <span
+                              key={tag}
+                              className="rounded-md bg-slate-100/80 border border-slate-200 px-2 py-0.5 font-mono text-[10px] text-steel font-bold"
+                            >
+                              #{tag}
+                            </span>
                           ))}
                         </div>
                       )}
@@ -489,10 +558,16 @@ export default function KolaborasiPage() {
                         <span className="shrink-0">Batas: {k.batasWaktu}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Link href={`/kolaborasi/${k.id}`} className="flex-1 rounded-xl border-2 border-steel/20 py-2 text-center font-mono text-xs font-bold text-ink transition hover:bg-slate-50">
+                        <Link
+                          href={`/kolaborasi/${k.id}`}
+                          className="flex-1 rounded-xl border-2 border-steel/20 py-2 text-center font-mono text-xs font-bold text-ink transition hover:bg-slate-50"
+                        >
                           Detail
                         </Link>
-                        <Link href={`/kolaborasi/${k.id}`} className="flex-1 rounded-xl bg-ink py-2 text-center font-mono text-xs font-bold text-paper transition hover:bg-steel shadow-md flex items-center justify-center">
+                        <Link
+                          href={`/kolaborasi/${k.id}`}
+                          className="flex-1 rounded-xl bg-ink py-2 text-center font-mono text-xs font-bold text-paper transition hover:bg-steel shadow-md flex items-center justify-center"
+                        >
                           Ajukan
                         </Link>
                       </div>
@@ -503,8 +578,12 @@ export default function KolaborasiPage() {
 
               {filtered.length === 0 && !loading && (
                 <div className="col-span-3 py-16 text-center rounded-3xl border-2 border-dashed border-steel/25 bg-white/60">
-                  <p className="font-display text-lg font-bold text-ink">Tidak ada kolaborasi yang cocok</p>
-                  <p className="mt-1 text-xs text-steel font-medium">Coba ubah kata kunci pencarian atau sesuaikan filter kategori kamu.</p>
+                  <p className="font-display text-lg font-bold text-ink">
+                    Tidak ada kolaborasi yang cocok
+                  </p>
+                  <p className="mt-1 text-xs text-steel font-medium">
+                    Coba ubah kata kunci pencarian atau sesuaikan filter kategori kamu.
+                  </p>
                 </div>
               )}
             </motion.div>
@@ -513,7 +592,12 @@ export default function KolaborasiPage() {
       </div>
 
       {applyTarget && user && (
-        <ApplyModal data={applyTarget} user={user} onClose={() => setApplyTarget(null)} onSuccess={handleApplySuccess} />
+        <ApplyModal
+          data={applyTarget as any}
+          user={user}
+          onClose={() => setApplyTarget(null)}
+          onSuccess={handleApplySuccess}
+        />
       )}
     </main>
   );
