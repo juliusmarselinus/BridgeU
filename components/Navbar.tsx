@@ -120,13 +120,13 @@ type NotifIconConfig = {
 
 const NOTIF_ICON_CONFIG: { [key in NotificationType]: NotifIconConfig } = {
   success: {
-    bg: "bg-bridge-gold/15",
-    fg: "text-bridge-gold",
+    bg: "bg-emerald-500/10",
+    fg: "text-emerald-600",
     path: <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />,
   },
   info: {
-    bg: "bg-bridge-gold/15",
-    fg: "text-bridge-gold",
+    bg: "bg-primary/10",
+    fg: "text-primary",
     path: (
       <>
         <circle cx="12" cy="12" r="9" />
@@ -135,8 +135,8 @@ const NOTIF_ICON_CONFIG: { [key in NotificationType]: NotifIconConfig } = {
     ),
   },
   warning: {
-    bg: "bg-orange-500/15",
-    fg: "text-orange-400",
+    bg: "bg-orange-500/10",
+    fg: "text-orange-500",
     path: (
       <>
         <path d="M12 9v4M12 17h.01" strokeLinecap="round" />
@@ -178,13 +178,13 @@ function NotificationPanel({
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="absolute right-0 top-13 w-96 overflow-hidden rounded-3xl border border-bridge-gold/20 bg-ink shadow-[0_20px_50px_-12px_rgba(0,0,0,0.55)]">
+    <div className="absolute right-0 top-13 w-96 overflow-hidden rounded-3xl border border-border bg-card shadow-[0_20px_50px_-12px_rgba(23,59,108,0.25)]">
       {/* header */}
-      <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.03] px-5 py-4">
+      <div className="flex items-center justify-between border-b border-border bg-surface px-5 py-4">
         <div className="flex items-center gap-2">
-          <span className="font-display text-sm font-semibold text-paper">Notifikasi</span>
+          <span className="font-display text-sm font-semibold text-ink">Notifikasi</span>
           {unreadCount > 0 && (
-            <span className="rounded-full bg-bridge-gold/15 px-2 py-0.5 font-mono text-[10px] font-semibold text-bridge-gold">
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-primary">
               {unreadCount} baru
             </span>
           )}
@@ -192,7 +192,7 @@ function NotificationPanel({
         {unreadCount > 0 && (
           <button
             onClick={onMarkAllAsRead}
-            className="font-mono text-[11px] text-steel transition hover:text-bridge-gold"
+            className="font-mono text-[11px] text-steel transition hover:text-primary"
           >
             Tandai semua dibaca
           </button>
@@ -203,10 +203,10 @@ function NotificationPanel({
       <div className="max-h-96 overflow-y-auto">
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-5 py-12 text-center">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-paper/30">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-steel/50">
               <BellIcon />
             </div>
-            <p className="font-mono text-xs text-paper/40">Belum ada notifikasi</p>
+            <p className="font-mono text-xs text-steel/60">Belum ada notifikasi</p>
           </div>
         ) : (
           notifications.map((n, i) => (
@@ -214,32 +214,32 @@ function NotificationPanel({
               key={n.id}
               onClick={() => onMarkAsRead(n.id)}
               className={`flex w-full items-start gap-3 px-5 py-4 text-left transition ${
-                i !== notifications.length - 1 ? "border-b border-white/5" : ""
-              } ${n.read ? "hover:bg-white/[0.04]" : "bg-bridge-gold/[0.06] hover:bg-bridge-gold/[0.1]"}`}
+                i !== notifications.length - 1 ? "border-b border-border" : ""
+              } ${n.read ? "hover:bg-surface" : "bg-primary/[0.05] hover:bg-primary/[0.08]"}`}
             >
               <NotifIcon type={n.type} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <span
                     className={`truncate font-display text-[13px] font-semibold ${
-                      n.read ? "text-paper/70" : "text-paper"
+                      n.read ? "text-steel" : "text-ink"
                     }`}
                   >
                     {n.title}
                   </span>
-                  {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-bridge-gold" />}
+                  {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
                 </div>
                 {n.message && (
                   <p
                     className={`mt-1 font-mono text-[11px] leading-relaxed ${
-                      n.read ? "text-paper/40" : "text-paper/65"
+                      n.read ? "text-steel/50" : "text-steel"
                     }`}
                   >
                     {n.message}
                   </p>
                 )}
                 {n.time && (
-                  <span className="mt-1.5 block font-mono text-[10px] text-paper/35">{n.time}</span>
+                  <span className="mt-1.5 block font-mono text-[10px] text-steel/40">{n.time}</span>
                 )}
               </div>
             </button>
@@ -249,7 +249,7 @@ function NotificationPanel({
 
       {/* footer */}
       {notifications.length > 0 && (
-        <div className="border-t border-white/10 bg-white/[0.03] px-5 py-2.5 text-center">
+        <div className="border-t border-border bg-surface px-5 py-2.5 text-center">
           <span className="font-mono text-[11px] text-steel">
             Menampilkan {notifications.length} notifikasi terakhir
           </span>
@@ -310,12 +310,12 @@ function NotificationBell() {
         aria-label="Notifikasi"
         onClick={() => setOpen((p) => !p)}
         className={`relative flex h-9 w-9 items-center justify-center rounded-full transition ${
-          open ? "bg-white/15 text-paper" : "text-paper/60 hover:bg-white/10 hover:text-paper"
+          open ? "bg-primary/10 text-primary" : "text-steel hover:bg-surface hover:text-ink"
         }`}
       >
         <BellIcon />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full border-2 border-ink bg-bridge-gold px-1 font-mono text-[10px] font-bold leading-none text-ink">
+          <span className="absolute -right-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full border-2 border-card bg-primary px-1 font-mono text-[10px] font-bold leading-none text-white">
             {unreadCount}
           </span>
         )}
@@ -388,15 +388,15 @@ export function Navbar() {
   }, []);
 
   return (
-    <div className="sticky top-4 z-40 px-4 sm:px-6">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-2xl border border-bridge-gold/20 bg-ink px-6 py-3.5 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.4)]">
+    <div className="fixed inset-x-0 top-4 z-40 px-4 sm:px-6">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/40 bg-white/80 px-6 py-3.5 shadow-[0_4px_24px_-6px_rgba(23,59,108,0.18)] backdrop-blur-xl">
         {/* Logo */}
-        <Link href="/" className="font-display text-lg font-semibold tracking-tight text-paper">
-          Bridge<span className="text-bridge-gold">U</span>
+        <Link href="/" className="font-display text-lg font-semibold tracking-tight text-ink">
+          Bridge<span className="text-primary">U</span>
         </Link>
 
         {/* Center nav links with dot separators */}
-        <div className="hidden items-center gap-5 font-mono text-[13px] text-paper/70 md:flex">
+        <div className="hidden items-center gap-5 font-mono text-[13px] text-steel md:flex">
           {navLinks.map((link, i) => {
             const active = pathname === link.href;
             return (
@@ -404,13 +404,13 @@ export function Navbar() {
                 <Link
                   href={link.href}
                   className={`transition ${
-                    active ? "text-paper" : "text-paper/60 hover:text-paper"
+                    active ? "text-ink" : "text-steel hover:text-ink"
                   }`}
                 >
                   {link.label}
                 </Link>
                 {i < navLinks.length - 1 && (
-                  <span className="text-paper/25">&middot;</span>
+                  <span className="text-border">&middot;</span>
                 )}
               </div>
             );
@@ -425,14 +425,14 @@ export function Navbar() {
 
           <Link
             href="/profile"
-            className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/10 text-paper/80 transition hover:bg-white/20"
+            className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary transition hover:bg-primary/20"
             aria-label="Profil"
           >
             {user?.foto ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={user.foto} alt="Foto profil" className="h-full w-full object-cover" />
             ) : user ? (
-              <span className="font-mono text-[11px] font-medium text-paper">
+              <span className="font-mono text-[11px] font-medium text-primary">
                 {initials(user.nama)}
               </span>
             ) : (

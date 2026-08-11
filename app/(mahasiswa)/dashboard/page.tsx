@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useDashboard } from "./hooks/useDashboard";
+import { GradientBars } from "@/components/ui/gradient-bars-background";
 import { DashboardHero } from "./components/DashboardHero";
 import { DashboardStatsCards } from "./components/DashboardStats";
 import { DashboardPengajuanList } from "./components/DashboardPengajuanList";
@@ -23,9 +24,20 @@ export default function DashboardPage() {
   if (!authChecked && !loading) return null;
 
   return (
-    <main className="min-h-screen bg-paper pb-24 font-sans text-ink">
+    <main className="relative overflow-hidden bg-gradient-to-b from-secondary/15 via-clouds to-clouds pb-24 font-sans text-ink">
+      {/* Soft ambient bars — very subtle, just to break up the flat background */}
+      <GradientBars
+        numBars={20}
+        gradientFrom="rgb(176, 208, 218)"
+        gradientTo="transparent"
+        animationDuration={7}
+        className="opacity-70"
+      />
+
       {/* 1. HERO SECTION */}
-      <DashboardHero loading={loading} user={user} stats={stats} />
+      <div className="relative z-10">
+        <DashboardHero loading={loading} user={user} stats={stats} />
+      </div>
 
       {/* 2. OVERLAPPING / STACKED CARDS CONTENT */}
       <div className="relative mx-auto max-w-6xl px-6 -mt-16 z-30 space-y-10">

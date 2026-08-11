@@ -34,10 +34,10 @@ export function DashboardBadges({ userBadges }: DashboardBadgesProps) {
     >
       <div className="flex items-center justify-between border-b border-steel/15 pb-3">
         <h3 className="font-display text-base font-bold text-ink flex items-center gap-2">
-          <IconAward className="w-5 h-5 text-bridge-gold" />
+          <IconAward className="w-5 h-5 text-blue" />
           Pencapaian kamu
         </h3>
-        <span className="font-mono text-xs font-bold text-bridge-gold bg-bridge-gold/15 px-2.5 py-1 rounded-md border border-bridge-gold/30">
+        <span className="font-mono text-xs font-bold text-blue bg-bridge-gold/15 px-2.5 py-1 rounded-md border border-bridge-gold/30">
           {userBadges.length} Badge Unlocked
         </span>
       </div>

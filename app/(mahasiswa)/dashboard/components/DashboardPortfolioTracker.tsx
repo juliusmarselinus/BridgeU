@@ -11,10 +11,12 @@ export function DashboardPortfolioTracker() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4, duration: 0.5 }}
-      className="rounded-2xl border-2 border-bridge-gold/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-6 space-y-3 shadow-md"
+      className="space-y-3 rounded-2xl border-2 border-[#B9D5EC]/0 bg-gradient-to-br from-[#F7FAFC] via-[#F3F8FC] to-[#EAF3FA] p-6 shadow-md"
     >
-      <div className="flex items-center gap-2">
-        <IconFileText className="w-5 h-5 text-bridge-gold" />
+      <div className="relative z-10 flex items-center gap-2.5">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-bridge-gold shrink-0">
+          <IconFileText className="w-4.5 h-4.5" />
+        </span>
         <h4 className="font-display text-sm font-bold text-ink">Student Portfolio Tracker</h4>
       </div>
       <p className="text-xs font-medium text-steel leading-relaxed">
@@ -22,7 +24,7 @@ export function DashboardPortfolioTracker() {
       </p>
       <Link
         href="/profile"
-        className="inline-block font-mono text-xs font-bold text-ink hover:text-bridge-gold underline underline-offset-4"
+        className="relative z-10 inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 font-mono text-xs font-bold text-paper transition hover:bg-steel hover:shadow-md"
       >
         Cek Profil & Portofolio →
       </Link>

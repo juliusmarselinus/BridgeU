@@ -44,7 +44,7 @@ export function DashboardPengajuanList({ pengajuan }: DashboardPengajuanListProp
         </div>
         <Link
           href="/status"
-          className="font-mono text-xs font-bold text-bridge-gold underline underline-offset-4 transition hover:text-ink"
+          className="font-mono text-xs font-bold text-blue underline underline-offset-4 transition hover:text-ink"
         >
           Lihat semua →
         </Link>

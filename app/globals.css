@@ -2,19 +2,36 @@
 @import "tailwindcss";
 
 :root {
-  --background: #F2EDE5;   /* Warm Cream */
---foreground: #0F2A44;   /* Navy */
---color-bridge-gold: #B08A44;   /* Antique Gold */
---color-steel: #7A8CA3;         /* Blue Gray */
+  --background: #DCE9F5;   /* Powder Blue */
+--foreground: #173B6C;   /* Navy */
+--color-bridge-gold: #F1E4D1;   /* Bone accent */
+--color-steel: #496783;         /* Muted Navy-Blue */
 --color-verified: #5B7F5E;
 }
 
 @theme inline {
   --color-paper: var(--background);
   --color-ink: var(--foreground);
-  --color-bridge-gold: #B08A44;   /* antique gold, lebih muted dari #C98A3D */
-  --color-steel: #7A8CA3;         /* slate/blue-gray */
-  --color-verified: #5B7F5E;      /* tetep, udah cocok */
+  --color-bridge-gold: #F1E4D1;   /* bone accent, matches Hero highlight */
+  --color-steel: #496783;         /* muted navy-blue, matches Hero body text */
+  --color-verified: #5B7F5E;      /* tetep, status color */
+
+  /* Restored — dipakai navbar, ProgramsSection, HeroScrollSection, halaman daftar */
+  --color-primary: #216DC0;         /* accent blue, matches Hero label/link color */
+  --color-secondary: #A9CBEA;       /* light blue, matches Hero gradient accent */
+  --color-surface: #EAF2FB;         /* light panel tint above background */
+  --color-card: #FFFFFF;            /* card/panel background */
+  --color-border: #C7D9E8;          /* hairline border */
+  --color-text-primary: var(--foreground);
+  --color-text-secondary: #496783;  /* sama seperti steel, konsisten */
+  --color-muted: #8CA6C2;
+
+  /* Dashboard app-shell palette — dipakai khusus buat hero/cover section
+     dashboard mahasiswa, biar ada division tegas dari konten di bawahnya
+     (bukan nyambung/blending kayak landing page) */
+  --color-sky: #8CC1E9;      /* clear skies */
+  --color-ocean: #12284B;    /* deep ocean */
+  --color-clouds: #EDF4FA;   /* clouds (blue) */
 
   --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
@@ -23,10 +40,10 @@
 body {
   background: linear-gradient(
     -45deg,
-    #F4F8FE,
-    #EAF3FF,
-    #F4F8FE,
-    #E9F2FD
+    #DCE9F5,
+    #EAF2FB,
+    #DCE9F5,
+    #D0E6FD
   );
   background-size: 300% 300%;
   animation: bgFlow 30s ease infinite;
