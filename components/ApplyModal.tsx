@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
 type StoredUser = {
@@ -80,6 +80,8 @@ export function ApplyModal({
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const mouseDownOnBackdrop = useRef(false);
+
   const progress = ((step + 1) / STEPS.length) * 100;
 
   const canGoNext = () => {
@@ -100,12 +102,10 @@ export function ApplyModal({
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      // 1. Dapatkan user id yang sedang login
       const { data: authData } = await supabase.auth.getUser();
       const currentUserId = authData?.user?.id;
 
       if (currentUserId && data.id) {
-        // Insert ke tabel pendaftaran_kolaborasi Supabase
         const { error: insertErr } = await supabase
           .from("pendaftaran_kolaborasi")
           .insert({
@@ -123,7 +123,6 @@ export function ApplyModal({
       console.error("Error submitting application:", err);
     }
 
-    // Backup ke localStorage
     const existing = JSON.parse(localStorage.getItem("bridgeu_pengajuan") || "[]");
     existing.push({
       id: data.id,
@@ -150,7 +149,18 @@ export function ApplyModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 animate-in fade-in duration-200"
+      onMouseDown={(e) => {
+        mouseDownOnBackdrop.current = e.target === e.currentTarget;
+      }}
+      onMouseUp={(e) => {
+        if (mouseDownOnBackdrop.current && e.target === e.currentTarget) {
+          onClose();
+        }
+        mouseDownOnBackdrop.current = false;
+      }}
+    >
       <div className="flex max-h-[90vh] w-full max-w-xl flex-col rounded-2xl bg-paper shadow-2xl border border-steel/20 animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-steel/10 px-7 py-5 shrink-0">
@@ -183,8 +193,7 @@ export function ApplyModal({
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto px-7 py-6 space-y-6">
-          {/* STEP 0: Data Pemohon (read-only, stacked) + Tujuan */}
+        <div className="overflow-y-auto px-7 py-6 space-y-6 scrollbar-hide">
           {step === 0 && (
             <>
               <div className="rounded-xl border border-steel/15 bg-steel/5 p-5">
@@ -218,7 +227,6 @@ export function ApplyModal({
             </>
           )}
 
-          {/* STEP 1: Ketersediaan */}
           {step === 1 && (
             <>
               <div>
@@ -265,7 +273,6 @@ export function ApplyModal({
             </>
           )}
 
-          {/* STEP 2: Portofolio */}
           {step === 2 && (
             <div>
               <label className="text-[10px] font-bold tracking-wider text-steel uppercase">
@@ -284,7 +291,6 @@ export function ApplyModal({
             </div>
           )}
 
-          {/* STEP 3: Dokumen + Review */}
           {step === 3 && (
             <>
               <div>

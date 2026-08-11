@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { ApplyModal } from "@/components/ApplyModal";
+import { DetailModal } from "@/components/DetailModal";
 import { Kolaborasi } from "@/lib/types";
 import {
   fetchMahasiswaMatchProfile,
@@ -17,6 +16,7 @@ type StoredUser = {
   nama: string;
   universitas: string;
   prodi: string;
+  semester?: string;
 };
 
 function initials(name: string) {
@@ -100,35 +100,59 @@ async function fetchKolaborasiFromSupabase(): Promise<Kolaborasi[]> {
   return (data ?? []).map(mapDbRow);
 }
 
+/** Fetch profil pemohon (nama, universitas, prodi, semester) langsung dari Supabase — bukan localStorage */
+async function fetchApplicantProfile(): Promise<StoredUser | null> {
+  const { data: authData } = await supabase.auth.getUser();
+  const uid = authData?.user?.id;
+  if (!uid) return null;
+
+  const { data: profile, error } = await supabase
+    .from("mahasiswa_profiles")
+    .select(`
+      nama_lengkap,
+      semester,
+      universitas:universitas_id ( nama_universitas ),
+      prodi:prodi_id ( nama_prodi )
+    `)
+    .eq("user_id", uid)
+    .single();
+
+  if (error || !profile) {
+    console.error("Gagal memuat profil mahasiswa:", error?.message);
+    return null;
+  }
+
+  return {
+    nama: profile.nama_lengkap,
+    universitas: (profile.universitas as any)?.nama_universitas ?? "-",
+    prodi: (profile.prodi as any)?.nama_prodi ?? "-",
+    semester: profile.semester ?? undefined,
+  };
+}
+
 export default function KolaborasiPage() {
-  const router = useRouter();
   const [kolaborasiList, setKolaborasiList] = useState<Kolaborasi[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<StoredUser | null>(null);
+  const [applicantProfile, setApplicantProfile] = useState<StoredUser | null>(null);
   const [mahasiswaProfile, setMahasiswaProfile] = useState<MahasiswaMatchProfile | null>(null);
   const [search, setSearch] = useState("");
   const [tipeFilter, setTipeFilter] = useState<"Semua" | "Akademik" | "Magang">("Semua");
-  const [kategoriFilter, setKategoriFilter] = useState<string>("Semua");
   const [applyTarget, setApplyTarget] = useState<Kolaborasi | null>(null);
-  const [lowMatchTarget, setLowMatchTarget] = useState<any | null>(null);
+  const [detailTarget, setDetailTarget] = useState<Kolaborasi | null>(null);
   const [successToast, setSuccessToast] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [containerW, setContainerW] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 18;
 
   useEffect(() => {
-    const measure = () => {
-      if (carouselRef.current) setContainerW(carouselRef.current.offsetWidth);
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    // eslint-disable-next-line no-console
+    console.log("COMPONENT CHECK:", { ApplyModal, DetailModal, AnimatePresence, motion });
   }, []);
 
   useEffect(() => {
-    // Nama/universitas/prodi buat tampilan header - boleh tetap dari localStorage
+    // Nama/universitas/prodi buat tampilan header ringan - boleh tetap dari localStorage
     const storedUser = localStorage.getItem("bridgeu_user");
     if (storedUser) {
       try {
@@ -137,6 +161,9 @@ export default function KolaborasiPage() {
         console.error(e);
       }
     }
+
+    // Profil pemohon buat form Ajukan Kolaborasi — WAJIB dari Supabase (bukan localStorage)
+    fetchApplicantProfile().then(setApplicantProfile);
 
     // Profil buat SCORING (skills, minat, prodi_id) WAJIB dari Supabase, by session login
     fetchMahasiswaMatchProfile().then(setMahasiswaProfile);
@@ -154,11 +181,11 @@ export default function KolaborasiPage() {
     });
   }, [kolaborasiList, mahasiswaProfile]);
 
-  // Rekomendasi utama buat carousel: HANYA yang lolos threshold kemiripan, top 4
+  // Rekomendasi utama buat carousel: HANYA yang lolos threshold kemiripan, top 5
   const smartRecommendations = useMemo(() => {
     return rankKolaborasiByMatch(kolaborasiList, mahasiswaProfile, {
       onlyPassingThreshold: true,
-      topN: 4,
+      topN: 5,
     });
   }, [kolaborasiList, mahasiswaProfile]);
 
@@ -172,11 +199,6 @@ export default function KolaborasiPage() {
     return () => clearInterval(timer);
   }, [isPaused, totalRecs]);
 
-  const categories = useMemo(() => {
-    const set = new Set(kolaborasiWithScores.map((k) => k.kategori));
-    return ["Semua", ...Array.from(set)];
-  }, [kolaborasiWithScores]);
-
   const filtered = useMemo(() => {
     return kolaborasiWithScores.filter((k) => {
       const matchSearch =
@@ -185,18 +207,15 @@ export default function KolaborasiPage() {
         k.kategori.toLowerCase().includes(search.toLowerCase()) ||
         (k.tags && k.tags.some((t) => t.toLowerCase().includes(search.toLowerCase())));
       const matchTipe = tipeFilter === "Semua" || k.tipe === tipeFilter;
-      const matchKategori = kategoriFilter === "Semua" || k.kategori === kategoriFilter;
-      return matchSearch && matchTipe && matchKategori;
+      return matchSearch && matchTipe;
     });
-  }, [kolaborasiWithScores, search, tipeFilter, kategoriFilter]);
+  }, [kolaborasiWithScores, search, tipeFilter]);
 
-  const handleAjukanClick = (k: Kolaborasi & { match: { scorePercent: number } }) => {
-    if (k.match.scorePercent < 50) {
-      setLowMatchTarget(k);
-    } else {
-      setApplyTarget(k);
-    }
-  };
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedItems = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleApplySuccess = () => {
     setApplyTarget(null);
@@ -204,15 +223,19 @@ export default function KolaborasiPage() {
     setTimeout(() => setSuccessToast(false), 3000);
   };
 
+  // Reset ke halaman 1 saat filter/search berubah
+  const handleSearchChange = (val: string) => { setSearch(val); setCurrentPage(1); };
+  const handleTipeChange = (t: "Semua" | "Akademik" | "Magang") => { setTipeFilter(t); setCurrentPage(1); };
+
+  // Carousel infinite: index asli 0..totalRecs-1
   const nextCarousel = () => setCarouselIndex((prev) => (prev + 1) % totalRecs);
   const prevCarousel = () => setCarouselIndex((prev) => (prev - 1 + totalRecs) % totalRecs);
 
   const GAP = 16;
-  const centerW = containerW > 0 ? Math.floor(containerW * 0.5) - GAP : 400;
-  const sideW = containerW > 0 ? Math.floor(containerW * 0.25) - GAP : 180;
-  const slotW = sideW;
-  const trackOffset =
-    containerW > 0 ? (containerW - centerW) / 2 - carouselIndex * (slotW + GAP) : 0;
+
+  // Carousel absolute-positioned: active selalu center, prev di kiri, next di kanan
+  // Lebar: active = 50% container, side = 25% container
+  // Tidak bergantung pada containerW untuk layout agar selalu akurat
 
   return (
     <main className="min-h-screen bg-paper pb-24 font-sans text-ink">
@@ -297,54 +320,65 @@ export default function KolaborasiPage() {
             </div>
           </div>
 
-          <div ref={carouselRef} className="relative overflow-hidden" style={{ minHeight: 240 }}>
+          <div className="relative" style={{ height: 260 }}>
             {loading ? (
-              <div className="flex items-center justify-center h-48 text-paper/50 font-mono text-sm">
+              <div className="flex items-center justify-center h-full text-paper/50 font-mono text-sm">
                 Memuat rekomendasi...
               </div>
             ) : !mahasiswaProfile ? (
-              <div className="flex items-center justify-center h-48 text-paper/50 font-mono text-sm text-center px-6">
+              <div className="flex items-center justify-center h-full text-paper/50 font-mono text-sm text-center px-6">
                 Login sebagai mahasiswa untuk melihat rekomendasi yang dipersonalisasi.
               </div>
             ) : totalRecs === 0 ? (
-              <div className="flex items-center justify-center h-48 text-paper/50 font-mono text-sm text-center px-6">
+              <div className="flex items-center justify-center h-full text-paper/50 font-mono text-sm text-center px-6">
                 Belum ada kolaborasi yang cukup cocok dengan skill/minat kamu saat ini. Lengkapi
                 profil kamu supaya rekomendasi makin akurat.
               </div>
             ) : (
-              containerW > 0 && (
-                <motion.div
-                  className="flex items-center"
-                  animate={{ x: trackOffset }}
-                  transition={{ type: "spring", stiffness: 300, damping: 35, mass: 0.8 }}
-                  style={{ gap: GAP, willChange: "transform" }}
-                >
-                  {smartRecommendations.map((rec, i) => {
-                    const isActive = i === carouselIndex;
-                    const isPrev = i === (carouselIndex - 1 + totalRecs) % totalRecs;
-                    const isNext = i === (carouselIndex + 1) % totalRecs;
-                    const isVisible = isActive || isPrev || isNext;
+              <>
+              {smartRecommendations.map((rec, i) => {
+                  const isActive = i === carouselIndex;
+                  const isPrev = i === (carouselIndex - 1 + totalRecs) % totalRecs;
+                  const isNext = i === (carouselIndex + 1) % totalRecs;
+                  const isVisible = isActive || isPrev || isNext;
 
-                    return (
+                  // Outer div: CSS positioning (tidak konflik dengan Framer Motion transform)
+                  // Active: kiri=25%, kanan=75% → persis di tengah
+                  // Prev:   kanan=25% (right-anchor) → di kiri active
+                  // Next:   kiri=75% → di kanan active
+                  const posStyle: React.CSSProperties = {
+                    position: "absolute",
+                    top: 0,
+                    height: "100%",
+                    transition: "left 0.45s cubic-bezier(0.16,1,0.3,1), right 0.45s cubic-bezier(0.16,1,0.3,1), width 0.45s cubic-bezier(0.16,1,0.3,1)",
+                    pointerEvents: isVisible ? "auto" : "none",
+                    zIndex: isActive ? 10 : 5,
+                    ...(isActive
+                      ? { left: "25%", width: "50%" }
+                      : isPrev
+                      ? { right: "75%", width: "24%" }
+                      : { left: "75%", width: "24%" }),
+                  };
+
+                  return (
+                    <div key={`carousel-slot-${i}`} style={posStyle}>
                       <motion.div
-                        key={rec.id}
                         onClick={() => {
                           if (isPrev) prevCarousel();
                           else if (isNext) nextCarousel();
                         }}
                         animate={{
-                          width: isActive ? centerW : sideW,
-                          opacity: isActive ? 1 : isVisible ? 0.55 : 0.2,
+                          opacity: isActive ? 1 : isVisible ? 0.55 : 0,
                           scale: isActive ? 1 : 0.93,
                         }}
                         transition={{ type: "spring", stiffness: 300, damping: 35, mass: 0.8 }}
-                        className={`flex-shrink-0 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden
+                        style={{ width: "100%", height: "100%" }}
+                        className={`rounded-2xl p-5 flex flex-col justify-between overflow-hidden relative
                           ${
                             isActive
                               ? "border-2 border-bridge-gold/80 bg-gradient-to-br from-white/15 via-white/10 to-white/5 backdrop-blur-xl shadow-[0_0_35px_rgba(201,168,76,0.3)] cursor-default"
-                              : "border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors"
+                              : "border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10"
                           }`}
-                        style={{ minHeight: isActive ? 220 : 180 }}
                       >
                         {isActive && (
                           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-bridge-gold to-transparent" />
@@ -395,15 +429,16 @@ export default function KolaborasiPage() {
                                 {rec.lokasi} &bull; Batas: {rec.batasWaktu}
                               </span>
                               <div className="flex items-center gap-2 shrink-0">
-                                <Link
-                                  href={`/kolaborasi/${rec.id}`}
+                                <button
+                                  type="button"
+                                  onClick={() => setDetailTarget(rec)}
                                   className="rounded-xl border border-white/30 px-3.5 py-1.5 font-mono text-xs font-bold text-paper hover:bg-white/10 transition"
                                 >
                                   Detail
-                                </Link>
+                                </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleAjukanClick(rec)}
+                                  onClick={() => setApplyTarget(rec)}
                                   className="rounded-xl bg-bridge-gold px-5 py-1.5 font-mono text-xs font-extrabold text-ink hover:bg-white transition shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center text-center"
                                 >
                                   Ajukan
@@ -415,7 +450,7 @@ export default function KolaborasiPage() {
                           <div className="flex flex-col gap-2 h-full justify-between">
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between text-[10px] font-mono text-paper/60">
-                                <span>{isPrev ? "Sebelumnya" : "Selanjutnya"}</span>
+                                <span>{isPrev ? "← Sebelumnya" : "Selanjutnya →"}</span>
                                 <span className="text-bridge-gold/80 font-bold">
                                   {rec.match.scorePercent}%
                                 </span>
@@ -433,10 +468,10 @@ export default function KolaborasiPage() {
                           </div>
                         )}
                       </motion.div>
-                    );
-                  })}
-                </motion.div>
-              )
+                    </div>
+                  );
+                })}
+              </>
             )}
           </div>
         </section>
@@ -448,7 +483,7 @@ export default function KolaborasiPage() {
               <input
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Cari judul, perusahaan, skill (Next.js, Figma, Python)..."
                 className="w-full rounded-2xl border-2 border-steel/20 bg-white/80 backdrop-blur-md px-4 py-3 text-sm text-ink outline-none transition focus:border-ink shadow-sm font-medium"
               />
@@ -457,7 +492,7 @@ export default function KolaborasiPage() {
               {(["Semua", "Akademik", "Magang"] as const).map((t) => (
                 <button
                   key={t}
-                  onClick={() => setTipeFilter(t)}
+                  onClick={() => handleTipeChange(t)}
                   className={`rounded-xl px-4 py-2 font-bold transition duration-200 shadow-sm ${
                     tipeFilter === t
                       ? "bg-ink text-paper shadow-md border-2 border-ink"
@@ -468,27 +503,6 @@ export default function KolaborasiPage() {
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex flex-wrap gap-2 font-mono text-xs">
-              {categories.map((kat) => (
-                <button
-                  key={kat}
-                  onClick={() => setKategoriFilter(kat)}
-                  className={`rounded-xl px-3.5 py-1.5 font-semibold transition duration-200 ${
-                    kategoriFilter === kat
-                      ? "bg-bridge-gold text-ink font-extrabold shadow-md border-2 border-bridge-gold"
-                      : "bg-white/70 backdrop-blur-md text-steel border border-steel/20 hover:border-steel hover:text-ink"
-                  }`}
-                >
-                  {kat}
-                </button>
-              ))}
-            </div>
-            <span className="font-mono text-xs text-steel font-bold shrink-0">
-              Menampilkan {filtered.length} Peluang
-            </span>
           </div>
 
           {loading ? (
@@ -503,11 +517,11 @@ export default function KolaborasiPage() {
           ) : (
             <motion.div
               layout
-              key={`${tipeFilter}-${kategoriFilter}-${search}`}
+              key={`${tipeFilter}-${search}-${currentPage}`}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               <AnimatePresence mode="popLayout">
-                {filtered.map((k, index) => (
+                {paginatedItems.map((k, index) => (
                   <motion.div
                     layout
                     key={k.id}
@@ -545,7 +559,7 @@ export default function KolaborasiPage() {
                           {k.tipe}
                         </span>
                       </div>
-                      <h3 className="mt-3.5 font-display text-lg font-bold text-ink leading-snug group-hover:text-bridge-gold transition-colors duration-200 line-clamp-2">
+                      <h3 className="mt-3.5 font-display text-lg font-bold text-ink leading-snug group-hover:underline decoration-bridge-gold decoration-2 underline-offset-2 transition-colors duration-200 line-clamp-2">
                         {k.judul}
                       </h3>
                       <p className="mt-2 text-xs font-medium text-steel line-clamp-3 leading-relaxed">
@@ -570,16 +584,17 @@ export default function KolaborasiPage() {
                         <span className="shrink-0">Batas: {k.batasWaktu}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Link
-                          href={`/kolaborasi/${k.id}`}
+                        <button
+                          type="button"
+                          onClick={() => setDetailTarget(k)}
                           className="flex-1 rounded-xl border-2 border-steel/20 py-2 text-center font-mono text-xs font-bold text-ink transition hover:bg-slate-50"
                         >
                           Detail
-                        </Link>
+                        </button>
                         <button
                           type="button"
-                          onClick={() => handleAjukanClick(k)}
-                          className="flex-1 rounded-xl bg-ink py-2 text-center font-mono text-xs font-bold text-paper transition hover:bg-steel shadow-md flex items-center justify-center cursor-pointer"
+                          onClick={() => setApplyTarget(k)}
+                          className="flex-1 rounded-xl bg-ink py-2 text-center font-mono text-xs font-bold text-paper transition hover:bg-steel shadow-md flex items-center justify-center"
                         >
                           Ajukan
                         </button>
@@ -589,7 +604,7 @@ export default function KolaborasiPage() {
                 ))}
               </AnimatePresence>
 
-              {filtered.length === 0 && !loading && (
+              {paginatedItems.length === 0 && !loading && (
                 <div className="col-span-3 py-16 text-center rounded-3xl border-2 border-dashed border-steel/25 bg-white/60">
                   <p className="font-display text-lg font-bold text-ink">
                     Tidak ada kolaborasi yang cocok
@@ -601,57 +616,57 @@ export default function KolaborasiPage() {
               )}
             </motion.div>
           )}
+
+          {/* ═══════ PAGINATION ═══════ */}
+          {!loading && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4 pb-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-9 w-9 rounded-full border-2 border-steel/20 bg-white/80 font-mono text-sm font-bold text-ink transition hover:border-ink hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+              >
+                ←
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`h-9 w-9 rounded-full border-2 font-mono text-sm font-bold transition shadow-sm ${
+                    page === currentPage
+                      ? "border-ink bg-ink text-paper shadow-md"
+                      : "border-steel/20 bg-white/80 text-ink hover:border-ink hover:bg-slate-50"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="h-9 w-9 rounded-full border-2 border-steel/20 bg-white/80 font-mono text-sm font-bold text-ink transition hover:border-ink hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+              >
+                →
+              </button>
+            </div>
+          )}
         </section>
       </div>
 
-      {/* MODAL KONFIRMASI SKOR KECOCOKAN RENDAH (<50%) */}
-      {lowMatchTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-3xl bg-paper p-6 sm:p-8 shadow-2xl border border-steel/20 space-y-5 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-display text-lg font-bold text-ink">Kecocokan Profil Dibawah 50%</h3>
-                <p className="font-mono text-xs text-steel">Skor Match: <span className="font-bold text-amber-600">{lowMatchTarget.match.scorePercent}%</span></p>
-              </div>
-            </div>
-
-            <p className="text-xs text-steel leading-relaxed">
-              Tingkat kecocokan profil kamu dengan persyaratan proyek ini berada di bawah 50% ({lowMatchTarget.match.scorePercent}%). Apakah Anda yakin tetap ingin melanjutkan pengajuan kolaborasi ini?
-            </p>
-
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-steel/15">
-              <button
-                type="button"
-                onClick={() => setLowMatchTarget(null)}
-                className="rounded-xl border border-steel/20 bg-white px-4 py-2 text-xs font-semibold text-steel hover:border-ink hover:text-ink transition"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const targetId = lowMatchTarget.id;
-                  setLowMatchTarget(null);
-                  router.push(`/kolaborasi/${targetId}`);
-                }}
-                className="rounded-xl bg-bridge-gold px-5 py-2 text-xs font-bold text-ink hover:bg-bridge-gold/90 transition shadow-md"
-              >
-                Yakin & Lanjutkan →
-              </button>
-            </div>
-          </div>
-        </div>
+      {detailTarget && (
+        <DetailModal
+          data={detailTarget}
+          onClose={() => setDetailTarget(null)}
+          onAjukan={() => {
+            setApplyTarget(detailTarget);
+            setDetailTarget(null);
+          }}
+        />
       )}
 
-      {applyTarget && user && (
+      {applyTarget && applicantProfile && (
         <ApplyModal
           data={applyTarget as any}
-          user={user}
+          user={applicantProfile}
           onClose={() => setApplyTarget(null)}
           onSuccess={handleApplySuccess}
         />
