@@ -1,54 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  dummyKolaborasi,
-  dummyRegisteredCompanies,
-  dummyManagedUsers,
-  Kolaborasi,
-  RegisteredCompany,
-  ManagedUser,
-} from "@/lib/dummy-data";
+import { useAdminDashboard } from "./hooks/useAdminDashboard";
 
 export default function AdminDashboardPage() {
-  const [kolaborasiList, setKolaborasiList] = useState<Kolaborasi[]>([]);
-  const [companyList, setCompanyList] = useState<RegisteredCompany[]>([]);
-  const [userList, setUserList] = useState<ManagedUser[]>([]);
+  const { stats, isLoading } = useAdminDashboard();
 
-  useEffect(() => {
-    // Hydrate Kolaborasi
-    const storedKolaborasi = localStorage.getItem("bridgeu_kolaborasi_list");
-    if (storedKolaborasi) {
-      const parsed = JSON.parse(storedKolaborasi);
-      queueMicrotask(() => setKolaborasiList(parsed));
-    } else {
-      queueMicrotask(() => setKolaborasiList(dummyKolaborasi));
-    }
-
-    // Hydrate Companies
-    const storedCompanies = localStorage.getItem("bridgeu_registered_companies");
-    if (storedCompanies) {
-      const parsed = JSON.parse(storedCompanies);
-      queueMicrotask(() => setCompanyList(parsed));
-    } else {
-      queueMicrotask(() => setCompanyList(dummyRegisteredCompanies));
-    }
-
-    // Hydrate Users
-    const storedUsers = localStorage.getItem("bridgeu_managed_users");
-    if (storedUsers) {
-      const parsed = JSON.parse(storedUsers);
-      queueMicrotask(() => setUserList(parsed));
-    } else {
-      queueMicrotask(() => setUserList(dummyManagedUsers));
-    }
-  }, []);
-
-  const totalUsers = userList.length;
-  const totalKolaborasi = kolaborasiList.length;
-  const pendingCompanies = companyList.filter((c) => c.statusVerifikasi === "Menunggu Verifikasi").length;
-  const verifiedCompanies = companyList.filter((c) => c.statusVerifikasi === "Terverifikasi").length;
+  const totalUsers = stats.totalUsers;
+  const totalKolaborasi = stats.totalKolaborasi;
+  const pendingCompanies = stats.pendingCompanies;
+  const verifiedCompanies = stats.verifiedCompanies;
 
   return (
     <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-8">
@@ -84,29 +45,40 @@ export default function AdminDashboardPage() {
               href="/admin/perusahaan"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-3 font-mono text-xs font-medium text-paper transition hover:bg-white/10"
             >
-              Verifikasi Perusahaan ({pendingCompanies})
+              Verifikasi Perusahaan ({isLoading ? "..." : pendingCompanies})
             </Link>
           </div>
         </div>
 
         {/* Ringkasan Statistik Sistem */}
         <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-white/10 pt-8">
-          <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
-            <p className="font-mono text-xs text-paper/60 uppercase tracking-wider">Total Pengguna</p>
-            <p className="mt-1 font-display text-3xl font-bold text-paper">{totalUsers}</p>
-          </div>
-          <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
-            <p className="font-mono text-xs text-paper/60 uppercase tracking-wider">Peluang Kolaborasi</p>
-            <p className="mt-1 font-display text-3xl font-bold text-bridge-gold">{totalKolaborasi}</p>
-          </div>
-          <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
-            <p className="font-mono text-xs text-paper/60 uppercase tracking-wider">Perlu Verifikasi</p>
-            <p className="mt-1 font-display text-3xl font-bold text-yellow-400">{pendingCompanies}</p>
-          </div>
-          <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
-            <p className="font-mono text-xs text-paper/60 uppercase tracking-wider">Mitra Terverifikasi</p>
-            <p className="mt-1 font-display text-3xl font-bold text-emerald-400">{verifiedCompanies}</p>
-          </div>
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="rounded-2xl bg-white/5 p-4 border border-white/5 animate-pulse">
+                <div className="h-3 w-20 bg-white/20 rounded mb-2"></div>
+                <div className="h-8 w-12 bg-white/20 rounded"></div>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
+                <p className="font-mono text-xs text-paper/60 uppercase tracking-wider">Total Pengguna</p>
+                <p className="mt-1 font-display text-3xl font-bold text-paper">{totalUsers}</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
+                <p className="font-mono text-xs text-paper/60 uppercase tracking-wider">Peluang Kolaborasi</p>
+                <p className="mt-1 font-display text-3xl font-bold text-bridge-gold">{totalKolaborasi}</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
+                <p className="font-mono text-xs text-paper/60 uppercase tracking-wider">Perlu Verifikasi</p>
+                <p className="mt-1 font-display text-3xl font-bold text-yellow-400">{pendingCompanies}</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
+                <p className="font-mono text-xs text-paper/60 uppercase tracking-wider">Mitra Terverifikasi</p>
+                <p className="mt-1 font-display text-3xl font-bold text-emerald-400">{verifiedCompanies}</p>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -127,7 +99,9 @@ export default function AdminDashboardPage() {
           >
             <div>
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 font-display text-xl font-bold group-hover:scale-105 transition">
-                🔍
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
               <h3 className="mt-5 font-display text-xl font-bold text-ink group-hover:text-emerald-700 transition">
                 Moderasi Kolaborasi
@@ -139,7 +113,7 @@ export default function AdminDashboardPage() {
             <div className="mt-6 pt-4 border-t border-steel/10 flex items-center justify-between font-mono text-xs text-emerald-700 font-semibold">
               <span>Buka Moderasi →</span>
               <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] text-blue-700">
-                {totalKolaborasi} Proyek Dipantau
+                {isLoading ? "..." : totalKolaborasi} Proyek Dipantau
               </span>
             </div>
           </Link>
@@ -151,7 +125,9 @@ export default function AdminDashboardPage() {
           >
             <div>
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 font-display text-xl font-bold group-hover:scale-105 transition">
-                ✓
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
               <h3 className="mt-5 font-display text-xl font-bold text-ink group-hover:text-emerald-700 transition">
                 Verifikasi Perusahaan
@@ -163,7 +139,7 @@ export default function AdminDashboardPage() {
             <div className="mt-6 pt-4 border-t border-steel/10 flex items-center justify-between font-mono text-xs text-emerald-700 font-semibold">
               <span>Buka Verifikasi →</span>
               <span className="rounded-full bg-yellow-50 px-2.5 py-1 text-[11px] text-yellow-700">
-                {pendingCompanies} Perlu Tindakan
+                {isLoading ? "..." : pendingCompanies} Perlu Tindakan
               </span>
             </div>
           </Link>
@@ -175,7 +151,9 @@ export default function AdminDashboardPage() {
           >
             <div>
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-100 text-purple-700 font-display text-xl font-bold group-hover:scale-105 transition">
-                👥
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
               </div>
               <h3 className="mt-5 font-display text-xl font-bold text-ink group-hover:text-emerald-700 transition">
                 Manajemen Pengguna
@@ -187,7 +165,7 @@ export default function AdminDashboardPage() {
             <div className="mt-6 pt-4 border-t border-steel/10 flex items-center justify-between font-mono text-xs text-emerald-700 font-semibold">
               <span>Kelola Pengguna →</span>
               <span className="rounded-full bg-purple-50 px-2.5 py-1 text-[11px] text-purple-700">
-                {totalUsers} Akun Aktif
+                {isLoading ? "..." : totalUsers} Akun Aktif
               </span>
             </div>
           </Link>
