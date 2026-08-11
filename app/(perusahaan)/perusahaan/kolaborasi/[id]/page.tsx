@@ -283,6 +283,7 @@ export default function DetailKolaborasiPage() {
               tanggal_daftar,
               status,
               catatan_perusahaan,
+              url_portofolio_dokumen,
               mahasiswa_profiles (
                 nama_lengkap,
                 semester,
@@ -291,6 +292,15 @@ export default function DetailKolaborasiPage() {
                 reputation_score,
                 universitas ( nama_universitas ),
                 program_studi ( nama_prodi )
+              ),
+              riwayat_pengumpulan_kolaborasi (
+                id,
+                versi,
+                url_hasil,
+                catatan_mahasiswa,
+                evaluasi_perusahaan,
+                status_evaluasi,
+                created_at
               )
             )
           `)
@@ -330,6 +340,11 @@ export default function DetailKolaborasiPage() {
           // Map applicants
           const mappedPelamar: PelamarDetail[] = (row.pendaftaran_kolaborasi || []).map((p: any) => {
             const mProfile = p.mahasiswa_profiles;
+            const riwayat = (p.riwayat_pengumpulan_kolaborasi || []).sort(
+              (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+            const latestSubmission = riwayat[0] || null;
+
             return {
               id: p.id,
               kolaborasi_id: p.kolaborasi_id,
@@ -343,7 +358,11 @@ export default function DetailKolaborasiPage() {
               reputation_score: mProfile?.reputation_score || 0,
               tanggal_daftar: p.tanggal_daftar,
               status: p.status,
-              catatan_perusahaan: p.catatan_perusahaan,
+              catatan_perusahaan: latestSubmission?.evaluasi_perusahaan || p.catatan_perusahaan,
+              url_portofolio_dokumen: p.url_portofolio_dokumen,
+              url_hasil_kolaborasi: latestSubmission?.url_hasil,
+              catatan_hasil_kolaborasi: latestSubmission?.catatan_mahasiswa,
+              riwayat_pengumpulan: riwayat,
             };
           });
           setPelamarList(mappedPelamar);
@@ -1128,13 +1147,13 @@ export default function DetailKolaborasiPage() {
               <div className="rounded-2xl border border-steel/15 bg-white p-6 space-y-4">
                 <h3 className="font-display font-bold text-ink text-base">Daftar Tim Mahasiswa</h3>
                 <div className="space-y-4">
-                  {pelamarList.filter((p) => p.status === "Diterima" || p.status === "Selesai").length === 0 ? (
+                  {pelamarList.filter((p) => p.status === "Diterima" || p.status === "Diproses" || p.status === "Evaluasi" || p.status === "Revisi" || p.status === "Selesai").length === 0 ? (
                     <div className="py-8 text-center font-mono text-xs text-steel">
                       Belum ada mahasiswa yang berstatus diterima/aktif.
                     </div>
                   ) : (
                     pelamarList
-                      .filter((p) => p.status === "Diterima" || p.status === "Selesai")
+                      .filter((p) => p.status === "Diterima" || p.status === "Diproses" || p.status === "Evaluasi" || p.status === "Revisi" || p.status === "Selesai")
                       .map((member) => (
                         <div
                           key={member.id}
@@ -1154,15 +1173,19 @@ export default function DetailKolaborasiPage() {
                             </div>
                             <div className="flex items-center gap-2">
                               <span
-                                className={`rounded-full px-2 py-0.5 font-mono text-[9px] font-bold border ${
-                                  member.status === "Selesai"
-                                    ? "bg-blue-50 text-blue-800 border-blue-200"
-                                    : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                className={`rounded-full px-2.5 py-0.5 font-mono text-[9px] font-bold border ${
+                                  member.status === "Evaluasi"
+                                    ? "bg-purple-100 text-purple-800 border-purple-300"
+                                    : member.status === "Revisi"
+                                    ? "bg-orange-100 text-orange-800 border-orange-300"
+                                    : member.status === "Selesai"
+                                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                    : "bg-blue-100 text-blue-800 border-blue-200"
                                 }`}
                               >
-                                {member.status === "Selesai" ? "Selesai" : "Bekerja"}
+                                {member.status === "Evaluasi" ? "Menunggu Evaluasi" : member.status === "Revisi" ? "Perlu Revisi" : member.status}
                               </span>
-                              {member.status === "Diterima" && evaluatingId !== member.id && (
+                              {member.status !== "Selesai" && evaluatingId !== member.id && (
                                 <button
                                   onClick={() => {
                                     setEvaluatingId(member.id);
@@ -1170,11 +1193,35 @@ export default function DetailKolaborasiPage() {
                                   }}
                                   className="rounded-full bg-bridge-gold px-3.5 py-1.5 font-mono text-[10px] font-bold text-ink hover:bg-bridge-gold/90 transition shadow-xs"
                                 >
-                                  Tandai Selesai
+                                  Evaluasi &amp; Beri Masukan
                                 </button>
                               )}
                             </div>
                           </div>
+
+                          {/* INFORMASI TAUTAN KARYA HASIL MAHASISWA REAL */}
+                          {member.url_hasil_kolaborasi ? (
+                            <div className="mt-2 border-t border-steel/10 pt-2 font-mono text-xs space-y-1">
+                              <span className="text-[10px] text-steel font-bold uppercase block">Tautan Karya Mahasiswa:</span>
+                              <a
+                                href={member.url_hasil_kolaborasi}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-bridge-gold font-bold underline truncate block text-xs"
+                              >
+                                {member.url_hasil_kolaborasi} ↗
+                              </a>
+                              {member.catatan_hasil_kolaborasi && (
+                                <p className="font-sans text-[11px] text-ink italic bg-white p-2 rounded border border-steel/10">
+                                  &ldquo;{member.catatan_hasil_kolaborasi}&rdquo;
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="mt-2 border-t border-steel/10 pt-2 font-mono text-[10px] text-steel italic">
+                              Belum mengunggah tautan hasil karya.
+                            </div>
+                          )}
 
                           {evaluatingId === member.id && (
                             <div className="mt-3 border-t border-steel/10 pt-3 space-y-3">
@@ -1200,10 +1247,17 @@ export default function DetailKolaborasiPage() {
                                 </button>
                                 <button
                                   type="button"
+                                  onClick={() => handleUpdateStatus(member.id, "Revisi", evalCatatan)}
+                                  className="rounded-full border border-orange-300 bg-orange-50 px-4 py-1 font-mono text-[10px] font-bold text-orange-800 hover:bg-orange-100"
+                                >
+                                  Minta Revisi Karya
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => handleUpdateStatus(member.id, "Selesai", evalCatatan)}
                                   className="rounded-full bg-emerald-600 px-4 py-1 font-mono text-[10px] font-bold text-white hover:bg-emerald-700"
                                 >
-                                  Simpan Selesai
+                                  Setujui &amp; Selesai ✓
                                 </button>
                               </div>
                             </div>
@@ -1225,35 +1279,121 @@ export default function DetailKolaborasiPage() {
 
               {activeTeamCount > 0 && (
                 <div className="rounded-2xl border border-steel/15 bg-white p-6 space-y-4">
-                  <h3 className="font-display font-bold text-ink text-base">Laporan & Pengumpulan Tugas</h3>
-                  <div className="space-y-3 font-mono text-xs">
-                    <div className="flex items-center justify-between p-3 border border-steel/10 rounded-xl bg-steel/5">
-                      <div className="space-y-1">
-                        <span className="font-bold text-ink">Dokumen Proposal Awal Proyek</span>
-                        <p className="text-[10px] text-steel font-sans">Dikirim oleh Tim Mahasiswa</p>
-                      </div>
-                      <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-semibold text-emerald-800">
-                        Disetujui
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border border-steel/10 rounded-xl bg-steel/5">
-                      <div className="space-y-1">
-                        <span className="font-bold text-ink">Laporan Kemajuan Progres</span>
-                        <p className="text-[10px] text-steel font-sans">Dikirim oleh Tim Mahasiswa</p>
-                      </div>
-                      <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-semibold text-emerald-800">
-                        Disetujui
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border border-steel/10 rounded-xl bg-steel/5">
-                      <div className="space-y-1">
-                        <span className="font-bold text-ink">Laporan Hasil Akhir & Dokumentasi Luaran</span>
-                        <p className="text-[10px] text-steel font-sans">Menunggu unggahan berkas oleh tim</p>
-                      </div>
-                      <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[9px] font-semibold text-amber-800">
-                        Dalam Proses
-                      </span>
-                    </div>
+                  <h3 className="font-display font-bold text-ink text-base">Laporan &amp; Pengumpulan Karya Real Mahasiswa</h3>
+                  <div className="space-y-4 font-mono text-xs">
+                    {pelamarList.filter(p => p.url_hasil_kolaborasi || (p.riwayat_pengumpulan && p.riwayat_pengumpulan.length > 0)).length === 0 ? (
+                      <p className="text-[11px] text-steel py-4 text-center">Belum ada mahasiswa yang mengunggah hasil karya kolaborasi.</p>
+                    ) : (
+                      pelamarList
+                        .filter(p => p.url_hasil_kolaborasi || (p.riwayat_pengumpulan && p.riwayat_pengumpulan.length > 0))
+                        .map((item) => {
+                          const historyItems = item.riwayat_pengumpulan || [];
+                          return (
+                            <div key={item.id} className="p-5 border border-steel/15 rounded-2xl bg-steel/5 space-y-4 shadow-xs">
+                              <div className="flex items-center justify-between border-b border-steel/10 pb-3">
+                                <div className="space-y-0.5">
+                                  <strong className="text-ink text-sm font-bold block">{item.nama_lengkap}</strong>
+                                  <span className="text-[10px] text-steel font-sans">{item.program_studi} • {item.universitas}</span>
+                                </div>
+                                <span className={`rounded-full px-3 py-1 text-[10px] font-bold border ${
+                                  item.status === "Evaluasi" ? "bg-purple-100 text-purple-800 border-purple-300"
+                                  : item.status === "Revisi" ? "bg-orange-100 text-orange-800 border-orange-300"
+                                  : item.status === "Selesai" ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                  : "bg-blue-100 text-blue-800 border-blue-300"
+                                }`}>
+                                  {item.status === "Evaluasi" ? "Menunggu Evaluasi Perusahaan" : item.status === "Revisi" ? "Perlu Revisi" : item.status}
+                                </span>
+                              </div>
+
+                              {/* DAFTAR RIWAYAT ITERASI PENGUMPULAN MAHASISWA */}
+                              <div className="space-y-3">
+                                <span className="text-[10px] uppercase font-bold text-steel block">
+                                  Log Riwayat Pengumpulan &amp; Evaluasi ({historyItems.length > 0 ? historyItems.length : 1}):
+                                </span>
+                                {historyItems.length > 0 ? (
+                                  historyItems.map((h: any, hIdx: number) => (
+                                    <div key={h.id || hIdx} className="bg-white p-3.5 rounded-xl border border-steel/10 space-y-2">
+                                      <div className="flex items-center justify-between border-b border-steel/10 pb-1.5">
+                                        <span className="font-bold text-ink text-[11px]">Versi #{h.versi || historyItems.length - hIdx}</span>
+                                        <span className="text-[10px] text-steel">
+                                          {h.created_at ? new Date(h.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-"}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[9px] uppercase font-bold text-steel block">Tautan Karya:</span>
+                                        <a href={h.url_hasil} target="_blank" rel="noreferrer" className="text-bridge-gold font-bold underline truncate block text-xs">
+                                          {h.url_hasil} ↗
+                                        </a>
+                                      </div>
+                                      {h.catatan_mahasiswa && (
+                                        <div>
+                                          <span className="text-[9px] uppercase font-bold text-steel block">Catatan Mahasiswa:</span>
+                                          <p className="font-sans text-[11px] text-ink italic bg-steel/5 p-2 rounded border border-steel/5">
+                                            &ldquo;{h.catatan_mahasiswa}&rdquo;
+                                          </p>
+                                        </div>
+                                      )}
+                                      {h.evaluasi_perusahaan && (
+                                        <div className="pt-1">
+                                          <span className="text-[9px] uppercase font-bold text-amber-800 block">Kritik / Evaluasi Perusahaan:</span>
+                                          <p className="font-sans text-[11px] text-amber-950 bg-amber-100/60 p-2 rounded border border-amber-300">
+                                            &ldquo;{h.evaluasi_perusahaan}&rdquo;
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="bg-white p-3.5 rounded-xl border border-steel/10 space-y-2">
+                                    <div>
+                                      <span className="text-[9px] uppercase font-bold text-steel block">Tautan Karya Terakhir:</span>
+                                      <a href={item.url_hasil_kolaborasi} target="_blank" rel="noreferrer" className="text-bridge-gold font-bold underline truncate block text-xs">
+                                        {item.url_hasil_kolaborasi} ↗
+                                      </a>
+                                    </div>
+                                    {item.catatan_hasil_kolaborasi && (
+                                      <div>
+                                        <span className="text-[9px] uppercase font-bold text-steel block">Catatan Mahasiswa:</span>
+                                        <p className="font-sans text-[11px] text-ink italic bg-steel/5 p-2 rounded border border-steel/5">
+                                          &ldquo;{item.catatan_hasil_kolaborasi}&rdquo;
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* AKSI PERUSAHAAN: MINTA REVISI ATAU SETUJUI SELESAI */}
+                              <div className="pt-2 border-t border-steel/10 flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const catatanRevisi = prompt("Masukkan masukan/kritik revisi untuk mahasiswa ini:");
+                                    if (catatanRevisi !== null) {
+                                      handleUpdateStatus(item.id, "Revisi", catatanRevisi);
+                                    }
+                                  }}
+                                  className="rounded-full border border-orange-300 bg-orange-50 px-3.5 py-1.5 font-mono text-[10px] font-bold text-orange-800 hover:bg-orange-100 transition"
+                                >
+                                  Minta Revisi Karya
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const catatanSelesai = prompt("Masukkan catatan evaluasi kelulusan/penyelesaian proyek:");
+                                    if (catatanSelesai !== null) {
+                                      handleUpdateStatus(item.id, "Selesai", catatanSelesai);
+                                    }
+                                  }}
+                                  className="rounded-full bg-emerald-600 px-4 py-1.5 font-mono text-[10px] font-bold text-white hover:bg-emerald-700 transition"
+                                >
+                                  Setujui &amp; Tandai Selesai ✓
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                    )}
                   </div>
                 </div>
               )}

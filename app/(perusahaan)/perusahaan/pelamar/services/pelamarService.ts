@@ -21,6 +21,7 @@ export const pelamarService = {
           tanggal_daftar,
           status,
           catatan_perusahaan,
+          url_portofolio_dokumen,
           mahasiswa_profiles (
             nama_lengkap,
             semester,
@@ -29,6 +30,15 @@ export const pelamarService = {
             reputation_score,
             universitas ( nama_universitas ),
             program_studi ( nama_prodi )
+          ),
+          riwayat_pengumpulan_kolaborasi (
+            id,
+            versi,
+            url_hasil,
+            catatan_mahasiswa,
+            evaluasi_perusahaan,
+            status_evaluasi,
+            created_at
           )
         )
       `)
@@ -43,6 +53,11 @@ export const pelamarService = {
     return (data || []).map((proyek: any) => {
       const pelamarList: PelamarDetail[] = (proyek.pendaftaran_kolaborasi || []).map((p: any) => {
         const mProfile = p.mahasiswa_profiles;
+        const riwayat = (p.riwayat_pengumpulan_kolaborasi || []).sort(
+          (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        const latestSubmission = riwayat[0] || null;
+
         return {
           id: p.id,
           kolaborasi_id: p.kolaborasi_id,
@@ -56,7 +71,11 @@ export const pelamarService = {
           reputation_score: mProfile?.reputation_score || 0,
           tanggal_daftar: p.tanggal_daftar,
           status: p.status,
-          catatan_perusahaan: p.catatan_perusahaan,
+          catatan_perusahaan: latestSubmission?.evaluasi_perusahaan || p.catatan_perusahaan,
+          url_portofolio_dokumen: p.url_portofolio_dokumen,
+          url_hasil_kolaborasi: latestSubmission?.url_hasil,
+          catatan_hasil_kolaborasi: latestSubmission?.catatan_mahasiswa,
+          riwayat_pengumpulan: riwayat,
         };
       });
 
@@ -73,24 +92,47 @@ export const pelamarService = {
     });
   },
 
-  // 2. Update status pendaftaran mahasiswa
+  // 2. Update status pendaftaran mahasiswa dan simpan evaluasi perusahaan ke riwayat terbaru
   async updateStatusPelamar(
     pendaftaranId: string,
     status: StatusLamaran,
     catatan?: string
   ): Promise<boolean> {
+    const nowIso = new Date().toISOString();
+
     const { error } = await supabase
       .from("pendaftaran_kolaborasi")
       .update({
         status,
         catatan_perusahaan: catatan || null,
-        updated_at: new Date().toISOString(),
+        updated_at: nowIso,
       })
       .eq("id", pendaftaranId);
 
     if (error) {
       console.error("Gagal memperbarui status pelamar:", error.message);
       return false;
+    }
+
+    if (catatan) {
+      // Ambil entri riwayat pengumpulan terbaru untuk pendaftaran_id ini
+      const { data: latestRiwayat } = await supabase
+        .from("riwayat_pengumpulan_kolaborasi")
+        .select("id")
+        .eq("pendaftaran_id", pendaftaranId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestRiwayat) {
+        await supabase
+          .from("riwayat_pengumpulan_kolaborasi")
+          .update({
+            evaluasi_perusahaan: catatan,
+            status_evaluasi: status,
+          })
+          .eq("id", latestRiwayat.id);
+      }
     }
 
     return true;

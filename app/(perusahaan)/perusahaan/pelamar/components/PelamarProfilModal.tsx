@@ -61,6 +61,39 @@ export function PelamarProfilModal({
               {pelamar.ringkasan_self}
             </p>
           </div>
+
+          {pelamar.url_portofolio_dokumen && (
+            <div>
+              <span className="text-steel block font-bold text-[10px] uppercase">Link Portofolio &amp; Berkas Pendukung:</span>
+              <a
+                href={pelamar.url_portofolio_dokumen}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 block rounded-xl bg-blue-50/50 p-2.5 font-sans text-xs font-bold text-bridge-gold underline truncate border border-blue-100"
+              >
+                {pelamar.url_portofolio_dokumen}
+              </a>
+            </div>
+          )}
+
+          {pelamar.url_hasil_kolaborasi && (
+            <div>
+              <span className="text-steel block font-bold text-[10px] uppercase text-purple-800">Link Hasil Karya Kolaborasi:</span>
+              <a
+                href={pelamar.url_hasil_kolaborasi}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 block rounded-xl bg-purple-50 p-2.5 font-sans text-xs font-bold text-purple-900 underline truncate border border-purple-200"
+              >
+                {pelamar.url_hasil_kolaborasi}
+              </a>
+              {pelamar.catatan_hasil_kolaborasi && (
+                <p className="mt-1 font-sans text-[11px] text-steel italic bg-white p-2 rounded border border-steel/10">
+                  &ldquo;{pelamar.catatan_hasil_kolaborasi}&rdquo;
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-2 pt-4 border-t border-steel/10">

@@ -151,7 +151,7 @@ export default function DetailKolaborasiPage() {
     if (data && (data.matchScore ?? 0) < 50) {
       setShowLowMatchConfirmModal(true);
     } else {
-      setIsModalOpen(true);
+      router.push(`/kolaborasi/${id}/daftar`);
     }
   };
 
@@ -435,7 +435,7 @@ export default function DetailKolaborasiPage() {
                 type="button"
                 onClick={() => {
                   setShowLowMatchConfirmModal(false);
-                  setIsModalOpen(true);
+                  router.push(`/kolaborasi/${id}/daftar`);
                 }}
                 className="rounded-xl bg-bridge-gold px-5 py-2 text-xs font-bold text-ink hover:bg-bridge-gold/90 transition shadow-md"
               >
@@ -444,19 +444,6 @@ export default function DetailKolaborasiPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* MODAL APPLY */}
-      {isModalOpen && user && (
-        <ApplyModal
-          data={data}
-          user={user}
-          onClose={() => setIsModalOpen(false)}
-          onSuccess={() => {
-            setIsModalOpen(false);
-            setSubmitted(true);
-          }}
-        />
       )}
     </main>
   );
