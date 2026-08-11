@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BridgeDivider } from "@/components/BridgeDivider";
@@ -50,6 +50,16 @@ export default function LandingPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"masuk" | "daftar">("masuk");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("auth") === "login") {
+        setModalTab("masuk");
+        setModalOpen(true);
+      }
+    }
+  }, []);
 
   const openModal = (tab: "masuk" | "daftar") => {
     if (tab === "daftar") {

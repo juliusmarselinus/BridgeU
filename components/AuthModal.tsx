@@ -32,6 +32,13 @@ export function AuthModal({
       onClose();
       router.push("/daftar");
     }
+
+    if (isOpen && typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("blocked") === "true") {
+        setErrorMessage("Akun Anda telah ditangguhkan/diblokir oleh administrator. Silakan hubungi dukungan BridgeU.");
+      }
+    }
   }, [isOpen, defaultTab, router, onClose]);
 
   // ===== State Login =====
@@ -173,7 +180,7 @@ export function AuthModal({
 
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("role")
+        .select("role, status")
         .eq("id", authData.user.id)
         .single();
 
@@ -181,6 +188,12 @@ export function AuthModal({
         onClose();
         router.push("/dashboard");
         return;
+      }
+
+      const statusDb = (userData.status || "aktif").toLowerCase();
+      if (statusDb === "ditangguhkan" || statusDb === "suspended") {
+        await supabase.auth.signOut();
+        throw new Error("Akun Anda telah ditangguhkan/diblokir oleh administrator. Silakan hubungi dukungan BridgeU.");
       }
 
       onClose();
