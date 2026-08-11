@@ -73,18 +73,6 @@ export function useRegistration() {
   const [dbSektorOptions, setDbSektorOptions] = useState<SektorItem[]>([]);
   const [dbKotaOptions, setDbKotaOptions] = useState<KotaItem[]>([]);
 
-  // Read URL query params on mount for role (e.g. ?role=mahasiswa)
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const urlRole = params.get("role");
-      if (urlRole === "mahasiswa" || urlRole === "perusahaan") {
-        setFormData((prev) => ({ ...prev, role: urlRole }));
-        setCurrentStep((prevStep) => (prevStep === 0 ? 1 : prevStep));
-      }
-    }
-  }, []);
-
   // Fetch Lookups from Supabase DB on mount
   useEffect(() => {
     let isMounted = true;
@@ -135,6 +123,21 @@ export function useRegistration() {
       }
     } catch (e) {
       console.error("Gagal membaca draft dari localStorage:", e);
+    }
+  }, []);
+
+  // Read URL query params on mount for role (e.g. ?role=mahasiswa)
+  // WAJIB dijalankan SETELAH restore draft di atas, biar niat eksplisit dari URL
+  // (misal user klik "Daftar sebagai Mahasiswa" di /masuk) selalu menang
+  // ketimbang draft lama yang ketinggalan di step 0 (pilih peran).
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlRole = params.get("role");
+      if (urlRole === "mahasiswa" || urlRole === "perusahaan") {
+        setFormData((prev) => ({ ...prev, role: urlRole }));
+        setCurrentStep(1);
+      }
     }
   }, []);
 

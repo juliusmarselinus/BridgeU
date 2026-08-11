@@ -11,8 +11,8 @@ export async function proxy(req: NextRequest) {
 
   const pathname = req.nextUrl.pathname;
 
-  // Halaman publik yang dapat diakses pengguna tanpa login (Home & Registration)
-  const isPublicRoute = pathname === "/" || pathname === "/daftar";
+  // Halaman publik yang dapat diakses pengguna tanpa login (Home, Registrasi, Login)
+  const isPublicRoute = pathname === "/" || pathname === "/daftar" || pathname === "/masuk";
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,38 +51,17 @@ export async function proxy(req: NextRequest) {
     return redirectRes;
   }
 
-  // 2. Ambil data role dan status dari tabel users database untuk memastikan status keaktifan terkini
-  const { data: userData } = await supabase
-    .from("users")
-    .select("role, status")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const userStatus = (userData?.status || "aktif").toLowerCase();
-
-  // 3. Jika status akun ditangguhkan / suspended / ditolak:
-  if (userStatus === "ditangguhkan" || userStatus === "suspended") {
-    // Lakukan signOut Supabase di server side / clear session cookie
-    await supabase.auth.signOut();
-
-    // Redirect ke landing page dengan parameter blocked=true & auth=login
-    const redirectUrl = new URL("/", req.url);
-    redirectUrl.searchParams.set("auth", "login");
-    redirectUrl.searchParams.set("blocked", "true");
-
-    const redirectRes = NextResponse.redirect(redirectUrl);
-
-    // Hapus semua session cookie Supabase dari response
-    req.cookies.getAll().forEach((cookie) => {
-      if (cookie.name.includes("sb-") || cookie.name.includes("supabase")) {
-        redirectRes.cookies.delete(cookie.name);
-      }
-    });
-
-    return redirectRes;
+  // 2. Jika sudah login, ambil role dari user_metadata atau tabel users database
+  let role = user.user_metadata?.role;
+  if (!role) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    role = userData?.role || "mahasiswa";
   }
 
-  let role = userData?.role || user.user_metadata?.role || "mahasiswa";
   const lowerRole = role.toLowerCase();
 
   // Route groupings
@@ -115,8 +94,8 @@ export async function proxy(req: NextRequest) {
     }
   }
 
-  // Jika sudah login tetapi mencoba akses /daftar
-  if (pathname === "/daftar") {
+  // Jika sudah login tetapi mencoba akses /daftar atau /masuk
+  if (pathname === "/daftar" || pathname === "/masuk") {
     if (lowerRole === "perusahaan") redirectTarget = "/perusahaan/dashboard";
     else if (lowerRole === "admin") redirectTarget = "/admin/dashboard";
     else redirectTarget = "/dashboard";

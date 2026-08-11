@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { AuthModal } from "@/components/AuthModal";
 import { GradientWave } from "@/components/ui/gradient-wave";
 import {
   Navbar,
@@ -158,19 +157,12 @@ export default function RegistrationPage() {
   } = useRegistration();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState<"masuk" | "daftar">("masuk");
 
   // Modal Picker States
   const [activePicker, setActivePicker] = useState<"univ" | "prodi" | "semester" | "sektor" | "kota" | null>(null);
 
   const isPerusahaan = formData.role === "perusahaan";
   const activeStepsList = isPerusahaan ? stepsListPerusahaan : stepsListMahasiswa;
-
-  const openAuthModal = (tab: "masuk" | "daftar") => {
-    setAuthModalTab(tab);
-    setAuthModalOpen(true);
-  };
 
   return (
     <div className="min-h-screen bg-[#DCE9F5] text-[#17356F] flex flex-col justify-between relative overflow-hidden">
@@ -197,7 +189,7 @@ export default function RegistrationPage() {
           <NavbarLogo />
           <NavItems items={navItems} />
           <div className="flex items-center gap-4">
-            <NavbarButton as="button" variant="secondary" onClick={() => openAuthModal("masuk")}>
+            <NavbarButton as={Link} href="/masuk" variant="secondary">
               Masuk
             </NavbarButton>
             <NavbarButton as={Link} href="/daftar" variant="primary">
@@ -228,13 +220,11 @@ export default function RegistrationPage() {
             ))}
             <div className="flex w-full flex-col gap-3">
               <NavbarButton
-                as="button"
+                as={Link}
+                href="/masuk"
                 variant="secondary"
                 className="w-full"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  openAuthModal("masuk");
-                }}
+                onClick={() => setMobileMenuOpen(false)}
               >
                 Masuk
               </NavbarButton>
@@ -458,13 +448,6 @@ export default function RegistrationPage() {
           updateField("lokasiPerusahaan", val);
           updateField("kotaId", found ? found.id : 0);
         }}
-      />
-
-      {/* Auth Modal for Login */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        defaultTab={authModalTab}
       />
     </div>
   );

@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { BridgeDivider } from "@/components/BridgeDivider";
-import { AuthModal } from "@/components/AuthModal";
 import { ProgramsSection } from "@/components/ProgramsSection";
 import {
   Navbar,
@@ -46,29 +44,7 @@ const navItems = [
 ];
 
 export default function LandingPage() {
-  const router = useRouter();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalTab, setModalTab] = useState<"masuk" | "daftar">("masuk");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("auth") === "login") {
-        setModalTab("masuk");
-        setModalOpen(true);
-      }
-    }
-  }, []);
-
-  const openModal = (tab: "masuk" | "daftar") => {
-    if (tab === "daftar") {
-      router.push("/daftar");
-      return;
-    }
-    setModalTab(tab);
-    setModalOpen(true);
-  };
 
   return (
     <main>
@@ -78,7 +54,7 @@ export default function LandingPage() {
           <NavbarLogo />
           <NavItems items={navItems} />
           <div className="flex items-center gap-4">
-            <NavbarButton as="button" variant="secondary" onClick={() => openModal("masuk")}>
+            <NavbarButton as={Link} href="/masuk" variant="secondary">
               Masuk
             </NavbarButton>
             <NavbarButton as={Link} href="/daftar" variant="primary">
@@ -109,13 +85,11 @@ export default function LandingPage() {
             ))}
             <div className="flex w-full flex-col gap-3">
               <NavbarButton
-                as="button"
+                as={Link}
+                href="/masuk"
                 variant="secondary"
                 className="w-full"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  openModal("masuk");
-                }}
+                onClick={() => setMobileMenuOpen(false)}
               >
                 Masuk
               </NavbarButton>
@@ -162,12 +136,6 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <Footer />
-
-      <AuthModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        defaultTab={modalTab}
-      />
     </main>
   );
 }
