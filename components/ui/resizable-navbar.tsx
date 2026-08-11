@@ -1,6 +1,7 @@
 "use client";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
+import Image from "next/image";
 import {
   motion,
   AnimatePresence,
@@ -205,8 +206,9 @@ export const NavbarLogo = () => {
   return (
     <a
       href="/"
-      className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal"
+      className="relative z-20 mr-4 flex items-center gap-2 px-2 py-1 text-sm font-normal"
     >
+      <Image src="/logo.png" alt="BridgeU" width={28} height={28} className="h-7 w-7 object-contain" priority />
       <span className="font-display text-xl font-semibold tracking-tight text-text-primary">
         Bridge<span className="text-primary">U</span>
       </span>
@@ -232,7 +234,7 @@ export const NavbarButton = ({
     "px-5 py-2.5 rounded-full text-sm font-medium relative cursor-pointer hover:-translate-y-0.5 transition duration-200 inline-block text-center";
 
   const variantStyles = {
-    primary: "bg-text-primary text-background shadow-sm hover:bg-secondary",
+    primary: "bg-ink text-paper shadow-sm hover:bg-secondary hover:text-ink",
     secondary: "bg-transparent text-text-secondary hover:text-text-primary",
   };
 

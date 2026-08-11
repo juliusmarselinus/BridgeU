@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -137,7 +138,8 @@ export default function MasukPage() {
       {/* ═══════ MAIN ═══════ */}
       <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-6 pt-32 pb-16 flex flex-col justify-center">
         <div className="text-center mb-6 md:hidden">
-          <span className="font-display text-2xl font-bold tracking-tight text-[#17356F]">
+          <span className="inline-flex items-center gap-2 font-display text-2xl font-bold tracking-tight text-[#17356F]">
+            <Image src="/logo.png" alt="BridgeU" width={26} height={26} className="h-6 w-6 object-contain" />
             Bridge<span className="text-primary">U</span>
           </span>
         </div>
@@ -166,7 +168,8 @@ export default function MasukPage() {
                   transition={{ duration: 0.3, delay: 0.15 }}
                   className="w-full max-w-sm"
                 >
-                  <span className="block text-center font-display text-lg font-bold tracking-tight text-[#17356F] mb-1">
+                  <span className="flex items-center justify-center gap-2 text-center font-display text-lg font-bold tracking-tight text-[#17356F] mb-1">
+                    <Image src="/logo.png" alt="BridgeU" width={22} height={22} className="h-[22px] w-[22px] object-contain" />
                     Bridge<span className="text-primary">U</span>
                   </span>
                   <h1 className="text-center font-display text-3xl font-bold text-[#17356F]">Masuk ke Akun</h1>

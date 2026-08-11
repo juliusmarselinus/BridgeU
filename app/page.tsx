@@ -117,18 +117,20 @@ export default function LandingPage() {
       </div>
 
       {/* FITUR */}
-      <section id="fitur" className="mx-auto max-w-6xl px-6 py-20">
-        <h2 className="font-display text-2xl font-semibold text-ink">
-          Kenapa BridgeU?
-        </h2>
-        <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-3">
-          {features.map((f) => (
-            <div key={f.label} className="rounded-xl p-1 transition hover:-translate-y-1">
-              <span className="font-mono text-xs text-bridge-gold">{f.label}</span>
-              <h3 className="mt-2 font-display text-lg font-semibold text-ink">{f.title}</h3>
-              <p className="mt-2 text-sm text-steel">{f.desc}</p>
-            </div>
-          ))}
+      <section id="fitur" className="w-full bg-card">
+        <div className="mx-auto max-w-6xl px-6 py-20">
+          <h2 className="font-display text-2xl font-semibold text-ink">
+            Kenapa BridgeU?
+          </h2>
+          <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-3">
+            {features.map((f) => (
+              <div key={f.label} className="rounded-xl p-1 transition hover:-translate-y-1">
+                <span className="font-mono text-xs text-bridge-gold">{f.label}</span>
+                <h3 className="mt-2 font-display text-lg font-semibold text-ink">{f.title}</h3>
+                <p className="mt-2 text-sm text-steel">{f.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

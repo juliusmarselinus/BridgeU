@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { SearchBar } from "./SearchBar";
 import { supabase } from "@/lib/supabase";
@@ -389,9 +390,10 @@ export function Navbar() {
 
   return (
     <div className="fixed inset-x-0 top-4 z-40 px-4 sm:px-6">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/40 bg-white/80 px-6 py-3.5 shadow-[0_4px_24px_-6px_rgba(23,59,108,0.18)] backdrop-blur-xl">
+      <nav className="mx-auto flex max-w-[1400px] items-center justify-between rounded-full border border-white/40 bg-white/80 px-6 py-3.5 shadow-[0_4px_24px_-6px_rgba(23,59,108,0.18)] backdrop-blur-xl">
         {/* Logo */}
-        <Link href="/" className="font-display text-lg font-semibold tracking-tight text-ink">
+        <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-ink">
+          <Image src="/logo.png" alt="BridgeU" width={24} height={24} className="h-6 w-6 object-contain" />
           Bridge<span className="text-primary">U</span>
         </Link>
 

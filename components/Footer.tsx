@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 function IconGithub({ className = "w-4 h-4" }: { className?: string }) {
   return (
@@ -47,7 +48,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {/* Brand, Short Description & Social Media */}
           <div className="space-y-4">
-            <Link href="/" className="inline-block font-display text-2xl font-black tracking-tight text-paper">
+            <Link href="/" className="inline-flex items-center gap-2 font-display text-2xl font-black tracking-tight text-paper">
+              <Image src="/logo.png" alt="BridgeU" width={32} height={32} className="h-8 w-8 object-contain" />
               Bridge<span className="text-bridge-gold">U</span>
             </Link>
             <p className="text-xs font-medium leading-relaxed text-paper/70">
