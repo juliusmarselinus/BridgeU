@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { allCategoriesList, allSkillsList, badgeList, universitasList, prodiList, semesterList } from "@/lib/dummy-data";
+import { badgeList } from "@/lib/dummy-data";
 import { ModalPicker } from "@/app/daftar/components/ModalPicker";
 import { supabase } from "@/lib/supabase";
 
@@ -31,10 +31,21 @@ type Pengajuan = {
   tanggal: string;
 };
 
+type ReferenceData = {
+  universitas: string[];
+  prodi: string[];
+  skills: string[];
+  kategoriMinat: string[];
+};
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const SEMESTER_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
 /* ------------------------------------------------------------------ */
-/* SVG Icon Components (Strictly Yellow Icons & Zero Emojis)          */
+/* SVG Icon Components                                                */
+/* bridge-gold dipakai HANYA untuk icon di atas background sendiri     */
+/* (badge, pill, avatar ring). Icon judul section pakai ink/60 biar    */
+/* kontrasnya cukup di atas bg-paper.                                  */
 /* ------------------------------------------------------------------ */
 
 function IconCheck({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
@@ -253,59 +264,6 @@ function useSpringNumber(target: number, springConfig = { stiffness: 120, dampin
 }
 
 /* ------------------------------------------------------------------ */
-/* Magnetic button — nudges slightly toward the cursor on hover        */
-/* ------------------------------------------------------------------ */
-function MagneticButton({
-  children,
-  className = "",
-  onClick,
-  type = "button",
-  formId,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-  type?: "button" | "submit";
-  formId?: string;
-}) {
-  const ref = useRef<HTMLButtonElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const springX = useSpring(x, { stiffness: 250, damping: 15 });
-  const springY = useSpring(y, { stiffness: 250, damping: 15 });
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const rect = ref.current?.getBoundingClientRect();
-    if (!rect) return;
-    const relX = e.clientX - (rect.left + rect.width / 2);
-    const relY = e.clientY - (rect.top + rect.height / 2);
-    x.set(relX * 0.25);
-    y.set(relY * 0.35);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
-  return (
-    <motion.button
-      ref={ref}
-      type={type}
-      form={formId}
-      onClick={onClick}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{ x: springX, y: springY }}
-      whileTap={{ scale: 0.95 }}
-      className={className}
-    >
-      {children}
-    </motion.button>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* Subtle cursor-follow ambient glow (contained to its parent)         */
 /* ------------------------------------------------------------------ */
 function CursorGlow() {
@@ -345,9 +303,6 @@ function CursorGlow() {
 
 /* ------------------------------------------------------------------ */
 /* Entrance wrapper — consistent fade + slide-up used across cards     */
-/* Accepts a `nudgeKey` so callers can force a lightweight replay      */
-/* (micro-nudge) of the entrance animation, e.g. on tab switches,      */
-/* without treating it as a full first-mount reveal.                   */
 /* ------------------------------------------------------------------ */
 function RevealCard({
   children,
@@ -770,14 +725,18 @@ function EditPhotoModal({
 }
 
 /* ------------------------------------------------------------------ */
-/* Modal Edit Data Profil (Single-Scroll Modal)                      */
+/* Modal Edit Data Profil (Single-Scroll Modal)                       */
+/* Skill, minat, universitas & prodi sekarang di-fetch dari            */
+/* /api/reference (data asli database), bukan dummy-data lagi.         */
 /* ------------------------------------------------------------------ */
 function EditProfileModal({
   user,
+  isSaving = false,
   onClose,
   onSave,
 }: {
   user: StoredUser;
+  isSaving?: boolean;
   onClose: () => void;
   onSave: (updated: StoredUser) => void;
 }) {
@@ -798,6 +757,48 @@ function EditProfileModal({
   const [isCustomProdi, setIsCustomProdi] = useState(false);
   const [customProdiInput, setCustomProdiInput] = useState("");
 
+  // Data referensi dari database
+  const [refData, setRefData] = useState<ReferenceData>({
+    universitas: [],
+    prodi: [],
+    skills: [],
+    kategoriMinat: [],
+  });
+  const [isLoadingRef, setIsLoadingRef] = useState(true);
+  const [refError, setRefError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchReference = async () => {
+      setIsLoadingRef(true);
+      setRefError("");
+      try {
+        const res = await fetch("/api/reference");
+        if (!res.ok) throw new Error(`Gagal memuat referensi (${res.status})`);
+        const data = await res.json();
+        if (!cancelled) {
+          setRefData({
+            universitas: data.universitas ?? [],
+            prodi: data.prodi ?? [],
+            skills: data.skills ?? [],
+            kategoriMinat: data.kategoriMinat ?? [],
+          });
+        }
+      } catch (err) {
+        console.error("Gagal memuat data referensi:", err);
+        if (!cancelled) setRefError("Gagal memuat data skill/minat/universitas dari server.");
+      } finally {
+        if (!cancelled) setIsLoadingRef(false);
+      }
+    };
+
+    fetchReference();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const toggleMinat = (m: string) => {
     setMinatKategori((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
   };
@@ -808,6 +809,7 @@ function EditProfileModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return; // cegah submit dobel
     onSave({
       ...user,
       nama,
@@ -823,10 +825,9 @@ function EditProfileModal({
     });
   };
 
-  const prodiOptionsFormatted = useMemo(
-    () => prodiList.map((p) => (typeof p === "string" ? p : p.label)),
-    []
-  );
+  // Universitas & Prodi dari database + opsi "Lainnya" biar tetap bisa custom
+  const universitasOptions = useMemo(() => [...refData.universitas, "Lainnya"], [refData.universitas]);
+  const prodiOptions = useMemo(() => [...refData.prodi, "Lainnya"], [refData.prodi]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 animate-in fade-in duration-200">
@@ -847,6 +848,12 @@ function EditProfileModal({
         </div>
 
         <form id="edit-profile-form" onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 space-y-5">
+          {refError && (
+            <div className="rounded-xl border border-rose-300 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-700">
+              {refError}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="text-[10px] font-bold tracking-wider text-steel uppercase">Nama Lengkap</label>
@@ -918,7 +925,7 @@ function EditProfileModal({
                 onClick={() => setActivePicker("semester")}
                 className="mt-1 w-full flex items-center justify-between rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
               >
-                <span className="truncate">{semester || "-- Pilih Semester --"}</span>
+                <span className="truncate">{semester ? `Semester ${semester}` : "-- Pilih Semester --"}</span>
                 <span className="text-steel text-[10px]">▼</span>
               </button>
             </div>
@@ -927,48 +934,60 @@ function EditProfileModal({
           <div>
             <label className="block text-[10px] font-bold tracking-wider text-steel uppercase mb-2">Kategori Proyek Minat</label>
             <div className="flex flex-wrap gap-1.5">
-              {allCategoriesList.map((m) => {
-                const selected = minatKategori.includes(m);
-                return (
-                  <button
-                    type="button"
-                    key={m}
-                    onClick={() => toggleMinat(m)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
-                      selected
-                        ? "bg-ink text-paper"
-                        : "border border-steel/20 bg-paper text-steel hover:bg-paper"
-                    }`}
-                  >
-                    {selected ? "✓ " : "+ "}
-                    {m}
-                  </button>
-                );
-              })}
+              {isLoadingRef ? (
+                <p className="text-xs text-steel/60">Memuat kategori minat...</p>
+              ) : refData.kategoriMinat.length === 0 ? (
+                <p className="text-xs text-steel/60">Belum ada data kategori minat.</p>
+              ) : (
+                refData.kategoriMinat.map((m) => {
+                  const selected = minatKategori.includes(m);
+                  return (
+                    <button
+                      type="button"
+                      key={m}
+                      onClick={() => toggleMinat(m)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
+                        selected
+                          ? "bg-ink text-paper"
+                          : "border border-steel/20 bg-paper text-steel hover:bg-paper"
+                      }`}
+                    >
+                      {selected ? "✓ " : "+ "}
+                      {m}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
 
           <div>
             <label className="block text-[10px] font-bold tracking-wider text-steel uppercase mb-2">Skill & Tools</label>
             <div className="flex flex-wrap gap-1.5">
-              {allSkillsList.map((s) => {
-                const selected = skills.includes(s);
-                return (
-                  <button
-                    type="button"
-                    key={s}
-                    onClick={() => toggleSkill(s)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
-                      selected
-                        ? "bg-bridge-gold/100 text-paper"
-                        : "border border-steel/20 bg-paper text-steel hover:bg-paper"
-                    }`}
-                  >
-                    {selected ? "✓ " : "+ "}
-                    {s}
-                  </button>
-                );
-              })}
+              {isLoadingRef ? (
+                <p className="text-xs text-steel/60">Memuat skill...</p>
+              ) : refData.skills.length === 0 ? (
+                <p className="text-xs text-steel/60">Belum ada data skill.</p>
+              ) : (
+                refData.skills.map((s) => {
+                  const selected = skills.includes(s);
+                  return (
+                    <button
+                      type="button"
+                      key={s}
+                      onClick={() => toggleSkill(s)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
+                        selected
+                          ? "bg-bridge-gold/100 text-paper"
+                          : "border border-steel/20 bg-paper text-steel hover:bg-paper"
+                      }`}
+                    >
+                      {selected ? "✓ " : "+ "}
+                      {s}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -1028,12 +1047,12 @@ function EditProfileModal({
           </button>
         </div>
 
-        {/* Modal Pickers */}
+        {/* Modal Pickers — options sekarang dari database */}
         <ModalPicker
           isOpen={activePicker === "univ"}
           onClose={() => setActivePicker(null)}
           title="Pilih Universitas"
-          options={universitasList}
+          options={universitasOptions}
           selectedValue={universitas}
           onSelect={(val) => {
             if (val === "Lainnya") {
@@ -1051,7 +1070,7 @@ function EditProfileModal({
           isOpen={activePicker === "prodi"}
           onClose={() => setActivePicker(null)}
           title="Pilih Program Studi"
-          options={prodiOptionsFormatted}
+          options={prodiOptions}
           selectedValue={prodi}
           onSelect={(val) => {
             if (val === "Lainnya") {
@@ -1069,7 +1088,7 @@ function EditProfileModal({
           isOpen={activePicker === "semester"}
           onClose={() => setActivePicker(null)}
           title="Pilih Semester"
-          options={semesterList}
+          options={SEMESTER_OPTIONS}
           selectedValue={semester}
           allowLainnya={false}
           onSelect={(val) => {
@@ -1216,7 +1235,7 @@ function PublicActivitySection() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-steel/10 pb-4 mb-6">
           <div>
             <h3 className="text-base font-bold text-ink flex items-center gap-2">
-              <IconActivity className="w-5 h-5 text-bridge-gold" />
+              <IconActivity className="w-5 h-5 text-ink/60" />
               Matriks Keaktifan Publik
             </h3>
             <p className="text-xs text-steel mt-0.5">Catatan aktivitas harian kamu selama 12 minggu terakhir</p>
@@ -1256,7 +1275,7 @@ function PublicActivitySection() {
       <div className="rounded-2xl border border-steel/20 bg-paper p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-steel/10 pb-4 mb-6">
           <h3 className="text-base font-bold text-ink flex items-center gap-2">
-            <IconRocket className="w-5 h-5 text-bridge-gold" />
+            <IconRocket className="w-5 h-5 text-ink/60" />
             Riwayat Aktivitas Publik
           </h3>
 
@@ -1340,6 +1359,7 @@ export default function ProfilePage() {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isEditSaving, setIsEditSaving] = useState(false);
   const [fileError, setFileError] = useState("");
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
@@ -1477,6 +1497,8 @@ export default function ProfilePage() {
   };
 
   const handleProfileDataSave = async (updated: StoredUser) => {
+    if (isEditSaving) return; // cegah submit dobel selagi masih proses
+    setIsEditSaving(true);
     const result = await saveToDatabase({
       nama: updated.nama,
       universitas: updated.universitas,
@@ -1488,6 +1510,7 @@ export default function ProfilePage() {
       minatKategori: updated.minatKategori,
       skills: updated.skills,
     });
+    setIsEditSaving(false);
     if (!result.ok) {
       setFileError(result.error);
       return;
@@ -1579,6 +1602,7 @@ export default function ProfilePage() {
       {isEditModalOpen && (
         <EditProfileModal
           user={user}
+          isSaving={isEditSaving}
           onClose={() => setIsEditModalOpen(false)}
           onSave={handleProfileDataSave}
         />
@@ -1670,7 +1694,7 @@ export default function ProfilePage() {
                 onClick={handleLogout}
                 className="rounded-xl border border-steel/20 bg-paper px-5 py-2.5 text-xs font-bold text-ink transition-colors flex items-center gap-2 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 active:scale-95"
               >
-                <IconLogout className="w-4 h-4 text-bridge-gold" />
+                <IconLogout className="w-4 h-4 text-steel" />
                 Keluar
               </button>
             </div>
@@ -1700,7 +1724,7 @@ export default function ProfilePage() {
                         transition={{ type: "spring", stiffness: 380, damping: 32 }}
                       />
                     )}
-                    <IconComp className="w-4 h-4 text-bridge-gold" />
+                    <IconComp className={`w-4 h-4 ${isActive ? "text-bridge-gold" : "text-steel"}`} />
                     {tab.label}
                   </button>
                 );
@@ -1724,7 +1748,7 @@ export default function ProfilePage() {
           <div className="lg:col-span-4 space-y-6">
             <RevealCard nudgeKey={`bio-${activeTab}`} delay={0} className="rounded-2xl border border-steel/20 bg-paper p-5">
               <h3 className="text-sm font-bold text-ink mb-3 flex items-center gap-2">
-                <IconFileText className="w-4 h-4 text-bridge-gold" />
+                <IconFileText className="w-4 h-4 text-ink/60" />
                 Bio & Ringkasan Diri
               </h3>
               <p className="text-xs leading-relaxed text-steel">
@@ -1734,7 +1758,7 @@ export default function ProfilePage() {
 
             <RevealCard nudgeKey={`info-${activeTab}`} delay={0.03} className="rounded-2xl border border-steel/20 bg-paper p-5">
               <h3 className="text-sm font-bold text-ink mb-4 flex items-center gap-2">
-                <IconPin className="w-4 h-4 text-bridge-gold" />
+                <IconPin className="w-4 h-4 text-ink/60" />
                 Informasi & Sistem Kerja
               </h3>
               <div className="space-y-3 text-xs text-ink/80">
@@ -1763,7 +1787,7 @@ export default function ProfilePage() {
 
             <RevealCard nudgeKey={`skills-${activeTab}`} delay={0.06} className="rounded-2xl border border-steel/20 bg-paper p-5">
               <h3 className="text-sm font-bold text-ink mb-3 flex items-center gap-2">
-                <IconWrench className="w-4 h-4 text-bridge-gold" />
+                <IconWrench className="w-4 h-4 text-ink/60" />
                 Skill & Tools
               </h3>
               <div className="flex flex-wrap gap-1.5">
@@ -1784,7 +1808,7 @@ export default function ProfilePage() {
 
             <RevealCard nudgeKey={`minat-${activeTab}`} delay={0.09} className="rounded-2xl border border-steel/20 bg-paper p-5">
               <h3 className="text-sm font-bold text-ink mb-3 flex items-center gap-2">
-                <IconTarget className="w-4 h-4 text-bridge-gold" />
+                <IconTarget className="w-4 h-4 text-ink/60" />
                 Kategori Minat
               </h3>
               <div className="flex flex-wrap gap-1.5">
@@ -1826,7 +1850,7 @@ export default function ProfilePage() {
                   {activeTab === "profile" && (
                     <div className="rounded-2xl border border-steel/20 bg-paper p-6 sm:p-8">
                       <h3 className="text-base font-bold text-ink border-b border-steel/10 pb-4 mb-6 flex items-center gap-2">
-                        <IconClipboard className="w-4 h-4 text-bridge-gold" />
+                        <IconClipboard className="w-4 h-4 text-ink/60" />
                         Informasi Akun Lengkap
                       </h3>
 
@@ -1839,12 +1863,12 @@ export default function ProfilePage() {
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-steel/10 pt-5">
                           <InfoField label="Universitas" value={user.universitas || ""} />
                           <InfoField label="Program Studi" value={user.prodi || ""} />
-                          <InfoField label="Semester" value={user.semester || ""} />
+                          <InfoField label="Semester" value={user.semester ? `Semester ${user.semester}` : ""} />
                         </div>
 
                         <div className="border-t border-steel/10 pt-5">
                           <p className="text-[10px] font-bold tracking-wider text-steel/70 uppercase flex items-center gap-1.5">
-                            <IconTarget className="w-3.5 h-3.5 text-bridge-gold" />
+                            <IconTarget className="w-3.5 h-3.5 text-ink/60" />
                             Kategori Proyek Minat
                           </p>
                           <div className="mt-2.5 flex flex-wrap gap-2">
@@ -1866,7 +1890,7 @@ export default function ProfilePage() {
 
                         <div className="border-t border-steel/10 pt-5">
                           <p className="text-[10px] font-bold tracking-wider text-steel/70 uppercase flex items-center gap-1.5">
-                            <IconWrench className="w-3.5 h-3.5 text-bridge-gold" />
+                            <IconWrench className="w-3.5 h-3.5 text-ink/60" />
                             Skill & Tools
                           </p>
                           <div className="mt-2.5 flex flex-wrap gap-2">
@@ -1958,7 +1982,7 @@ export default function ProfilePage() {
                     <div className="rounded-2xl border border-steel/20 bg-paper p-6 sm:p-8">
                       <div className="flex items-center justify-between border-b border-steel/10 pb-4 mb-6">
                         <h3 className="text-base font-bold text-ink flex items-center gap-2">
-                          <IconRocket className="w-5 h-5 text-bridge-gold" />
+                          <IconRocket className="w-5 h-5 text-ink/60" />
                           Riwayat Kolaborasi
                         </h3>
                         <Link href="/kolaborasi" className="text-xs font-semibold text-bridge-gold hover:underline flex items-center gap-1">

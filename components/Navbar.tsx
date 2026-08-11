@@ -397,24 +397,23 @@ export function Navbar() {
           Bridge<span className="text-primary">U</span>
         </Link>
 
-        {/* Center nav links with dot separators */}
-        <div className="hidden items-center gap-5 font-mono text-[13px] text-steel md:flex">
-          {navLinks.map((link, i) => {
+        {/* Center nav links — active page gets a filled pill, not just color change */}
+        <div className="hidden items-center gap-1 font-mono text-[13px] md:flex">
+          {navLinks.map((link) => {
             const active = pathname === link.href;
             return (
-              <div key={link.href} className="flex items-center gap-5">
-                <Link
-                  href={link.href}
-                  className={`transition ${
-                    active ? "text-ink" : "text-steel hover:text-ink"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-                {i < navLinks.length - 1 && (
-                  <span className="text-border">&middot;</span>
-                )}
-              </div>
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`relative flex items-center gap-1.5 rounded-full px-3.5 py-1.5 transition ${
+                  active
+                    ? "bg-ink text-paper"
+                    : "text-steel hover:bg-steel/[0.06] hover:text-ink"
+                }`}
+              >
+                {active && <span className="h-1.5 w-1.5 rounded-full bg-bridge-gold" />}
+                {link.label}
+              </Link>
             );
           })}
         </div>

@@ -1,61 +1,78 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { dummyPublicUsers, dummyRegisteredCompanies } from "@/lib/dummy-data";
+import Image from "next/image";
 
 type SearchItem = {
   id: string;
   name: string;
   type: "mahasiswa" | "company";
   roleOrCategory: string;
+  fotoUrl: string | null;
   href: string;
 };
 
 const MIN_QUERY_LENGTH = 1;
+const DEBOUNCE_MS = 300;
+
+const GROUP_META: Record<SearchItem["type"], { label: string; badge: string }> = {
+  mahasiswa: { label: "Mahasiswa", badge: "bg-sky/25 text-ocean" },
+  company: { label: "Perusahaan", badge: "bg-primary/10 text-primary" },
+};
 
 export function SearchBar() {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [results, setResults] = useState<SearchItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
   const searchRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  // Gabungin dummy mahasiswa & company jadi satu dataset pencarian
-  const dataset: SearchItem[] = useMemo(() => {
-    const mahasiswaItems: SearchItem[] = Object.values(dummyPublicUsers).map((user) => ({
-      id: user.id,
-      name: user.nama,
-      type: "mahasiswa",
-      roleOrCategory: user.prodi || "Mahasiswa",
-      href: `/profile/${user.id}`,
-    }));
+  // Fetch ke API tiap query berubah, pake debounce biar ga spam request
+  useEffect(() => {
+    const trimmed = query.trim();
 
-    const companyItems: SearchItem[] = dummyRegisteredCompanies.map((comp) => ({
-      id: comp.id,
-      name: comp.nama,
-      type: "company",
-      roleOrCategory: comp.industri,
-      href: `/profile/company/${comp.id}`,
-    }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    return [...mahasiswaItems, ...companyItems];
-  }, []);
+    if (trimmed.length < MIN_QUERY_LENGTH) {
+      setResults([]);
+      setIsLoading(false);
+      return;
+    }
 
-  // Nama diprioritaskan; role/prodi cuma jadi fallback kalau ga ada yang match nama
-  const results = useMemo(() => {
-    const trimmed = query.trim().toLowerCase();
-    if (trimmed.length < MIN_QUERY_LENGTH) return [];
+    setIsLoading(true);
 
-    const matchesWord = (text: string) =>
-      text.toLowerCase().split(" ").some((word) => word.startsWith(trimmed));
+    debounceRef.current = setTimeout(async () => {
+      // Batalin request sebelumnya kalau masih jalan
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-    const nameMatches = dataset.filter((item) => matchesWord(item.name));
+      try {
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(trimmed)}`,
+          { signal: controller.signal }
+        );
+        if (!res.ok) throw new Error("Search request failed");
+        const data = await res.json();
+        setResults(data.results ?? []);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          console.error("Search error:", err);
+          setResults([]);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }, DEBOUNCE_MS);
 
-    const roleMatches = dataset.filter(
-      (item) => !nameMatches.includes(item) && matchesWord(item.roleOrCategory)
-    );
-
-    return [...nameMatches, ...roleMatches];
-  }, [query, dataset]);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -77,13 +94,28 @@ export function SearchBar() {
 
   const handleClear = () => {
     setQuery("");
+    setResults([]);
     setIsOpen(false);
   };
 
   const handleSelect = () => {
     setIsOpen(false);
     setQuery("");
+    setResults([]);
   };
+
+  // Group results by type so the dropdown reads as sections, not one flat list
+  const grouped = useMemo(() => {
+    const groups: { type: SearchItem["type"]; items: SearchItem[] }[] = [
+      { type: "mahasiswa", items: [] },
+      { type: "company", items: [] },
+    ];
+    for (const item of results) {
+      const g = groups.find((g) => g.type === item.type);
+      if (g) g.items.push(item);
+    }
+    return groups.filter((g) => g.items.length > 0);
+  }, [results]);
 
   return (
     <div className="relative w-48 sm:w-64" ref={searchRef}>
@@ -123,39 +155,71 @@ export function SearchBar() {
       </div>
 
       {isOpen && query.trim().length >= MIN_QUERY_LENGTH && (
-        <div className="absolute left-0 right-0 top-11 z-50 overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
-          {results.length > 0 ? (
-            <div className="max-h-64 overflow-y-auto py-1">
-              {results.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={handleSelect}
-                  className="flex items-center justify-between px-4 py-2.5 transition hover:bg-surface"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-display text-xs font-medium text-ink">
-                      {item.name}
-                    </p>
-                    <p className="font-mono text-[10px] text-steel">
-                      {item.roleOrCategory}
-                    </p>
+        <div
+          className="absolute right-0 top-11 z-50 overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"
+          style={{ width: "min(440px, calc(100vw - 2rem))" }}
+        >
+          {isLoading ? (
+            <div className="px-4 py-8 text-center font-mono text-xs text-steel/60">
+              Mencari...
+            </div>
+          ) : grouped.length > 0 ? (
+            <div className="max-h-[26rem] overflow-y-auto py-2">
+              {grouped.map((group, gi) => (
+                <div key={group.type} className={gi > 0 ? "mt-2" : ""}>
+                  <div className="sticky top-0 z-10 bg-card px-5 py-1.5">
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-steel/50">
+                      {GROUP_META[group.type].label}
+                      <span className="ml-1.5 text-steel/30">{group.items.length}</span>
+                    </span>
                   </div>
-                  <span
-                    className={`ml-2 shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold ${
-                      item.type === "company"
-                        ? "bg-primary/10 text-primary"
-                        : "bg-sky/25 text-ocean"
-                    }`}
-                  >
-                    {item.type === "company" ? "Perusahaan" : "Mahasiswa"}
-                  </span>
-                </Link>
+
+                  {group.items.map((item) => (
+                    <Link
+                      key={`${item.type}-${item.id}`}
+                      href={item.href}
+                      onClick={handleSelect}
+                      className="flex items-start gap-3.5 px-5 py-3 transition hover:bg-surface"
+                    >
+                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-surface">
+                        {item.fotoUrl ? (
+                          <Image
+                            src={item.fotoUrl}
+                            alt={item.name}
+                            fill
+                            sizes="40px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center font-display text-xs font-semibold text-steel/60">
+                            {item.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-display text-sm font-semibold text-ink leading-snug break-words">
+                            {item.name}
+                          </p>
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold whitespace-nowrap ${GROUP_META[item.type].badge}`}
+                          >
+                            {GROUP_META[item.type].label}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 font-mono text-[11px] text-steel leading-snug break-words">
+                          {item.roleOrCategory}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               ))}
             </div>
           ) : (
-            <div className="px-4 py-6 text-center font-mono text-xs text-steel/60">
-              Tidak ada hasil untuk "{query}"
+            <div className="px-4 py-8 text-center font-mono text-xs text-steel/60">
+              Tidak ada hasil untuk &ldquo;{query}&rdquo;
             </div>
           )}
         </div>
