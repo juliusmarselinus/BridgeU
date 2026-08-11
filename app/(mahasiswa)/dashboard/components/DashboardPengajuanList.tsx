@@ -25,9 +25,10 @@ function initials(name: string) {
 
 interface DashboardPengajuanListProps {
   pengajuan: Pengajuan[];
+  loading?: boolean;
 }
 
-export function DashboardPengajuanList({ pengajuan }: DashboardPengajuanListProps) {
+export function DashboardPengajuanList({ pengajuan, loading }: DashboardPengajuanListProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -51,7 +52,18 @@ export function DashboardPengajuanList({ pengajuan }: DashboardPengajuanListProp
       </div>
 
       <div className="flex flex-col gap-3">
-        {pengajuan.length > 0 ? (
+        {loading ? (
+          Array.from({ length: 3 }).map((_, idx) => (
+            <div key={idx} className="flex items-center gap-4 rounded-2xl border border-steel/15 bg-slate-50 p-4 animate-pulse">
+              <div className="h-11 w-11 shrink-0 rounded-full bg-steel/20" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-40 rounded bg-steel/20" />
+                <div className="h-3 w-28 rounded bg-steel/20" />
+              </div>
+              <div className="h-6 w-20 rounded-full bg-steel/20" />
+            </div>
+          ))
+        ) : pengajuan.length > 0 ? (
           pengajuan.slice(-3).reverse().map((p, i) => (
             <motion.div
               key={p.id || i}

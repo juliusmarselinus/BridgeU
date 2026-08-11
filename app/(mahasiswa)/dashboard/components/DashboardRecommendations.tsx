@@ -8,9 +8,10 @@ import { IconSparkles } from "./DashboardIcons";
 
 interface DashboardRecommendationsProps {
   recommendedProjects: RecommendedProject[];
+  loading?: boolean;
 }
 
-export function DashboardRecommendations({ recommendedProjects }: DashboardRecommendationsProps) {
+export function DashboardRecommendations({ recommendedProjects, loading }: DashboardRecommendationsProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -34,33 +35,46 @@ export function DashboardRecommendations({ recommendedProjects }: DashboardRecom
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {recommendedProjects.map((item) => (
-          <motion.div
-            key={item.id}
-            whileHover={{ y: -4, scale: 1.01 }}
-            className="p-5 rounded-2xl border-2 border-steel/15 bg-slate-50 hover:border-bridge-gold/60 hover:bg-white transition-all duration-200 flex flex-col justify-between space-y-3 shadow-xs hover:shadow-md group"
-          >
-            <div>
-              <div className="flex items-center justify-between text-[11px] font-mono text-steel font-semibold mb-2">
-                <span className="truncate max-w-[140px]">{item.tipe}</span>
-                <span className="font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  {item.matchScore}% Match
-                </span>
+        {loading ? (
+          Array.from({ length: 2 }).map((_, idx) => (
+            <div key={idx} className="p-5 rounded-2xl border-2 border-steel/15 bg-slate-50 animate-pulse space-y-3">
+              <div className="flex justify-between items-center">
+                <div className="h-3 w-20 rounded bg-steel/20" />
+                <div className="h-4 w-16 rounded bg-steel/20" />
               </div>
-              <h4 className="text-sm font-bold text-ink group-hover:text-bridge-gold transition line-clamp-2">
-                {item.judul}
-              </h4>
-              <p className="text-xs font-medium text-steel mt-1">{item.perusahaan}</p>
+              <div className="h-5 w-3/4 rounded bg-steel/20" />
+              <div className="h-3 w-1/2 rounded bg-steel/20" />
             </div>
-
-            <Link
-              href={`/kolaborasi/${item.id}`}
-              className="font-mono text-xs font-bold text-ink group-hover:text-bridge-gold flex items-center gap-1 transition pt-2 border-t border-steel/10"
+          ))
+        ) : (
+          recommendedProjects.map((item) => (
+            <motion.div
+              key={item.id}
+              whileHover={{ y: -4, scale: 1.01 }}
+              className="p-5 rounded-2xl border-2 border-steel/15 bg-slate-50 hover:border-bridge-gold/60 hover:bg-white transition-all duration-200 flex flex-col justify-between space-y-3 shadow-xs hover:shadow-md group"
             >
-              Lihat Detail <span className="group-hover:translate-x-1 transition">→</span>
-            </Link>
-          </motion.div>
-        ))}
+              <div>
+                <div className="flex items-center justify-between text-[11px] font-mono text-steel font-semibold mb-2">
+                  <span className="truncate max-w-[140px]">{item.tipe}</span>
+                  <span className="font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    {item.matchScore}% Match
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-ink group-hover:text-bridge-gold transition line-clamp-2">
+                  {item.judul}
+                </h4>
+                <p className="text-xs font-medium text-steel mt-1">{item.perusahaan}</p>
+              </div>
+
+              <Link
+                href={`/kolaborasi/${item.id}`}
+                className="font-mono text-xs font-bold text-ink group-hover:text-bridge-gold flex items-center gap-1 transition pt-2 border-t border-steel/10"
+              >
+                Lihat Detail <span className="group-hover:translate-x-1 transition">→</span>
+              </Link>
+            </motion.div>
+          ))
+        )}
       </div>
     </motion.div>
   );

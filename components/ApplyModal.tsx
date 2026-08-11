@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type StoredUser = {
   nama: string;
@@ -96,8 +97,33 @@ export function ApplyModal({
     else onClose();
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setSubmitting(true);
+    try {
+      // 1. Dapatkan user id yang sedang login
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData?.user?.id;
+
+      if (currentUserId && data.id) {
+        // Insert ke tabel pendaftaran_kolaborasi Supabase
+        const { error: insertErr } = await supabase
+          .from("pendaftaran_kolaborasi")
+          .insert({
+            kolaborasi_id: data.id,
+            mahasiswa_id: currentUserId,
+            status: "Menunggu",
+            updated_at: new Date().toISOString(),
+          });
+
+        if (insertErr) {
+          console.error("Gagal menyimpan pendaftaran ke Supabase:", insertErr.message);
+        }
+      }
+    } catch (err) {
+      console.error("Error submitting application:", err);
+    }
+
+    // Backup ke localStorage
     const existing = JSON.parse(localStorage.getItem("bridgeu_pengajuan") || "[]");
     existing.push({
       id: data.id,
@@ -114,10 +140,8 @@ export function ApplyModal({
     });
     localStorage.setItem("bridgeu_pengajuan", JSON.stringify(existing));
 
-    setTimeout(() => {
-      setSubmitting(false);
-      onSuccess();
-    }, 500);
+    setSubmitting(false);
+    onSuccess();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

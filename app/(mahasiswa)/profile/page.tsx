@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { allCategoriesList, allSkillsList, badgeList } from "@/lib/dummy-data";
+import { allCategoriesList, allSkillsList, badgeList, universitasList, prodiList, semesterList } from "@/lib/dummy-data";
+import { ModalPicker } from "@/app/daftar/components/ModalPicker";
 import { supabase } from "@/lib/supabase";
 
 type StoredUser = {
@@ -791,12 +792,18 @@ function EditProfileModal({
   const [minatKategori, setMinatKategori] = useState<string[]>(user.minatKategori || []);
   const [skills, setSkills] = useState<string[]>(user.skills || []);
 
+  const [activePicker, setActivePicker] = useState<"univ" | "prodi" | "semester" | null>(null);
+  const [isCustomUniv, setIsCustomUniv] = useState(false);
+  const [customUnivInput, setCustomUnivInput] = useState("");
+  const [isCustomProdi, setIsCustomProdi] = useState(false);
+  const [customProdiInput, setCustomProdiInput] = useState("");
+
   const toggleMinat = (m: string) => {
-    setMinatKategori((prev) => (prev.includes(m) ? prev.filter((item) => item !== m) : [...prev, m]));
+    setMinatKategori((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
   };
 
   const toggleSkill = (s: string) => {
-    setSkills((prev) => (prev.includes(s) ? prev.filter((item) => item !== s) : [...prev, s]));
+    setSkills((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -805,8 +812,8 @@ function EditProfileModal({
       ...user,
       nama,
       email,
-      universitas,
-      prodi,
+      universitas: isCustomUniv ? (customUnivInput || "Lainnya") : universitas,
+      prodi: isCustomProdi ? (customProdiInput || "Lainnya") : prodi,
       semester,
       preferensiTipe,
       preferensiLokasi,
@@ -815,6 +822,11 @@ function EditProfileModal({
       skills,
     });
   };
+
+  const prodiOptionsFormatted = useMemo(
+    () => prodiList.map((p) => (typeof p === "string" ? p : p.label)),
+    []
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 animate-in fade-in duration-200">
@@ -861,30 +873,54 @@ function EditProfileModal({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label className="text-[10px] font-bold tracking-wider text-steel uppercase">Universitas</label>
-              <input
-                type="text"
-                value={universitas}
-                onChange={(e) => setUniversitas(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
-              />
+              <button
+                type="button"
+                onClick={() => setActivePicker("univ")}
+                className="mt-1 w-full flex items-center justify-between rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
+              >
+                <span className="truncate">{isCustomUniv ? `Lainnya (${customUnivInput || "Belum diisi"})` : (universitas || "-- Pilih Universitas --")}</span>
+                <span className="text-steel text-[10px]">▼</span>
+              </button>
+              {isCustomUniv && (
+                <input
+                  type="text"
+                  value={customUnivInput}
+                  onChange={(e) => setCustomUnivInput(e.target.value)}
+                  placeholder="Ketik Nama Universitas..."
+                  className="mt-1.5 w-full rounded-xl border border-steel/20 bg-paper px-3 py-1.5 text-xs text-ink outline-none focus:border-ink"
+                />
+              )}
             </div>
             <div>
               <label className="text-[10px] font-bold tracking-wider text-steel uppercase">Program Studi</label>
-              <input
-                type="text"
-                value={prodi}
-                onChange={(e) => setProdi(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
-              />
+              <button
+                type="button"
+                onClick={() => setActivePicker("prodi")}
+                className="mt-1 w-full flex items-center justify-between rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
+              >
+                <span className="truncate">{isCustomProdi ? `Lainnya (${customProdiInput || "Belum diisi"})` : (prodi || "-- Pilih Prodi --")}</span>
+                <span className="text-steel text-[10px]">▼</span>
+              </button>
+              {isCustomProdi && (
+                <input
+                  type="text"
+                  value={customProdiInput}
+                  onChange={(e) => setCustomProdiInput(e.target.value)}
+                  placeholder="Ketik Nama Program Studi..."
+                  className="mt-1.5 w-full rounded-xl border border-steel/20 bg-paper px-3 py-1.5 text-xs text-ink outline-none focus:border-ink"
+                />
+              )}
             </div>
             <div>
               <label className="text-[10px] font-bold tracking-wider text-steel uppercase">Semester</label>
-              <input
-                type="text"
-                value={semester}
-                onChange={(e) => setSemester(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
-              />
+              <button
+                type="button"
+                onClick={() => setActivePicker("semester")}
+                className="mt-1 w-full flex items-center justify-between rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
+              >
+                <span className="truncate">{semester || "-- Pilih Semester --"}</span>
+                <span className="text-steel text-[10px]">▼</span>
+              </button>
             </div>
           </div>
 
@@ -991,6 +1027,56 @@ function EditProfileModal({
             Simpan Perubahan
           </button>
         </div>
+
+        {/* Modal Pickers */}
+        <ModalPicker
+          isOpen={activePicker === "univ"}
+          onClose={() => setActivePicker(null)}
+          title="Pilih Universitas"
+          options={universitasList}
+          selectedValue={universitas}
+          onSelect={(val) => {
+            if (val === "Lainnya") {
+              setIsCustomUniv(true);
+              setUniversitas("Lainnya");
+            } else {
+              setIsCustomUniv(false);
+              setUniversitas(val);
+            }
+            setActivePicker(null);
+          }}
+        />
+
+        <ModalPicker
+          isOpen={activePicker === "prodi"}
+          onClose={() => setActivePicker(null)}
+          title="Pilih Program Studi"
+          options={prodiOptionsFormatted}
+          selectedValue={prodi}
+          onSelect={(val) => {
+            if (val === "Lainnya") {
+              setIsCustomProdi(true);
+              setProdi("Lainnya");
+            } else {
+              setIsCustomProdi(false);
+              setProdi(val);
+            }
+            setActivePicker(null);
+          }}
+        />
+
+        <ModalPicker
+          isOpen={activePicker === "semester"}
+          onClose={() => setActivePicker(null)}
+          title="Pilih Semester"
+          options={semesterList}
+          selectedValue={semester}
+          allowLainnya={false}
+          onSelect={(val) => {
+            setSemester(val);
+            setActivePicker(null);
+          }}
+        />
       </div>
     </div>
   );

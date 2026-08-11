@@ -8,10 +8,28 @@ import { IconSum, IconClock, IconCheck } from "./DashboardIcons";
 
 interface DashboardStatsProps {
   stats: DashboardStats;
+  loading?: boolean;
 }
 
-export function DashboardStatsCards({ stats }: DashboardStatsProps) {
+export function DashboardStatsCards({ stats, loading }: DashboardStatsProps) {
   const { total, menunggu, diterima } = stats;
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <div key={idx} className="rounded-2xl border-2 border-steel/20 bg-white p-6 shadow-xl animate-pulse space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="h-3 w-24 rounded bg-steel/20" />
+              <div className="h-9 w-9 rounded-xl bg-steel/20" />
+            </div>
+            <div className="h-10 w-16 rounded bg-steel/20" />
+            <div className="h-3 w-32 rounded bg-steel/20" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <motion.div
