@@ -1,51 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { dummyKolaborasi, Kolaborasi } from "@/lib/dummy-data";
+import { useAdminKolaborasi } from "./hooks/useAdminKolaborasi";
 
 export default function AdminModerasiKolaborasiPage() {
-  const [kolaborasiList, setKolaborasiList] = useState<Kolaborasi[]>([]);
-  const [filterStatus, setFilterStatus] = useState<"Semua" | "Disetujui" | "Menunggu" | "Ditolak">("Semua");
-  const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("bridgeu_kolaborasi_list");
-    if (stored) {
-      const parsed: Kolaborasi[] = JSON.parse(stored);
-      // Ensure all items have default statusModerasi = Disetujui if not specified
-      const formatted = parsed.map((item) => ({
-        ...item,
-        statusModerasi: item.statusModerasi || "Disetujui",
-      }));
-      queueMicrotask(() => setKolaborasiList(formatted));
-    } else {
-      const formatted = dummyKolaborasi.map((item) => ({
-        ...item,
-        statusModerasi: "Disetujui" as const,
-      }));
-      queueMicrotask(() => setKolaborasiList(formatted));
-    }
-  }, []);
-
-  const handleUpdateStatus = (id: string, newStatus: "Disetujui" | "Ditolak") => {
-    const updated = kolaborasiList.map((item) =>
-      item.id === id ? { ...item, statusModerasi: newStatus } : item
-    );
-    setKolaborasiList(updated);
-    localStorage.setItem("bridgeu_kolaborasi_list", JSON.stringify(updated));
-  };
-
-  const filteredList = kolaborasiList.filter((item) => {
-    const matchesSearch =
-      item.judul.toLowerCase().includes(search.toLowerCase()) ||
-      item.perusahaan.toLowerCase().includes(search.toLowerCase()) ||
-      item.kategori.toLowerCase().includes(search.toLowerCase());
-
-    const status = item.statusModerasi || "Disetujui";
-    if (filterStatus === "Semua") return matchesSearch;
-    return matchesSearch && status === filterStatus;
-  });
+  const {
+    kolaborasiList,
+    filteredList,
+    isLoading,
+    filterStatus,
+    setFilterStatus,
+    search,
+    setSearch,
+    handleUpdateStatus,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    totalCount,
+  } = useAdminKolaborasi();
 
   return (
     <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-8">
@@ -73,7 +45,7 @@ export default function AdminModerasiKolaborasiPage() {
             const count =
               st === "Semua"
                 ? kolaborasiList.length
-                : kolaborasiList.filter((item) => (item.statusModerasi || "Disetujui") === st).length;
+                : kolaborasiList.filter((item) => item.status_moderasi === st).length;
 
             return (
               <button
@@ -101,14 +73,32 @@ export default function AdminModerasiKolaborasiPage() {
       </div>
 
       {/* Grid List Kolaborasi */}
-      {filteredList.length === 0 ? (
+      {isLoading ? (
+        <div className="mt-8 space-y-4">
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="rounded-2xl border border-steel/15 bg-white/70 p-6 shadow-sm animate-pulse space-y-3"
+            >
+              <div className="flex gap-2">
+                <div className="h-5 w-24 bg-steel/20 rounded-full"></div>
+                <div className="h-5 w-16 bg-steel/20 rounded-full"></div>
+                <div className="h-5 w-16 bg-steel/20 rounded-full"></div>
+              </div>
+              <div className="h-6 w-1/3 bg-steel/20 rounded"></div>
+              <div className="h-4 w-2/3 bg-steel/20 rounded"></div>
+              <div className="h-3 w-1/4 bg-steel/20 rounded"></div>
+            </div>
+          ))}
+        </div>
+      ) : filteredList.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-steel/30 bg-white/40 p-12 text-center">
           <p className="text-sm text-steel">Tidak ada proyek kolaborasi ditemukan.</p>
         </div>
       ) : (
         <div className="mt-8 space-y-4">
           {filteredList.map((item) => {
-            const status = item.statusModerasi || "Disetujui";
+            const status = item.status_moderasi;
             return (
               <div
                 key={item.id}
@@ -117,10 +107,10 @@ export default function AdminModerasiKolaborasiPage() {
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-xs font-bold text-bridge-gold bg-bridge-gold/10 px-2.5 py-0.5 rounded-full border border-bridge-gold/20">
-                      {item.perusahaan}
+                      {item.perusahaan_nama}
                     </span>
                     <span className="rounded-full bg-steel/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-steel">
-                      {item.kategori}
+                      {item.nama_kategori}
                     </span>
                     <span
                       className={`rounded-full px-2.5 py-0.5 font-mono text-[11px] font-semibold ${
@@ -142,10 +132,10 @@ export default function AdminModerasiKolaborasiPage() {
                       }`}
                     >
                       {status === "Disetujui"
-                        ? "✓ Disetujui (Aktif)"
+                        ? "Disetujui (Aktif)"
                         : status === "Menunggu"
-                        ? "⏳ Menunggu Moderasi"
-                        : "🚫 Ditolak / Take Down"}
+                        ? "Menunggu Moderasi"
+                        : "Ditolak / Take Down"}
                     </span>
                   </div>
 
@@ -157,8 +147,19 @@ export default function AdminModerasiKolaborasiPage() {
                   </p>
 
                   <div className="mt-3 flex items-center gap-4 font-mono text-[11px] text-steel">
-                    <span>📍 {item.lokasi}</span>
-                    <span>📅 Batas: {item.batasWaktu}</span>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5 text-steel" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {item.nama_kota}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5 text-steel" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Batas: {item.batas_waktu}
+                    </span>
                   </div>
                 </div>
 
@@ -185,6 +186,34 @@ export default function AdminModerasiKolaborasiPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!isLoading && totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-between border-t border-steel/10 pt-6">
+          <p className="text-xs text-steel font-mono">
+            Menampilkan {filteredList.length} dari {totalCount} proyek
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="rounded-full border border-steel/20 bg-white px-3.5 py-1.5 font-mono text-xs font-medium text-steel transition hover:border-ink hover:text-ink disabled:opacity-40 disabled:hover:border-steel/20 disabled:hover:text-steel"
+            >
+              ← Prev
+            </button>
+            <span className="font-mono text-xs text-ink font-semibold">
+              Halaman {currentPage} dari {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="rounded-full border border-steel/20 bg-white px-3.5 py-1.5 font-mono text-xs font-medium text-steel transition hover:border-ink hover:text-ink disabled:opacity-40 disabled:hover:border-steel/20 disabled:hover:text-steel"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       )}
     </main>

@@ -1,40 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { dummyRegisteredCompanies, RegisteredCompany } from "@/lib/dummy-data";
+import { useAdminPerusahaan } from "./hooks/useAdminPerusahaan";
 
 export default function AdminVerifikasiPerusahaanPage() {
-  const [companyList, setCompanyList] = useState<RegisteredCompany[]>([]);
-  const [filterStatus, setFilterStatus] = useState<
-    "Semua" | "Menunggu Verifikasi" | "Terverifikasi" | "Ditolak"
-  >("Semua");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("bridgeu_registered_companies");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      queueMicrotask(() => setCompanyList(parsed));
-    } else {
-      queueMicrotask(() => setCompanyList(dummyRegisteredCompanies));
-    }
-  }, []);
-
-  const handleUpdateVerifikasi = (
-    id: string,
-    newStatus: "Terverifikasi" | "Ditolak"
-  ) => {
-    const updated = companyList.map((comp) =>
-      comp.id === id ? { ...comp, statusVerifikasi: newStatus } : comp
-    );
-    setCompanyList(updated);
-    localStorage.setItem("bridgeu_registered_companies", JSON.stringify(updated));
-  };
-
-  const filteredList = companyList.filter((comp) => {
-    if (filterStatus === "Semua") return true;
-    return comp.statusVerifikasi === filterStatus;
-  });
+  const {
+    companyList,
+    filteredList,
+    isLoading,
+    filterStatus,
+    setFilterStatus,
+    handleUpdateVerifikasi,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    totalCount,
+  } = useAdminPerusahaan();
 
   return (
     <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-8">
@@ -80,7 +61,29 @@ export default function AdminVerifikasiPerusahaanPage() {
       </div>
 
       {/* Grid Perusahaan */}
-      {filteredList.length === 0 ? (
+      {isLoading ? (
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="rounded-2xl border border-steel/15 bg-white/70 p-6 shadow-sm animate-pulse space-y-4"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-steel/10">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-steel/20 rounded-full"></div>
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-32 bg-steel/20 rounded"></div>
+                    <div className="h-3 w-24 bg-steel/20 rounded"></div>
+                  </div>
+                </div>
+                <div className="h-6 w-20 bg-steel/20 rounded-full"></div>
+              </div>
+              <div className="h-10 w-full bg-steel/20 rounded-xl"></div>
+              <div className="h-3 w-1/3 bg-steel/20 rounded"></div>
+            </div>
+          ))}
+        </div>
+      ) : filteredList.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-steel/30 bg-white/40 p-12 text-center">
           <p className="text-sm text-steel">
             Tidak ada perusahaan dengan status &quot;{filterStatus}&quot;.
@@ -96,8 +99,10 @@ export default function AdminVerifikasiPerusahaanPage() {
               <div>
                 <div className="flex items-center justify-between gap-2 border-b border-steel/10 pb-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 font-mono font-bold text-ink">
-                      🏢
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-ink">
+                      <svg className="w-5 h-5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0h4m-4 0V11m0 0H9m4 0h2" />
+                      </svg>
                     </div>
                     <div>
                       <h3 className="font-display text-base font-bold text-ink leading-tight flex items-center gap-1.5">
@@ -143,8 +148,11 @@ export default function AdminVerifikasiPerusahaanPage() {
               </div>
 
               <div className="mt-6 pt-4 border-t border-steel/10 flex items-center justify-between">
-                <span className="font-mono text-[11px] text-steel">
-                  📅 Terdaftar: {comp.tanggalDaftar}
+                <span className="font-mono text-[11px] text-steel flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Terdaftar: {comp.tanggalDaftar}
                 </span>
 
                 <div className="flex items-center gap-2">
@@ -180,6 +188,34 @@ export default function AdminVerifikasiPerusahaanPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!isLoading && totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-between border-t border-steel/10 pt-6">
+          <p className="text-xs text-steel font-mono">
+            Menampilkan {filteredList.length} dari {totalCount} perusahaan
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="rounded-full border border-steel/20 bg-white px-3.5 py-1.5 font-mono text-xs font-medium text-steel transition hover:border-ink hover:text-ink disabled:opacity-40 disabled:hover:border-steel/20 disabled:hover:text-steel"
+            >
+              ← Prev
+            </button>
+            <span className="font-mono text-xs text-ink font-semibold">
+              Halaman {currentPage} dari {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="rounded-full border border-steel/20 bg-white px-3.5 py-1.5 font-mono text-xs font-medium text-steel transition hover:border-ink hover:text-ink disabled:opacity-40 disabled:hover:border-steel/20 disabled:hover:text-steel"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       )}
     </main>
