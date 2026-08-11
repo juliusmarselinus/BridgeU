@@ -104,6 +104,7 @@ export const companyService = {
       lokasi_id: item.lokasi_id,
       nama_kota: item.kota?.nama_kota || "Tidak Diketahui",
       batas_waktu: item.batas_waktu,
+      tanggal_selesai: item.tanggal_selesai,
       status_moderasi: item.status_moderasi,
       tingkat_kesulitan: item.tingkat_kesulitan,
       gaji_stipend: item.gaji_stipend,
@@ -126,6 +127,7 @@ export const companyService = {
       deskripsi: formData.deskripsi,
       lokasi_id: formData.lokasi_id,
       batas_waktu: formData.batas_waktu,
+      tanggal_selesai: formData.tanggal_selesai || null,
       tingkat_kesulitan: formData.tingkat_kesulitan,
       gaji_stipend: formData.gaji_stipend || null,
       slot: formData.slot,
@@ -158,6 +160,7 @@ export const companyService = {
       lokasi_id: data.lokasi_id,
       nama_kota: data.kota?.nama_kota,
       batas_waktu: data.batas_waktu,
+      tanggal_selesai: data.tanggal_selesai,
       status_moderasi: data.status_moderasi,
       tingkat_kesulitan: data.tingkat_kesulitan,
       gaji_stipend: data.gaji_stipend,
@@ -188,6 +191,7 @@ export interface CreateFullKolaborasiPayload {
   deskripsi: string;
   lokasi_id: number;
   batas_waktu: string;
+  tanggal_selesai?: string;
   tingkat_kesulitan: "Pemula" | "Menengah" | "Lanjut";
   gaji_stipend?: string;
   slot: number;
@@ -240,6 +244,7 @@ export const companyServiceExtended = {
           deskripsi: payload.deskripsi,
           lokasi_id: payload.lokasi_id,
           batas_waktu: payload.batas_waktu,
+          tanggal_selesai: payload.tanggal_selesai || null,
           tingkat_kesulitan: payload.tingkat_kesulitan,
           gaji_stipend: payload.gaji_stipend || null,
           slot: payload.slot,
@@ -322,6 +327,7 @@ export const companyServiceExtended = {
         deskripsi: payload.deskripsi,
         lokasi_id: payload.lokasi_id,
         batas_waktu: payload.batas_waktu,
+        tanggal_selesai: payload.tanggal_selesai || null,
         tingkat_kesulitan: payload.tingkat_kesulitan,
         gaji_stipend: payload.gaji_stipend || null,
         slot: payload.slot,

@@ -254,7 +254,7 @@ export default function TambahKolaborasiPage() {
             2. Ketentuan Proyek
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label className="block font-mono text-xs font-medium text-ink mb-1">
                 Tingkat Kesulitan
@@ -298,6 +298,18 @@ export default function TambahKolaborasiPage() {
                 required
                 value={formData.batas_waktu}
                 onChange={(e) => setFormData({ ...formData, batas_waktu: e.target.value })}
+                className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block font-mono text-xs font-medium text-ink mb-1">
+                Tanggal Selesai Kolaborasi
+              </label>
+              <input
+                type="date"
+                value={formData.tanggal_selesai}
+                onChange={(e) => setFormData({ ...formData, tanggal_selesai: e.target.value })}
                 className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans bg-white"
               />
             </div>

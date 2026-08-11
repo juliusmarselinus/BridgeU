@@ -109,6 +109,7 @@ CREATE TABLE public.kolaborasi (
   deskripsi text NOT NULL,
   lokasi_id bigint NOT NULL,
   batas_waktu date NOT NULL,
+  tanggal_selesai date,
   status_moderasi USER-DEFINED NOT NULL DEFAULT 'Menunggu'::moderasi_status,
   tingkat_kesulitan USER-DEFINED DEFAULT 'Menengah'::tingkat_kesulitan,
   gaji_stipend character varying,

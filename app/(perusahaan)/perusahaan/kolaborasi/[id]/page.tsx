@@ -228,6 +228,7 @@ export default function DetailKolaborasiPage() {
     tingkat_kesulitan: "Menengah" as "Pemula" | "Menengah" | "Lanjut",
     slot: 5,
     batas_waktu: "",
+    tanggal_selesai: "",
     gaji_stipend: "",
     deskripsi: "",
     selectedProdiIds: [] as number[],
@@ -269,7 +270,7 @@ export default function DetailKolaborasiPage() {
         const { data: row, error } = await supabase
           .from("kolaborasi")
           .select(`
-            id, judul, tipe, deskripsi, lokasi_id, batas_waktu, status_moderasi,
+            id, judul, tipe, deskripsi, lokasi_id, batas_waktu, tanggal_selesai, status_moderasi,
             tingkat_kesulitan, gaji_stipend, slot, kategori_id,
             kategori_minat:kategori_id ( nama_kategori ),
             kota ( nama_kota ),
@@ -359,6 +360,7 @@ export default function DetailKolaborasiPage() {
             tingkat_kesulitan: row.tingkat_kesulitan || "Menengah",
             slot: row.slot || 5,
             batas_waktu: row.batas_waktu || "",
+            tanggal_selesai: row.tanggal_selesai || "",
             gaji_stipend: row.gaji_stipend || "",
             deskripsi: row.deskripsi || "",
             selectedProdiIds: activeProdis,
@@ -466,6 +468,7 @@ export default function DetailKolaborasiPage() {
       deskripsi: formData.deskripsi,
       lokasi_id: formData.lokasi_id,
       batas_waktu: formData.batas_waktu,
+      tanggal_selesai: formData.tanggal_selesai || undefined,
       tingkat_kesulitan: formData.tingkat_kesulitan,
       gaji_stipend: formData.gaji_stipend,
       slot: formData.slot,
@@ -1387,7 +1390,7 @@ export default function DetailKolaborasiPage() {
                   Ketentuan Proyek
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div>
                     <label className="block font-mono text-xs font-medium text-ink mb-1">
                       Tingkat Kesulitan
@@ -1431,6 +1434,18 @@ export default function DetailKolaborasiPage() {
                       required
                       value={formData.batas_waktu}
                       onChange={(e) => setFormData({ ...formData, batas_waktu: e.target.value })}
+                      className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-mono text-xs font-medium text-ink mb-1">
+                      Tanggal Selesai Kolaborasi
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.tanggal_selesai}
+                      onChange={(e) => setFormData({ ...formData, tanggal_selesai: e.target.value })}
                       className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm outline-none focus:border-bridge-gold font-sans bg-white"
                     />
                   </div>

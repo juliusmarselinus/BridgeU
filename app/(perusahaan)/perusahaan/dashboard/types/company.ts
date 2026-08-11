@@ -37,6 +37,7 @@ export interface KolaborasiWithMeta {
   lokasi_id: number;
   nama_kota?: string;
   batas_waktu: string;
+  tanggal_selesai?: string;
   status_moderasi: ModerasiStatus;
   tingkat_kesulitan?: TingkatKesulitan;
   gaji_stipend?: string;
@@ -52,6 +53,7 @@ export interface KolaborasiFormData {
   deskripsi: string;
   lokasi_id: number;
   batas_waktu: string;
+  tanggal_selesai?: string;
   tingkat_kesulitan: TingkatKesulitan;
   gaji_stipend?: string;
   slot: number;

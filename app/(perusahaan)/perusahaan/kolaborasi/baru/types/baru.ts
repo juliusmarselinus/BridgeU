@@ -19,6 +19,7 @@ export interface BaruFormData {
   tingkat_kesulitan: "Pemula" | "Menengah" | "Lanjut";
   slot: number;
   batas_waktu: string;
+  tanggal_selesai: string;
   gaji_stipend: string;
   deskripsi: string;
   selectedProdiIds: number[];
