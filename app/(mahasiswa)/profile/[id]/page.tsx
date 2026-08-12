@@ -612,17 +612,22 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     let isMounted = true;
     async function fetchProfile() {
+      console.log("Fetching profile for:", rawProfileId);
       setIsLoading(true);
       try {
         const res = await fetch(`/api/profile/${rawProfileId}`);
+        console.log("Response status:", res.status);
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
+          console.error("Fetch error:", body);
           if (isMounted) setErrorMsg(body.error || "Profil tidak ditemukan");
         } else {
           const data = await res.json();
+          console.log("Fetched profile data:", data);
           if (isMounted) setProfileData(data);
         }
       } catch (err: any) {
+        console.error("Exception during fetch:", err);
         if (isMounted) setErrorMsg(err.message || "Gagal memuat profil");
       } finally {
         if (isMounted) setIsLoading(false);
