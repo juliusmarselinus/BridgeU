@@ -135,6 +135,38 @@ export const pelamarService = {
       }
     }
 
+    // Ambil data mahasiswa_id & judul kolaborasi untuk notifikasi
+    const { data: pend } = await supabase
+      .from("pendaftaran_kolaborasi")
+      .select("mahasiswa_id, kolaborasi:kolaborasi_id ( judul )")
+      .eq("id", pendaftaranId)
+      .maybeSingle();
+
+    if (pend?.mahasiswa_id) {
+      const proyJudul = (pend.kolaborasi as any)?.judul || "Proyek Kolaborasi";
+      let notifTitle = "Update Status Kolaborasi";
+      let notifMsg = `Status pengajuan kamu untuk '${proyJudul}' telah diperbarui menjadi '${status}'.`;
+
+      if (status === "Diterima") {
+        notifTitle = "Selamat! Lamaran Diterima";
+        notifMsg = `Pengajuan kamu untuk proyek '${proyJudul}' telah DITERIMA oleh mitra perusahaan.`;
+      } else if (status === "Ditolak") {
+        notifTitle = "Update Pengajuan Kolaborasi";
+        notifMsg = `Pengajuan kamu untuk proyek '${proyJudul}' belum dapat diterima saat ini.`;
+      } else if (status === "Selesai") {
+        notifTitle = "Kolaborasi Selesai";
+        notifMsg = `Selamat! Proyek kolaborasi '${proyJudul}' telah ditandai Selesai.`;
+      }
+
+      await supabase.from("notifikasi").insert({
+        recipient_user_id: pend.mahasiswa_id,
+        judul: notifTitle,
+        pesan: notifMsg,
+        is_read: false,
+        created_at: nowIso,
+      });
+    }
+
     return true;
   },
 };

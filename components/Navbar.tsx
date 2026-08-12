@@ -45,32 +45,7 @@ function initials(name: string) {
 
 
 
-const defaultNotifications: AppNotification[] = [
-  {
-    id: "1",
-    type: "success",
-    title: "Pengajuan Diterima",
-    message: "Pengajuan kolaborasi kamu ke PT Teknologi Nusantara telah diterima.",
-    time: "10 menit lalu",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "info",
-    title: "Peluang Baru",
-    message: "Ada peluang kolaborasi baru dari CV Karya Digital yang cocok dengan profil kamu.",
-    time: "2 jam lalu",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "warning",
-    title: "Reminder Deadline",
-    message: "Deadline pengajuan ke Startup Inovasi Muda tinggal 2 hari lagi.",
-    time: "1 hari lalu",
-    read: true,
-  },
-];
+const defaultNotifications: AppNotification[] = [];
 
 const NOTIF_TYPES: NotificationType[] = ["success", "info", "warning"];
 
@@ -89,23 +64,20 @@ function sanitizeNotification(raw: unknown, fallbackId: string): AppNotification
 }
 
 function readStoredNotifications(): AppNotification[] {
+  if (typeof window === "undefined") return [];
   const stored = localStorage.getItem(NOTIF_STORAGE_KEY);
 
   if (!stored) {
-    localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(defaultNotifications));
-    return defaultNotifications;
+    return [];
   }
 
   try {
     const parsed = JSON.parse(stored);
     if (!Array.isArray(parsed)) throw new Error("invalid shape");
 
-    const cleaned = parsed.map((item, i) => sanitizeNotification(item, `n-${i}`));
-    localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(cleaned));
-    return cleaned;
+    return parsed.map((item, i) => sanitizeNotification(item, `n-${i}`));
   } catch {
-    localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(defaultNotifications));
-    return defaultNotifications;
+    return [];
   }
 }
 
@@ -266,7 +238,57 @@ function NotificationBell() {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setNotifications(readStoredNotifications());
+    let isMounted = true;
+
+    async function fetchDbNotifications() {
+      console.log("🔍 [DEBUG NotificationBell] Fetching user auth...");
+      const { data: authData, error: authErr } = await supabase.auth.getUser();
+      const userId = authData?.user?.id;
+
+      if (authErr || !userId) {
+        console.warn("⚠️ [DEBUG NotificationBell] User not logged in or auth error:", authErr?.message);
+        setNotifications(readStoredNotifications());
+        return;
+      }
+
+      console.log("🔍 [DEBUG NotificationBell] Querying Supabase `notifikasi` for userId:", userId);
+      const { data, error } = await supabase
+        .from("notifikasi")
+        .select("id, judul, pesan, is_read, created_at")
+        .eq("recipient_user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) {
+        console.error("❌ [DEBUG NotificationBell] Error fetching notifikasi from Supabase:", error.message);
+        if (isMounted) setNotifications(readStoredNotifications());
+        return;
+      }
+
+      console.log("✅ [DEBUG NotificationBell] Raw DB notifications count:", data?.length ?? 0, data);
+
+      if (data && data.length > 0) {
+        const mapped: AppNotification[] = data.map((n: any) => ({
+          id: n.id.toString(),
+          type: n.judul.toLowerCase().includes("terbuka") || n.judul.toLowerCase().includes("diterima")
+            ? "success"
+            : n.judul.toLowerCase().includes("ditolak")
+            ? "warning"
+            : "info",
+          title: n.judul,
+          message: n.pesan,
+          time: n.created_at ? new Date(n.created_at).toLocaleDateString("id-ID") : "Terbaru",
+          read: Boolean(n.is_read),
+        }));
+        console.log("🔔 [DEBUG NotificationBell] Setting mapped notifications state:", mapped);
+        if (isMounted) setNotifications(mapped);
+      } else {
+        console.log("ℹ️ [DEBUG NotificationBell] DB notifications empty, reading fallback/localStorage...");
+        if (isMounted) setNotifications(readStoredNotifications());
+      }
+    }
+
+    fetchDbNotifications();
 
     const handleStorage = (e: StorageEvent) => {
       if (e.key === NOTIF_STORAGE_KEY) {
@@ -274,7 +296,10 @@ function NotificationBell() {
       }
     };
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   useEffect(() => {
@@ -289,20 +314,29 @@ function NotificationBell() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  function markAsRead(id: string) {
+  async function markAsRead(id: string) {
     setNotifications((prev) => {
       const updated = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
       writeStoredNotifications(updated);
       return updated;
     });
+
+    if (/^\d+$/.test(id)) {
+      await supabase.from("notifikasi").update({ is_read: true }).eq("id", parseInt(id, 10));
+    }
   }
 
-  function markAllAsRead() {
+  async function markAllAsRead() {
     setNotifications((prev) => {
       const updated = prev.map((n) => ({ ...n, read: true }));
       writeStoredNotifications(updated);
       return updated;
     });
+
+    const { data: authData } = await supabase.auth.getUser();
+    if (authData?.user?.id) {
+      await supabase.from("notifikasi").update({ is_read: true }).eq("recipient_user_id", authData.user.id);
+    }
   }
 
   return (

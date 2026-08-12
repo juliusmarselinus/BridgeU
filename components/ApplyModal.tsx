@@ -116,7 +116,22 @@ export function ApplyModal({
           });
 
         if (insertErr) {
-          console.error("Gagal menyimpan pendaftaran ke Supabase:", insertErr.message);
+          console.error("❌ [ApplyModal] Gagal menyimpan pendaftaran ke Supabase:", insertErr.message);
+        } else {
+          console.log("✅ [ApplyModal] Pendaftaran berhasil disimpan ke Supabase. Mengirim notifikasi ke tabel `notifikasi`...");
+          const { data: notifData, error: notifErr } = await supabase.from("notifikasi").insert({
+            recipient_user_id: currentUserId,
+            judul: "Pengajuan Kolaborasi Berhasil",
+            pesan: `Pengajuan kamu untuk proyek '${data.judul}' di ${data.perusahaan} telah berhasil dikirim.`,
+            is_read: false,
+            created_at: new Date().toISOString(),
+          }).select();
+
+          if (notifErr) {
+            console.error("❌ [ApplyModal] Gagal insert notifikasi ke Supabase:", notifErr.message);
+          } else {
+            console.log("✅ [ApplyModal] Notifikasi berhasil dibuat di tabel `notifikasi`:", notifData);
+          }
         }
       }
     } catch (err) {

@@ -243,6 +243,38 @@ export async function GET(req: NextRequest) {
           console.error("❌ [DEBUG /api/me] Failed to insert mahasiswa_badges:", insertErr.message);
         } else {
           console.log("✅ [DEBUG /api/me] Successfully inserted badges into mahasiswa_badges!");
+          // Kirim notifikasi ke tabel Supabase `notifikasi`
+          for (const newB of newBadgesToInsert) {
+            const badgeObj = (allBadges || []).find((b: any) => b.id === newB.badge_id);
+            if (badgeObj) {
+              console.log("⚡ [DEBUG /api/me] Inserting badge notification to `notifikasi` table:", badgeObj.nama_badge);
+              const { data: nData, error: nErr } = await db.from("notifikasi").insert({
+                recipient_user_id: authUser.id,
+                judul: `Badge Terbuka: ${badgeObj.nama_badge}`,
+                pesan: `Selamat! Kamu berhasil membuka badge '${badgeObj.nama_badge}' dan mendapatkan +${badgeObj.xp_bonus || 0} XP & Pts.`,
+                is_read: false,
+                created_at: new Date().toISOString(),
+              }).select();
+
+              if (nErr) {
+                // Fallback dengan anon client supabase
+                const { error: pubNotifErr } = await supabase.from("notifikasi").insert({
+                  recipient_user_id: authUser.id,
+                  judul: `Badge Terbuka: ${badgeObj.nama_badge}`,
+                  pesan: `Selamat! Kamu berhasil membuka badge '${badgeObj.nama_badge}' dan mendapatkan +${badgeObj.xp_bonus || 0} XP & Pts.`,
+                  is_read: false,
+                  created_at: new Date().toISOString(),
+                });
+                if (pubNotifErr) {
+                  console.error("❌ [DEBUG /api/me] Failed to insert badge notification:", pubNotifErr.message);
+                } else {
+                  console.log("✅ [DEBUG /api/me] Successfully inserted badge notification via public client!");
+                }
+              } else {
+                console.log("✅ [DEBUG /api/me] Successfully inserted badge notification via authed db client!", nData);
+              }
+            }
+          }
         }
       }
 
