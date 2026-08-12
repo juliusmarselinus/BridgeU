@@ -272,7 +272,7 @@ export default function DetailKolaborasiPage() {
                                 ? "bg-red-50 text-red-800 border-red-200"
                                 : pelamar.status === "Selesai"
                                 ? "bg-blue-50 text-blue-800 border-blue-200"
-                                : pelamar.status === "Revisi"
+                                : pelamar.status === "Minta Revisi"
                                 ? "bg-purple-50 text-purple-800 border-purple-200"
                                 : "bg-amber-50 text-amber-800 border-amber-200"
                             }`}

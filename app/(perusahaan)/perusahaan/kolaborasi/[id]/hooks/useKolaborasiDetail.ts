@@ -366,7 +366,7 @@ export function useKolaborasiDetail() {
         ? "Apakah Anda yakin ingin menerima pelamar ini?"
         : newStatus === "Ditolak"
         ? "Apakah Anda yakin ingin menolak pelamar ini?"
-        : newStatus === "Revisi"
+        : newStatus === "Minta Revisi"
         ? "Apakah Anda yakin ingin meminta revisi pengerjaan kepada pelamar ini?"
         : "Apakah Anda yakin ingin menandai proyek selesai untuk mahasiswa ini?";
 
