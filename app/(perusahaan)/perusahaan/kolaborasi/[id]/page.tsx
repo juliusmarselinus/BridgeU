@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { companyService, companyServiceExtended } from "../../dashboard/services/companyServices";
 import { pelamarService } from "../../pelamar/services/pelamarService";
 import { PelamarProfilModal } from "../../pelamar/components/PelamarProfilModal";
+import { PelamarCard } from "../../pelamar/components/PelamarCard";
 import { StatusLamaran, PelamarDetail } from "../../pelamar/types/pelamar";
 
 interface ProdiOption {
@@ -24,7 +25,7 @@ interface SkillOption {
 function recommendKategori(judul: string, kategoriList: any[]): number[] {
   if (!judul) return [];
   const normalizedTitle = judul.toLowerCase();
-  
+
   const mapping: { [key: string]: string[] } = {
     "Riset & Pengembangan": ["riset", "research", "pengembangan", "development", "ai", "machine learning", "deep learning", "science", "sains", "data", "analisis", "analyst", "survei", "survey", "academic", "akademik", "studi", "study"],
     "Teknologi & Produk Digital": ["web", "app", "mobile", "software", "developer", "coding", "program", "programmer", "database", "jaringan", "it", "cyber", "ai", "machine learning", "data scientist", "data analyst", "system", "sistem", "komputer", "frontend", "backend", "fullstack", "react", "python", "sql", "flutter", "aws", "cloud"],
@@ -40,8 +41,7 @@ function recommendKategori(judul: string, kategoriList: any[]): number[] {
   kategoriList.forEach(k => {
     const kName = k.nama_kategori;
     let score = 0;
-    
-    // Check word matches
+
     const words = kName.toLowerCase().split(/[\s&]+/);
     words.forEach((w: string) => {
       if (w.length > 2 && normalizedTitle.includes(w)) {
@@ -49,7 +49,6 @@ function recommendKategori(judul: string, kategoriList: any[]): number[] {
       }
     });
 
-    // Check keywords mappings
     const keywords = mapping[kName] || [];
     keywords.forEach(kw => {
       if (normalizedTitle.includes(kw)) {
@@ -82,7 +81,7 @@ function recommendItems(
   if (!judul && selectedKategoriIds.length === 0) return [];
 
   const normalizedTitle = judul.toLowerCase();
-  
+
   const selectedKategoriNames = selectedKategoriIds
     .map(id => kategoriList.find(k => k.id === id)?.nama_kategori || "")
     .filter(Boolean)
@@ -91,7 +90,6 @@ function recommendItems(
   const searchString = `${normalizedTitle} ${selectedKategoriNames.join(" ")}`;
 
   const associations: { [key: string]: string[] } = {
-    // Tech & IT
     "ai": ["python", "machine learning", "deep learning", "kecerdasan buatan", "data science", "tensorflow", "pytorch", "artificial intelligence", "informatika", "komputer", "sistem informasi"],
     "machine": ["python", "machine learning", "data science", "artificial intelligence", "informatika", "komputer"],
     "learning": ["python", "machine learning", "data science", "artificial intelligence", "informatika", "komputer"],
@@ -102,16 +100,12 @@ function recommendItems(
     "data": ["python", "sql", "pandas", "data analyst", "data scientist", "tableau", "power bi", "excel", "statistika", "informatika", "sistem informasi", "matematika"],
     "database": ["sql", "mysql", "postgresql", "mongodb", "database", "sistem informasi", "informatika"],
     "jaringan": ["jaringan", "networking", "cisco", "cybersecurity", "keamanan", "informatika", "sistem komputer"],
-    
-    // Design & Creative
     "desain": ["desain", "design", "ui", "ux", "figma", "illustrator", "photoshop", "graphic", "visual", "art", "creative", "multimedia", "dkv"],
     "design": ["desain", "design", "ui", "ux", "figma", "illustrator", "photoshop", "graphic", "visual", "art", "creative", "multimedia", "dkv"],
     "ui": ["desain", "design", "ui", "ux", "figma", "frontend", "visual", "dkv"],
     "ux": ["desain", "design", "ui", "ux", "figma", "visual", "sistem informasi"],
     "video": ["video", "editing", "premiere", "after effects", "creative", "multimedia", "dkv"],
     "konten": ["content", "konten", "creative", "writing", "copywriting", "marketing", "sosial media", "dkv", "ilmu komunikasi"],
-    
-    // Business, Finance, & Marketing
     "marketing": ["marketing", "pemasaran", "seo", "sem", "social media", "content", "copywriting", "digital marketing", "manajemen", "ilmu komunikasi"],
     "pemasaran": ["marketing", "pemasaran", "seo", "sem", "social media", "content", "copywriting", "digital marketing", "manajemen", "ilmu komunikasi"],
     "bisnis": ["business", "bisnis", "manajemen", "sistem informasi", "analisis bisnis", "akuntansi", "keuangan"],
@@ -127,7 +121,7 @@ function recommendItems(
 
   const targetTerms = new Set<string>();
   const words = searchString.split(/[\s,./()_-]+/).filter(w => w.length > 1);
-  
+
   words.forEach(word => {
     const lowerWord = word.toLowerCase();
     targetTerms.add(lowerWord);
@@ -141,7 +135,7 @@ function recommendItems(
   items.forEach(item => {
     const name = item[nameField].toLowerCase();
     let score = 0;
-    
+
     targetTerms.forEach(term => {
       if (name.includes(term)) {
         score += 1;
@@ -247,7 +241,6 @@ export default function DetailKolaborasiPage() {
     async function loadData() {
       setIsLoading(true);
       try {
-        // Fetch options first
         const [categories, kotas, prodis, skills, profile] = await Promise.all([
           companyService.fetchKategoriMinat(),
           companyService.fetchKotaList(),
@@ -266,7 +259,6 @@ export default function DetailKolaborasiPage() {
           }
         }
 
-        // Fetch collaboration detail
         const { data: row, error } = await supabase
           .from("kolaborasi")
           .select(`
@@ -313,7 +305,6 @@ export default function DetailKolaborasiPage() {
         }
 
         if (row && isMounted) {
-          // Fetch multiple categories with fallback
           let selectedKategoriIds: number[] = [];
           try {
             const { data: pivotData, error: pivotError } = await supabase
@@ -337,7 +328,6 @@ export default function DetailKolaborasiPage() {
 
           setKolaborasi(row);
 
-          // Map applicants
           const mappedPelamar: PelamarDetail[] = (row.pendaftaran_kolaborasi || []).map((p: any) => {
             const mProfile = p.mahasiswa_profiles;
             const riwayat = (p.riwayat_pengumpulan_kolaborasi || []).sort(
@@ -367,7 +357,6 @@ export default function DetailKolaborasiPage() {
           });
           setPelamarList(mappedPelamar);
 
-          // Populate Settings Form
           const activeProdis = (row.kolaborasi_target_prodi || []).map((p: any) => p.prodi_id);
           const activeSkills = (row.kolaborasi_skills || []).map((s: any) => s.skill_id);
 
@@ -400,13 +389,11 @@ export default function DetailKolaborasiPage() {
     };
   }, [id]);
 
-  // Update Kategori Recommendations
   useEffect(() => {
     const recommendedKats = recommendKategori(formData.judul, kategoriList);
     setRecKategoriIds(recommendedKats);
   }, [formData.judul, kategoriList]);
 
-  // Update Prodi & Skill Recommendations dynamically
   useEffect(() => {
     const recommendedProdis = recommendItems(
       formData.judul,
@@ -426,7 +413,6 @@ export default function DetailKolaborasiPage() {
     setRecSkillIds(recommendedSkills);
   }, [formData.judul, formData.selectedKategoriIds, kategoriList, prodiList, skillList]);
 
-  // Update applicant status
   const handleUpdateStatus = async (
     pendaftaranId: string,
     newStatus: StatusLamaran,
@@ -469,7 +455,6 @@ export default function DetailKolaborasiPage() {
     }
   };
 
-  // Submit Settings Edit
   const handleSaveSettings = async (e: FormEvent) => {
     e.preventDefault();
     if (!id) return;
@@ -483,7 +468,7 @@ export default function DetailKolaborasiPage() {
     const success = await companyServiceExtended.updateFullKolaborasi(id as string, {
       judul: formData.judul,
       tipe: formData.tipe,
-      kategori_id: formData.selectedKategoriIds[0] || 1, // primary fallback
+      kategori_id: formData.selectedKategoriIds[0] || 1,
       deskripsi: formData.deskripsi,
       lokasi_id: formData.lokasi_id,
       batas_waktu: formData.batas_waktu,
@@ -503,14 +488,13 @@ export default function DetailKolaborasiPage() {
         title: "Perubahan Disimpan",
         message: "Detail kolaborasi telah berhasil diperbarui.",
       });
-      // Get matched kategori names
       const matchedKategoriNames = formData.selectedKategoriIds
         .map(katId => kategoriList.find(k => k.id === katId)?.nama_kategori || "")
         .filter(Boolean)
         .join(", ");
-      
+
       const matchedKota = kotaList.find((k) => k.id === formData.lokasi_id);
-      
+
       setKolaborasi((prev: any) => ({
         ...prev,
         judul: formData.judul,
@@ -528,7 +512,6 @@ export default function DetailKolaborasiPage() {
     }
   };
 
-  // Delete collaboration
   const handleDeleteProyek = async () => {
     if (!id || !kolaborasi) return;
 
@@ -551,7 +534,6 @@ export default function DetailKolaborasiPage() {
     }
   };
 
-  // Target Prodi Toggles
   const toggleProdi = (prodiId: number) => {
     setFormData((prev) => {
       const exists = prev.selectedProdiIds.includes(prodiId);
@@ -564,7 +546,6 @@ export default function DetailKolaborasiPage() {
     });
   };
 
-  // Required Skills Toggles
   const toggleSkill = (skillId: number) => {
     setFormData((prev) => {
       const exists = prev.selectedSkillIds.includes(skillId);
@@ -577,7 +558,6 @@ export default function DetailKolaborasiPage() {
     });
   };
 
-  // Checkbox Kategori Minat Toggle
   const toggleKategori = (katId: number) => {
     setFormData((prev) => {
       const exists = prev.selectedKategoriIds.includes(katId);
@@ -590,7 +570,6 @@ export default function DetailKolaborasiPage() {
     });
   };
 
-  // Custom DB Insertion Handlers
   const handleAddCustomKategori = async (namaKategori: string) => {
     if (!namaKategori.trim()) return;
     setIsCreatingCustom(true);
@@ -699,13 +678,11 @@ export default function DetailKolaborasiPage() {
     }
   };
 
-  // Prepend "Lainnya" option to prodiList for Universitas & Program Studi selections rule
   const cleanProdiList = prodiList.filter(p => p && p.nama_prodi);
   const prodisWithLainnya = cleanProdiList.some(p => p.nama_prodi === "Lainnya")
     ? cleanProdiList
     : [{ id: -999, nama_prodi: "Lainnya", jenjang: "Umum" }, ...cleanProdiList];
 
-  // 1. Sort Kategori Minat
   const top10RecProdiIds = useMemo(() => recProdiIds.slice(0, 10), [recProdiIds]);
   const top10RecSkillIds = useMemo(() => recSkillIds.slice(0, 10), [recSkillIds]);
 
@@ -728,7 +705,6 @@ export default function DetailKolaborasiPage() {
     });
   }, [kategoriList, formData.selectedKategoriIds, recKategoriIds]);
 
-  // 2. Sort Prodi List
   const sortedProdis = useMemo(() => {
     return [...prodisWithLainnya].sort((a, b) => {
       const aSel = formData.selectedProdiIds.includes(a.id);
@@ -748,7 +724,6 @@ export default function DetailKolaborasiPage() {
     });
   }, [prodisWithLainnya, formData.selectedProdiIds, recProdiIds]);
 
-  // 3. Sort Skill List
   const sortedSkills = useMemo(() => {
     return [...skillList].sort((a, b) => {
       const aSel = formData.selectedSkillIds.includes(a.id);
@@ -768,34 +743,30 @@ export default function DetailKolaborasiPage() {
     });
   }, [skillList, formData.selectedSkillIds, recSkillIds]);
 
-  // Paginated/limited lists based on current limit states
   const visibleKategoris = sortedKategoris.slice(0, kategoriLimit);
   const visibleProdis = sortedProdis.slice(0, prodiLimit);
   const visibleSkills = sortedSkills.slice(0, skillLimit);
 
-  // Search calculations for Modals
-  const searchedKotaOptions = kotaList.filter(k => 
+  const searchedKotaOptions = kotaList.filter(k =>
     k.nama_kota.toLowerCase().includes(kotaSearch.toLowerCase())
   );
-  const searchedKategoriOptions = kategoriList.filter(k => 
+  const searchedKategoriOptions = kategoriList.filter(k =>
     k.nama_kategori.toLowerCase().includes(kategoriSearch.toLowerCase())
   );
   const isKategoriSearchEmpty = searchedKategoriOptions.length === 0 && kategoriSearch.trim() !== "";
 
-  const searchedProdiOptions = prodisWithLainnya.filter(p => 
+  const searchedProdiOptions = prodisWithLainnya.filter(p =>
     p.nama_prodi.toLowerCase().includes(prodiSearch.toLowerCase())
   );
   const isProdiSearchEmpty = searchedProdiOptions.length === 0 && prodiSearch.trim() !== "";
 
-  const searchedSkillOptions = skillList.filter(s => 
+  const searchedSkillOptions = skillList.filter(s =>
     s.nama_skill.toLowerCase().includes(skillSearch.toLowerCase())
   );
   const isSkillSearchEmpty = searchedSkillOptions.length === 0 && skillSearch.trim() !== "";
 
-  // Selected city object
   const selectedKotaObj = kotaList.find(k => k.id === formData.lokasi_id);
 
-  // Stats derivation
   const stats = {
     total: pelamarList.length,
     menunggu: pelamarList.filter((p) => p.status === "Menunggu").length,
@@ -993,82 +964,20 @@ export default function DetailKolaborasiPage() {
               </div>
             </div>
 
-            <div className="space-y-3">
+            {/* Grid Card Pelamar */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {pelamarList.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-steel/20 bg-white p-12 text-center font-mono text-xs text-steel">
+                <div className="col-span-full rounded-2xl border border-dashed border-steel/20 bg-white p-12 text-center font-mono text-xs text-steel">
                   Belum ada mahasiswa yang melamar pada proyek kolaborasi ini.
                 </div>
               ) : (
                 pelamarList.map((pelamar) => (
-                  <div
+                  <PelamarCard
                     key={pelamar.id}
-                    className="rounded-2xl border border-steel/15 bg-white p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:border-steel/30 transition"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-bridge-gold/20 font-display font-bold text-ink text-base">
-                        {pelamar.nama_lengkap.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-display font-bold text-ink text-sm sm:text-base">
-                            {pelamar.nama_lengkap}
-                          </h4>
-                          <span
-                            className={`rounded-full px-2.5 py-0.5 font-mono text-[9px] font-semibold border ${
-                              pelamar.status === "Diterima"
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                : pelamar.status === "Ditolak"
-                                ? "bg-red-50 text-red-800 border-red-200"
-                                : pelamar.status === "Selesai"
-                                ? "bg-blue-50 text-blue-800 border-blue-200"
-                                : "bg-amber-50 text-amber-800 border-amber-200"
-                            }`}
-                          >
-                            {pelamar.status}
-                          </span>
-                        </div>
-                        <p className="font-mono text-[11px] text-steel mt-0.5">
-                          {pelamar.program_studi} (Smtr {pelamar.semester}) • {pelamar.universitas}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1.5 font-mono text-[10px] text-steel">
-                          <span className="inline-flex items-center gap-1">
-                            Reputasi: <strong className="text-bridge-gold font-bold">{pelamar.reputation_score} Pts</strong>
-                          </span>
-                          <span>•</span>
-                          <span>Daftar: {new Date(pelamar.tanggal_daftar).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 justify-end sm:self-center border-t sm:border-t-0 pt-3 sm:pt-0">
-                      <button
-                        onClick={() => setSelectedPelamar(pelamar)}
-                        className="rounded-full bg-steel/10 px-4 py-2 font-mono text-xs font-medium text-ink hover:bg-steel/20 transition"
-                      >
-                        Detail Profil
-                      </button>
-                      {pelamar.status === "Menunggu" && (
-                        <>
-                          <button
-                            onClick={() => handleUpdateStatus(pelamar.id, "Diterima")}
-                            className="rounded-full bg-emerald-600 px-4 py-2 font-mono text-xs font-semibold text-white hover:bg-emerald-700 transition"
-                          >
-                            Terima
-                          </button>
-                          <button
-                            onClick={() => handleUpdateStatus(pelamar.id, "Ditolak")}
-                            className="rounded-full bg-red-50 p-2 text-red-600 hover:bg-red-50 transition border border-red-200"
-                            title="Tolak Pelamar"
-                          >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                              <line x1="18" y1="6" x2="6" y2="18" />
-                              <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                    pelamar={pelamar}
+                    onViewDetail={setSelectedPelamar}
+                    onUpdateStatus={handleUpdateStatus}
+                  />
                 ))
               )}
             </div>
@@ -1199,7 +1108,6 @@ export default function DetailKolaborasiPage() {
                             </div>
                           </div>
 
-                          {/* INFORMASI TAUTAN KARYA HASIL MAHASISWA REAL */}
                           {member.url_hasil_kolaborasi ? (
                             <div className="mt-2 border-t border-steel/10 pt-2 font-mono text-xs space-y-1">
                               <span className="text-[10px] text-steel font-bold uppercase block">Tautan Karya Mahasiswa:</span>
@@ -1305,7 +1213,6 @@ export default function DetailKolaborasiPage() {
                                 </span>
                               </div>
 
-                              {/* DAFTAR RIWAYAT ITERASI PENGUMPULAN MAHASISWA */}
                               <div className="space-y-3">
                                 <span className="text-[10px] uppercase font-bold text-steel block">
                                   Log Riwayat Pengumpulan &amp; Evaluasi ({historyItems.length > 0 ? historyItems.length : 1}):
@@ -1363,7 +1270,6 @@ export default function DetailKolaborasiPage() {
                                 )}
                               </div>
 
-                              {/* AKSI PERUSAHAAN: MINTA REVISI ATAU SETUJUI SELESAI */}
                               <div className="pt-2 border-t border-steel/10 flex items-center justify-end gap-2">
                                 <button
                                   type="button"
@@ -1798,7 +1704,7 @@ export default function DetailKolaborasiPage() {
               </div>
             </div>
           </form>
- 
+
             {/* Danger Zone */}
             <div className="rounded-2xl border border-red-200 bg-red-50 p-6 space-y-4">
               <div>

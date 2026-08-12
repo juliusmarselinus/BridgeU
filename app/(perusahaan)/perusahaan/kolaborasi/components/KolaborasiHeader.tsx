@@ -44,7 +44,7 @@ export function KolaborasiHeader({
 
           <button
             onClick={onOpenModal}
-            className="inline-flex items-center gap-2 rounded-full bg-bridge-gold px-5 py-2.5 font-mono text-xs font-semibold text-ink transition hover:bg-bridge-gold/90 shadow-md"
+            className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 font-mono text-xs font-semibold text-paper transition hover:bg-steel shadow-md"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19" />

@@ -12,17 +12,17 @@ export function KolaborasiItemCard({ item, onDelete }: KolaborasiItemCardProps) 
   return (
     <div className="rounded-2xl border border-steel/15 bg-white p-6 shadow-sm transition hover:shadow-md hover:border-bridge-gold/40 flex flex-col justify-between">
       <div>
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="rounded-full bg-steel/10 px-3 py-1 font-mono text-[11px] font-medium text-steel">
               {item.nama_kategori || "Umum"}
             </span>
-            <span className="rounded-full bg-bridge-gold/15 border border-bridge-gold/30 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-ink">
+            <span className="rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-blue-800">
               Slot: {item.slot || 0}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span
               className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-semibold ${
                 statusModerasi === "Menunggu"
@@ -80,7 +80,7 @@ export function KolaborasiItemCard({ item, onDelete }: KolaborasiItemCardProps) 
         <div className="flex items-center gap-2">
           <Link
             href={`/perusahaan/kolaborasi/${item.id}`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink/5 px-3 py-1.5 font-medium text-ink hover:bg-ink hover:text-paper transition text-xs"
+            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 font-medium text-paper hover:bg-steel transition text-xs"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
