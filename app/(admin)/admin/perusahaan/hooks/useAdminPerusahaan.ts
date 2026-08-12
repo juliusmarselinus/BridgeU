@@ -8,7 +8,7 @@ export function useAdminPerusahaan() {
   const [filterStatus, setFilterStatus] = useState<"Semua" | VerifikasiStatus>("Semua");
 
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 4;
+  const ITEMS_PER_PAGE = 8;
 
   const loadData = useCallback(async () => {
     setIsLoading(true);

@@ -14,9 +14,9 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-paper text-ink antialiased flex flex-col justify-between">
+    <div className="relative bg-clouds text-ink antialiased flex flex-col justify-between min-h-screen">
       <AdminNavbar />
-      <div className="pb-16 flex-1">{children}</div>
+      <div className="flex-1">{children}</div>
       <Footer />
     </div>
   );

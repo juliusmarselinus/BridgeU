@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 interface GradientBarsProps {
   numBars?: number;
@@ -17,6 +17,12 @@ export const GradientBars: React.FC<GradientBarsProps> = ({
   animationDuration = 3,
   className = "",
 }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const calculateHeight = (index: number, total: number) => {
     const position = index / (total - 1);
     const maxHeight = 100;
@@ -28,6 +34,14 @@ export const GradientBars: React.FC<GradientBarsProps> = ({
 
     return minHeight + (maxHeight - minHeight) * heightPercentage;
   };
+
+  if (!mounted) {
+    return (
+      <div className={`pointer-events-none absolute inset-0 z-0 overflow-hidden ${className}`}>
+        <div className="flex h-full w-full" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -75,3 +89,4 @@ export const GradientBars: React.FC<GradientBarsProps> = ({
     </>
   );
 };
+

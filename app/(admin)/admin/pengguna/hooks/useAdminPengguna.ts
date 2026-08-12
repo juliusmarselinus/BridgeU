@@ -9,7 +9,7 @@ export function useAdminPengguna() {
   const [search, setSearch] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 8;
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
