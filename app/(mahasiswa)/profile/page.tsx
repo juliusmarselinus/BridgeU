@@ -43,12 +43,12 @@ const SEMESTER_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
 /* ------------------------------------------------------------------ */
 /* SVG Icon Components                                                */
-/* bridge-gold dipakai HANYA untuk icon di atas background sendiri     */
+/* sky dipakai HANYA untuk icon di atas background sendiri              */
 /* (badge, pill, avatar ring). Icon judul section pakai ink/60 biar    */
 /* kontrasnya cukup di atas bg-paper.                                  */
 /* ------------------------------------------------------------------ */
 
-function IconCheck({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconCheck({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12" />
@@ -56,7 +56,7 @@ function IconCheck({ className = "w-4 h-4 text-bridge-gold" }: { className?: str
   );
 }
 
-function IconPencil({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconPencil({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
@@ -64,7 +64,7 @@ function IconPencil({ className = "w-4 h-4 text-bridge-gold" }: { className?: st
   );
 }
 
-function IconSave({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconSave({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
@@ -74,7 +74,7 @@ function IconSave({ className = "w-4 h-4 text-bridge-gold" }: { className?: stri
   );
 }
 
-function IconCamera({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconCamera({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
@@ -83,7 +83,7 @@ function IconCamera({ className = "w-4 h-4 text-bridge-gold" }: { className?: st
   );
 }
 
-function IconX({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconX({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="6" x2="6" y2="18" />
@@ -92,7 +92,7 @@ function IconX({ className = "w-4 h-4 text-bridge-gold" }: { className?: string 
   );
 }
 
-function IconRotate({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconRotate({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M23 4v6h-6" />
@@ -101,7 +101,7 @@ function IconRotate({ className = "w-4 h-4 text-bridge-gold" }: { className?: st
   );
 }
 
-function IconUser({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconUser({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -110,7 +110,7 @@ function IconUser({ className = "w-4 h-4 text-bridge-gold" }: { className?: stri
   );
 }
 
-function IconTrophy({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconTrophy({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
@@ -123,7 +123,7 @@ function IconTrophy({ className = "w-4 h-4 text-bridge-gold" }: { className?: st
   );
 }
 
-function IconRocket({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconRocket({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.71 1.26-1.5 1.5-2.5l-3-3c-1 0-1.79.79-1.5 2.5z" />
@@ -133,7 +133,7 @@ function IconRocket({ className = "w-4 h-4 text-bridge-gold" }: { className?: st
   );
 }
 
-function IconActivity({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconActivity({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -141,7 +141,7 @@ function IconActivity({ className = "w-4 h-4 text-bridge-gold" }: { className?: 
   );
 }
 
-function IconFileText({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconFileText({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -152,7 +152,7 @@ function IconFileText({ className = "w-4 h-4 text-bridge-gold" }: { className?: 
   );
 }
 
-function IconPin({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconPin({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="17" x2="12" y2="22" />
@@ -161,7 +161,7 @@ function IconPin({ className = "w-4 h-4 text-bridge-gold" }: { className?: strin
   );
 }
 
-function IconClipboard({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconClipboard({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
@@ -170,7 +170,7 @@ function IconClipboard({ className = "w-4 h-4 text-bridge-gold" }: { className?:
   );
 }
 
-function IconTarget({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconTarget({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
@@ -180,7 +180,7 @@ function IconTarget({ className = "w-4 h-4 text-bridge-gold" }: { className?: st
   );
 }
 
-function IconWrench({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconWrench({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
@@ -188,7 +188,7 @@ function IconWrench({ className = "w-4 h-4 text-bridge-gold" }: { className?: st
   );
 }
 
-function IconLock({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconLock({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -197,7 +197,7 @@ function IconLock({ className = "w-4 h-4 text-bridge-gold" }: { className?: stri
   );
 }
 
-function IconLogout({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconLogout({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -207,7 +207,7 @@ function IconLogout({ className = "w-4 h-4 text-bridge-gold" }: { className?: st
   );
 }
 
-function IconFlame({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconFlame({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.38 0 2.5-1.12 2.5-2.5 0-1.99-1.25-3.32-2.5-4.5-1.25 1.18-2.5 2.51-2.5 4.5z" />
@@ -216,7 +216,7 @@ function IconFlame({ className = "w-4 h-4 text-bridge-gold" }: { className?: str
   );
 }
 
-function IconAlertTriangle({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconAlertTriangle({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
@@ -226,7 +226,7 @@ function IconAlertTriangle({ className = "w-4 h-4 text-bridge-gold" }: { classNa
   );
 }
 
-function IconCheckSquare({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconCheckSquare({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="9 11 12 14 22 4" />
@@ -235,7 +235,7 @@ function IconCheckSquare({ className = "w-4 h-4 text-bridge-gold" }: { className
   );
 }
 
-function IconSparkles({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconSparkles({ className = "w-4 h-4 text-sky" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z" />
@@ -389,7 +389,7 @@ function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
         aria-label="Tutup"
         className="absolute top-5 right-5 flex h-10 w-10 items-center justify-center rounded-full border border-paper/30 bg-paper/10 text-paper backdrop-blur-sm transition hover:bg-paper/20 active:scale-90"
       >
-        <IconX className="w-5 h-5 text-bridge-gold" />
+        <IconX className="w-5 h-5 text-paper" />
       </button>
     </motion.div>
   );
@@ -413,19 +413,19 @@ function LevelGamificationCard({ level, totalPengajuan }: { level: number; total
 
   return (
     <div className="relative group cursor-default overflow-visible z-30 w-full">
-      <div className="relative overflow-hidden w-full rounded-2xl border border-steel/20 bg-paper p-5 transition-colors duration-200 hover:border-bridge-gold/60">
+      <div className="relative overflow-hidden w-full rounded-2xl border border-border bg-card p-5 transition-colors duration-200 hover:border-sky/60">
         <CursorGlow />
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-bridge-gold/40 bg-bridge-gold/10 text-bridge-gold">
-              <IconTrophy className="w-6 h-6 text-bridge-gold" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-sky/40 bg-sky/15 text-ocean">
+              <IconTrophy className="w-6 h-6 text-ocean" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
                 <span className="text-base font-black text-ink">
                   Level {animatedLevel}
                 </span>
-                <span className="rounded-lg border border-bridge-gold/40 bg-bridge-gold/10 px-2.5 py-0.5 text-xs font-bold text-ink">
+                <span className="rounded-lg border border-sky/40 bg-sky/15 px-2.5 py-0.5 text-xs font-bold text-ink">
                   {levelTitle}
                 </span>
               </div>
@@ -440,11 +440,11 @@ function LevelGamificationCard({ level, totalPengajuan }: { level: number; total
           <div className="w-full md:w-72 shrink-0">
             <div className="flex justify-between items-center text-xs font-bold text-ink/80 mb-1.5">
               <span>Progres Gamifikasi</span>
-              <span className="text-bridge-gold font-mono">{xpCurrent}/{xpNext} XP ({xpPercent}%)</span>
+              <span className="text-primary font-mono">{xpCurrent}/{xpNext} XP ({xpPercent}%)</span>
             </div>
             <div className="h-3 w-full rounded-full bg-steel/10 overflow-hidden border border-steel/20">
               <motion.div
-                className="h-full bg-bridge-gold rounded-full"
+                className="h-full bg-primary rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${xpPercent}%` }}
                 transition={{ type: "spring", stiffness: 90, damping: 16 }}
@@ -474,7 +474,7 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 animate-in fade-in duration-200 cursor-pointer"
     >
       <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-paper p-6 text-center shadow-xl border border-steel/20 animate-in zoom-in-95 duration-200">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-bridge-gold/15 border border-bridge-gold/30">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky/20 border border-sky/40">
           <svg viewBox="0 0 52 52" className="h-10 w-10">
             <circle
               cx="26"
@@ -483,7 +483,7 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
               fill="none"
               stroke="currentColor"
               strokeWidth="3"
-              className="text-bridge-gold animate-draw-circle"
+              className="text-ocean animate-draw-circle"
             />
             <path
               fill="none"
@@ -491,7 +491,7 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
               strokeWidth="3.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-bridge-gold animate-draw-check"
+              className="text-ocean animate-draw-check"
               d="M14 27l7 7 17-17"
             />
           </svg>
@@ -506,7 +506,7 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
 
         <div className="mt-5 h-1 w-full overflow-hidden rounded-full bg-steel/15">
           <div
-            className="h-full bg-bridge-gold rounded-full"
+            className="h-full bg-primary rounded-full"
             style={{
               animation: `success-countdown ${AUTO_DISMISS_MS}ms linear forwards`,
             }}
@@ -633,7 +633,7 @@ function EditPhotoModal({
       <div className="w-full max-w-sm rounded-2xl bg-paper p-6 shadow-xl border border-steel/20 animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between pb-4 border-b border-steel/10">
           <h3 className="text-sm font-bold text-ink flex items-center gap-2">
-            <IconCamera className="w-4 h-4 text-bridge-gold" />
+            <IconCamera className="w-4 h-4 text-ink/60" />
             Edit Foto Profil
           </h3>
           <button
@@ -642,7 +642,7 @@ function EditPhotoModal({
             aria-label="Tutup"
             className="flex h-7 w-7 items-center justify-center rounded-full text-steel/70 hover:bg-steel/10 hover:text-steel transition active:scale-90"
           >
-            <IconX className="w-4 h-4 text-bridge-gold" />
+            <IconX className="w-4 h-4 text-steel" />
           </button>
         </div>
 
@@ -652,7 +652,7 @@ function EditPhotoModal({
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerUp}
-            className="relative overflow-hidden rounded-full border-2 border-steel/20 bg-paper"
+            className="relative overflow-hidden rounded-full border-2 border-border bg-card"
             style={{
               width: PREVIEW_SIZE,
               height: PREVIEW_SIZE,
@@ -684,7 +684,7 @@ function EditPhotoModal({
               max={200}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
-              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-steel/20 accent-bridge-gold transition-all"
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-steel/20 accent-primary transition-all"
             />
             <span className="text-xs font-bold text-steel/70">+</span>
             <span className="w-10 shrink-0 text-right font-mono text-xs text-steel">{zoom}%</span>
@@ -697,7 +697,7 @@ function EditPhotoModal({
               aria-label="Putar gambar"
               className="flex h-9 w-9 items-center justify-center rounded-full border border-steel/20 text-steel transition hover:bg-paper active:scale-90"
             >
-              <IconRotate className="w-4 h-4 text-bridge-gold" />
+              <IconRotate className="w-4 h-4 text-steel" />
             </button>
 
             <div className="flex gap-2">
@@ -713,7 +713,7 @@ function EditPhotoModal({
                 onClick={handleSave}
                 className="rounded-xl bg-ink px-5 py-2 text-xs font-semibold text-paper shadow-xs transition active:scale-95 flex items-center gap-1.5"
               >
-                <IconCheck className="w-3.5 h-3.5 text-bridge-gold" />
+                <IconCheck className="w-3.5 h-3.5 text-sky" />
                 Simpan
               </button>
             </div>
@@ -834,7 +834,7 @@ function EditProfileModal({
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-paper shadow-2xl border border-steel/20 animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between border-b border-steel/10 px-6 py-4 shrink-0">
           <h3 className="text-base font-bold text-ink flex items-center gap-2">
-            <IconPencil className="w-4 h-4 text-bridge-gold" />
+            <IconPencil className="w-4 h-4 text-ink/60" />
             Edit Profil Data Diri
           </h3>
           <button
@@ -843,7 +843,7 @@ function EditProfileModal({
             aria-label="Tutup Modal"
             className="flex h-8 w-8 items-center justify-center rounded-full text-steel/70 hover:bg-steel/10 hover:text-steel transition active:scale-90"
           >
-            <IconX className="w-4 h-4 text-bridge-gold" />
+            <IconX className="w-4 h-4 text-steel" />
           </button>
         </div>
 
@@ -861,7 +861,7 @@ function EditProfileModal({
                 type="text"
                 value={nama}
                 onChange={(e) => setNama(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
+                className="mt-1 w-full rounded-xl border border-border bg-card px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
                 required
               />
             </div>
@@ -871,7 +871,7 @@ function EditProfileModal({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
+                className="mt-1 w-full rounded-xl border border-border bg-card px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
                 required
               />
             </div>
@@ -883,7 +883,7 @@ function EditProfileModal({
               <button
                 type="button"
                 onClick={() => setActivePicker("univ")}
-                className="mt-1 w-full flex items-center justify-between rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
+                className="mt-1 w-full flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
               >
                 <span className="truncate">{isCustomUniv ? `Lainnya (${customUnivInput || "Belum diisi"})` : (universitas || "-- Pilih Universitas --")}</span>
                 <span className="text-steel text-[10px]">▼</span>
@@ -894,7 +894,7 @@ function EditProfileModal({
                   value={customUnivInput}
                   onChange={(e) => setCustomUnivInput(e.target.value)}
                   placeholder="Ketik Nama Universitas..."
-                  className="mt-1.5 w-full rounded-xl border border-steel/20 bg-paper px-3 py-1.5 text-xs text-ink outline-none focus:border-ink"
+                  className="mt-1.5 w-full rounded-xl border border-border bg-card px-3 py-1.5 text-xs text-ink outline-none focus:border-ink"
                 />
               )}
             </div>
@@ -903,7 +903,7 @@ function EditProfileModal({
               <button
                 type="button"
                 onClick={() => setActivePicker("prodi")}
-                className="mt-1 w-full flex items-center justify-between rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
+                className="mt-1 w-full flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
               >
                 <span className="truncate">{isCustomProdi ? `Lainnya (${customProdiInput || "Belum diisi"})` : (prodi || "-- Pilih Prodi --")}</span>
                 <span className="text-steel text-[10px]">▼</span>
@@ -914,7 +914,7 @@ function EditProfileModal({
                   value={customProdiInput}
                   onChange={(e) => setCustomProdiInput(e.target.value)}
                   placeholder="Ketik Nama Program Studi..."
-                  className="mt-1.5 w-full rounded-xl border border-steel/20 bg-paper px-3 py-1.5 text-xs text-ink outline-none focus:border-ink"
+                  className="mt-1.5 w-full rounded-xl border border-border bg-card px-3 py-1.5 text-xs text-ink outline-none focus:border-ink"
                 />
               )}
             </div>
@@ -923,7 +923,7 @@ function EditProfileModal({
               <button
                 type="button"
                 onClick={() => setActivePicker("semester")}
-                className="mt-1 w-full flex items-center justify-between rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
+                className="mt-1 w-full flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
               >
                 <span className="truncate">{semester ? `Semester ${semester}` : "-- Pilih Semester --"}</span>
                 <span className="text-steel text-[10px]">▼</span>
@@ -949,7 +949,7 @@ function EditProfileModal({
                       className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
                         selected
                           ? "bg-ink text-paper"
-                          : "border border-steel/20 bg-paper text-steel hover:bg-paper"
+                          : "border border-border bg-card text-steel hover:bg-paper"
                       }`}
                     >
                       {selected ? "✓ " : "+ "}
@@ -978,8 +978,8 @@ function EditProfileModal({
                       onClick={() => toggleSkill(s)}
                       className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
                         selected
-                          ? "bg-bridge-gold/100 text-paper"
-                          : "border border-steel/20 bg-paper text-steel hover:bg-paper"
+                          ? "bg-primary text-white"
+                          : "border border-border bg-card text-steel hover:bg-paper"
                       }`}
                     >
                       {selected ? "✓ " : "+ "}
@@ -997,7 +997,7 @@ function EditProfileModal({
               <select
                 value={preferensiTipe}
                 onChange={(e) => setPreferensiTipe(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
+                className="mt-1 w-full rounded-xl border border-border bg-card px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
               >
                 <option value="Semua">Semua</option>
                 <option value="Akademik">Hanya Studi Kasus / Riset</option>
@@ -1009,7 +1009,7 @@ function EditProfileModal({
               <select
                 value={preferensiLokasi}
                 onChange={(e) => setPreferensiLokasi(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
+                className="mt-1 w-full rounded-xl border border-border bg-card px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
               >
                 <option value="Remote">Remote</option>
                 <option value="Hybrid">Hybrid</option>
@@ -1024,7 +1024,7 @@ function EditProfileModal({
               rows={3}
               value={ringkasan}
               onChange={(e) => setRingkasan(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
+              className="mt-1 w-full rounded-xl border border-border bg-card px-3.5 py-2 text-xs text-ink outline-none focus:border-ink transition"
             />
           </div>
         </form>
@@ -1042,7 +1042,7 @@ function EditProfileModal({
             form="edit-profile-form"
             className="rounded-xl bg-ink px-5 py-2.5 text-xs font-bold text-paper transition-colors flex items-center gap-2 active:scale-95"
           >
-            <IconSave className="w-4 h-4 text-bridge-gold" />
+            <IconSave className="w-4 h-4 text-sky" />
             Simpan Perubahan
           </button>
         </div>
@@ -1104,11 +1104,27 @@ function EditProfileModal({
 /* ------------------------------------------------------------------ */
 /* Helper Component                                                   */
 /* ------------------------------------------------------------------ */
-function InfoField({ label, value }: { label: string; value: string }) {
+function InfoField({ label, value, icon: Icon }: { label: string; value: string; icon?: React.ComponentType<{ className?: string }> }) {
   return (
-    <div className="group rounded-xl p-2.5 transition duration-150 hover:bg-paper">
-      <p className="text-[10px] font-bold tracking-wider text-steel/70 uppercase">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-ink/90">{value || "—"}</p>
+    <div
+      className="group rounded-xl p-3.5 transition-all duration-200 hover:-translate-y-0.5"
+      style={{
+        background: "#EAF2FB",
+        boxShadow: "5px 5px 12px rgba(23,59,108,0.12), -5px -5px 12px rgba(255,255,255,0.9)",
+      }}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        {Icon && (
+          <span
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-ocean"
+            style={{ boxShadow: "inset 2px 2px 5px rgba(23,59,108,0.15), inset -2px -2px 5px rgba(255,255,255,0.8)" }}
+          >
+            <Icon className="w-3 h-3 text-ocean" />
+          </span>
+        )}
+        <p className="text-[10px] font-bold tracking-wider text-steel/70 uppercase">{label}</p>
+      </div>
+      <p className="text-sm font-semibold text-ink/90">{value || "—"}</p>
     </div>
   );
 }
@@ -1150,7 +1166,7 @@ function PublicActivitySection() {
       deskripsi: "Mengajukan kolaborasi Studi Kasus: Optimasi UX Aplikasi Perbankan di Nexora Digital.",
       waktu: "Hari ini, 14:30",
       badgeText: "Kolaborasi",
-      badgeColor: "bg-bridge-gold/10 text-bridge-gold border-bridge-gold/30",
+      badgeColor: "bg-sky/15 text-ocean border-sky/40",
     },
     {
       id: "act-2",
@@ -1159,7 +1175,7 @@ function PublicActivitySection() {
       deskripsi: "Menambahkan skill baru: TypeScript, React, dan Figma ke profil publik.",
       waktu: "Kemarin, 09:15",
       badgeText: "Skill & Tools",
-      badgeColor: "bg-bridge-gold/10 text-bridge-gold border-bridge-gold/30",
+      badgeColor: "bg-sky/15 text-ocean border-sky/40",
     },
     {
       id: "act-3",
@@ -1168,7 +1184,7 @@ function PublicActivitySection() {
       deskripsi: "Berhasil mendapatkan badge 'Consistent Contributor' dari keaktifan kolaborasi.",
       waktu: "3 Hari lalu",
       badgeText: "Pencapaian",
-      badgeColor: "bg-bridge-gold/10 text-bridge-gold border-bridge-gold/30",
+      badgeColor: "bg-sky/15 text-ocean border-sky/40",
     },
     {
       id: "act-4",
@@ -1177,7 +1193,7 @@ function PublicActivitySection() {
       deskripsi: "Lamaran magang di Skyline Fintech telah dikonfirmasi dan disetujui.",
       waktu: "5 Hari lalu",
       badgeText: "Kolaborasi",
-      badgeColor: "bg-bridge-gold/10 text-bridge-gold border-bridge-gold/30",
+      badgeColor: "bg-sky/15 text-ocean border-sky/40",
     },
     {
       id: "act-5",
@@ -1212,18 +1228,18 @@ function PublicActivitySection() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: idx * 0.05, ease: "easeOut" }}
-              className="rounded-2xl border border-steel/20 bg-paper p-4.5 hover:border-bridge-gold/40 transition-colors"
+              className="rounded-2xl border border-border bg-card p-4.5 hover:border-sky/50 transition-colors"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-steel">{stat.label}</span>
-                <div className="p-2 rounded-xl bg-bridge-gold/10 text-bridge-gold border border-bridge-gold/30">
-                  <StatIcon className="w-4 h-4 text-bridge-gold" />
+                <div className="p-2 rounded-xl bg-sky/15 text-ocean border border-sky/40">
+                  <StatIcon className="w-4 h-4 text-ocean" />
                 </div>
               </div>
               <p className="text-2xl font-black text-ink mt-2">
                 {animatedValue}
                 {stat.suffix}{" "}
-                {stat.extra && <span className="text-xs font-semibold text-bridge-gold">{stat.extra}</span>}
+                {stat.extra && <span className="text-xs font-semibold text-primary">{stat.extra}</span>}
               </p>
               <p className="text-[11px] text-steel/70 mt-1">{stat.desc}</p>
             </motion.div>
@@ -1231,7 +1247,7 @@ function PublicActivitySection() {
         })}
       </div>
 
-      <div className="rounded-2xl border border-steel/20 bg-paper p-6">
+      <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-steel/10 pb-4 mb-6">
           <div>
             <h3 className="text-base font-bold text-ink flex items-center gap-2">
@@ -1243,9 +1259,9 @@ function PublicActivitySection() {
           <div className="flex items-center gap-1.5 text-[11px] text-steel/70">
             <span>Kurang</span>
             <span className="h-3 w-3 rounded-xs bg-steel/10 inline-block" />
-            <span className="h-3 w-3 rounded-xs bg-bridge-gold/25 inline-block" />
-            <span className="h-3 w-3 rounded-xs bg-bridge-gold inline-block" />
-            <span className="h-3 w-3 rounded-xs bg-bridge-gold/100 inline-block" />
+            <span className="h-3 w-3 rounded-xs bg-primary/25 inline-block" />
+            <span className="h-3 w-3 rounded-xs bg-primary/60 inline-block" />
+            <span className="h-3 w-3 rounded-xs bg-primary inline-block" />
             <span>Banyak</span>
           </div>
         </div>
@@ -1255,9 +1271,9 @@ function PublicActivitySection() {
             <div className="grid grid-flow-col grid-rows-7 gap-1.5">
               {heatmapDays.map((item, idx) => {
                 let colorClass = "bg-steel/10 hover:bg-steel/20";
-                if (item.count === 1) colorClass = "bg-bridge-gold/25 hover:bg-bridge-gold/50";
-                if (item.count === 2) colorClass = "bg-bridge-gold hover:bg-bridge-gold/100";
-                if (item.count >= 3) colorClass = "bg-bridge-gold/100 hover:bg-bridge-gold";
+                if (item.count === 1) colorClass = "bg-primary/25 hover:bg-primary/40";
+                if (item.count === 2) colorClass = "bg-primary/60 hover:bg-primary/80";
+                if (item.count >= 3) colorClass = "bg-primary hover:bg-primary/80";
 
                 return (
                   <div
@@ -1272,7 +1288,7 @@ function PublicActivitySection() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-steel/20 bg-paper p-6">
+      <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-steel/10 pb-4 mb-6">
           <h3 className="text-base font-bold text-ink flex items-center gap-2">
             <IconRocket className="w-5 h-5 text-ink/60" />
@@ -1293,7 +1309,7 @@ function PublicActivitySection() {
                 className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all active:scale-95 ${
                   filter === t.key
                     ? "bg-ink text-paper"
-                    : "border border-steel/20 bg-paper text-steel hover:bg-paper"
+                    : "border border-border bg-card text-steel hover:bg-paper"
                 }`}
               >
                 {t.label}
@@ -1311,8 +1327,8 @@ function PublicActivitySection() {
               transition={{ duration: 0.3, delay: idx * 0.04, ease: "easeOut" }}
               className="relative group"
             >
-              <span className="absolute -left-[19px] top-1.5 h-3 w-3 rounded-full border-2 border-paper bg-bridge-gold ring-2 ring-bridge-gold/20 group-hover:scale-125 transition-transform" />
-              <div className="rounded-xl border border-steel/20 bg-paper p-4 hover:border-steel/40 transition-all">
+              <span className="absolute -left-[19px] top-1.5 h-3 w-3 rounded-full border-2 border-card bg-primary ring-2 ring-primary/20 group-hover:scale-125 transition-transform" />
+              <div className="rounded-xl border border-border bg-card p-4 hover:border-steel/40 transition-all">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-bold ${act.badgeColor}`}>
@@ -1558,7 +1574,7 @@ export default function ProfilePage() {
 
   if (isLoadingUser) {
     return (
-      <main className="min-h-screen bg-paper pt-24">
+      <main className="min-h-screen bg-clouds pt-24">
         <div className="mx-auto max-w-3xl px-6 py-20 text-center">
           <p className="text-sm font-medium text-steel/60">Memuat profil...</p>
         </div>
@@ -1568,10 +1584,10 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-paper pt-24">
+      <main className="min-h-screen bg-clouds pt-24">
         <div className="mx-auto max-w-3xl px-6 py-20 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-steel/10 text-steel mb-4 border border-steel/20">
-            <IconLock className="w-8 h-8 text-bridge-gold" />
+            <IconLock className="w-8 h-8 text-steel" />
           </div>
           <p className="text-sm font-medium text-steel">
             {loadError
@@ -1586,7 +1602,7 @@ export default function ProfilePage() {
   const inisial = user.nama ? user.nama.trim().charAt(0).toUpperCase() : "?";
 
   return (
-    <main className="min-h-screen bg-paper text-ink pt-24 pb-20 overflow-x-visible">
+    <main className="min-h-screen bg-clouds text-ink pb-20 overflow-x-visible">
       <AnimatePresence>
         {showSuccessModal && <SuccessModal onClose={() => setShowSuccessModal(false)} />}
       </AnimatePresence>
@@ -1614,19 +1630,23 @@ export default function ProfilePage() {
         )}
       </AnimatePresence>
 
-      {/* Hero Banner Area — pure gradient transition, no curved divider */}
-      <div className="-mt-20 w-full bg-paper">
-        <div className="w-full bg-gradient-to-b from-ink via-ink/90 to-paper relative pt-24 pb-24 sm:pb-28">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.12),transparent)]" />
+      {/* Hero Banner Area — ocean → sky gradient, konsisten sama dashboard & kolaborasi */}
+      <div className="w-full bg-clouds">
+        <div
+          className="w-full relative pt-28 pb-24 sm:pb-28 rounded-b-[2.5rem] shadow-[0_20px_50px_-20px_rgba(18,40,75,0.45)] overflow-hidden"
+          style={{ background: "linear-gradient(160deg, #12284B 0%, #1B3A63 45%, #8CC1E9 100%)" }}
+        >
+          <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-sky/20 blur-3xl" />
+          <div className="pointer-events-none absolute -left-16 top-1/2 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
         </div>
 
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-8 lg:px-12 relative overflow-visible">
-          <div className="flex flex-col md:flex-row items-center md:items-end justify-between relative -mt-16 sm:-mt-20 gap-6 pb-4">
+          <div className="flex flex-col md:flex-row items-center md:items-end justify-between relative -mt-10 sm:-mt-12 gap-6 pb-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left z-20">
               <div className="relative group shrink-0">
                 <div
                   onClick={() => user.foto && setIsPhotoOpen(true)}
-                  className={`h-36 w-36 sm:h-44 sm:w-44 overflow-hidden rounded-full border-4 border-paper bg-steel/10 shadow-lg transition-transform duration-200 group-hover:scale-105 ${
+                  className={`h-36 w-36 sm:h-44 sm:w-44 overflow-hidden rounded-full border-4 border-clouds bg-card shadow-lg transition-transform duration-200 group-hover:scale-105 ${
                     user.foto ? "cursor-zoom-in" : ""
                   }`}
                 >
@@ -1648,9 +1668,9 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => fotoInputRef.current?.click()}
                   aria-label="Edit foto profil"
-                  className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-paper bg-ink text-paper shadow-md transition hover:scale-110 active:scale-90"
+                  className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-clouds bg-ink text-paper shadow-md transition hover:scale-110 active:scale-90"
                 >
-                  <IconCamera className="w-4 h-4 text-bridge-gold" />
+                  <IconCamera className="w-4 h-4 text-sky" />
                 </button>
                 <input ref={fotoInputRef} type="file" accept="image/*" onChange={readFile} className="hidden" />
               </div>
@@ -1664,8 +1684,8 @@ export default function ProfilePage() {
                 </p>
 
                 <div className="mt-2.5 flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <span className="rounded-lg bg-bridge-gold/10 px-2.5 py-1 text-xs font-bold text-ink border border-bridge-gold/40 flex items-center gap-1.5">
-                    <IconTrophy className="w-3.5 h-3.5 text-bridge-gold" />
+                  <span className="rounded-lg bg-sky/15 px-2.5 py-1 text-xs font-bold text-ink border border-sky/40 flex items-center gap-1.5">
+                    <IconTrophy className="w-3.5 h-3.5 text-ocean" />
                     Lvl {level} Mahasiswa Aktif
                   </span>
                   <span className="rounded-lg bg-paper px-2.5 py-1 text-xs font-semibold text-ink/80 border border-steel/20">
@@ -1685,14 +1705,14 @@ export default function ProfilePage() {
                   onClick={() => setIsEditModalOpen(true)}
                   className="rounded-xl bg-ink px-5 py-2.5 text-xs font-bold text-paper transition-colors flex items-center gap-2 active:scale-95"
                 >
-                  <IconPencil className="w-4 h-4 text-bridge-gold" />
+                  <IconPencil className="w-4 h-4 text-sky" />
                   Edit Profil
                 </button>
               )}
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-xl border border-steel/20 bg-paper px-5 py-2.5 text-xs font-bold text-ink transition-colors flex items-center gap-2 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 active:scale-95"
+                className="rounded-xl border border-border bg-card px-5 py-2.5 text-xs font-bold text-ink transition-colors flex items-center gap-2 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 active:scale-95"
               >
                 <IconLogout className="w-4 h-4 text-steel" />
                 Keluar
@@ -1711,20 +1731,20 @@ export default function ProfilePage() {
                     key={tab.key}
                     type="button"
                     onClick={() => handleTabChange(tab.key)}
-                    className={`relative isolate flex items-center gap-2.5 rounded-xl px-5 py-3 sm:px-6 text-xs sm:text-sm font-bold transition-colors duration-150 active:scale-95 border ${
+                    className={`relative isolate flex items-center gap-2.5 rounded-full px-5 py-3 sm:px-6 text-xs sm:text-sm font-bold transition-all duration-150 active:scale-95 ${
                       isActive
-                        ? "border-ink text-paper"
-                        : "border-steel/20 bg-paper text-steel hover:text-ink hover:border-steel/40"
+                        ? "text-paper shadow-md"
+                        : "bg-card text-steel shadow-sm hover:text-ink hover:shadow-md"
                     }`}
                   >
                     {isActive && (
                       <motion.span
                         layoutId="active-tab-pill"
-                        className="absolute inset-0 -z-10 rounded-xl bg-ink shadow-md"
+                        className="absolute inset-0 -z-10 rounded-full bg-ink shadow-md"
                         transition={{ type: "spring", stiffness: 380, damping: 32 }}
                       />
                     )}
-                    <IconComp className={`w-4 h-4 ${isActive ? "text-bridge-gold" : "text-steel"}`} />
+                    <IconComp className={`w-4 h-4 ${isActive ? "text-sky" : "text-steel"}`} />
                     {tab.label}
                   </button>
                 );
@@ -1738,7 +1758,7 @@ export default function ProfilePage() {
       <div className="mx-auto w-full max-w-[1400px] px-4 pt-6 sm:px-8 lg:px-12 overflow-visible">
         {fileError && (
           <div className="mb-6 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700 flex items-center gap-2 animate-in fade-in duration-200">
-            <IconAlertTriangle className="w-4 h-4 text-bridge-gold shrink-0" />
+            <IconAlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
             <span>{fileError}</span>
           </div>
         )}
@@ -1746,7 +1766,7 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Column Sidebar — cards get a subtle micro-nudge replay on tab change */}
           <div className="lg:col-span-4 space-y-6">
-            <RevealCard nudgeKey={`bio-${activeTab}`} delay={0} className="rounded-2xl border border-steel/20 bg-paper p-5">
+            <RevealCard nudgeKey={`bio-${activeTab}`} delay={0} className="rounded-2xl border border-border bg-card p-5">
               <h3 className="text-sm font-bold text-ink mb-3 flex items-center gap-2">
                 <IconFileText className="w-4 h-4 text-ink/60" />
                 Bio & Ringkasan Diri
@@ -1756,36 +1776,67 @@ export default function ProfilePage() {
               </p>
             </RevealCard>
 
-            <RevealCard nudgeKey={`info-${activeTab}`} delay={0.03} className="rounded-2xl border border-steel/20 bg-paper p-5">
+            <RevealCard nudgeKey={`info-${activeTab}`} delay={0.03} className="rounded-2xl border border-border bg-card p-5">
               <h3 className="text-sm font-bold text-ink mb-4 flex items-center gap-2">
                 <IconPin className="w-4 h-4 text-ink/60" />
                 Informasi & Sistem Kerja
               </h3>
-              <div className="space-y-3 text-xs text-ink/80">
-                <div className="flex items-center justify-between border-b border-steel/10 pb-2.5">
-                  <span className="text-steel/70 font-medium">Universitas</span>
-                  <span className="font-semibold text-ink">{user.universitas || "—"}</span>
-                </div>
-                <div className="flex items-center justify-between border-b border-steel/10 pb-2.5">
-                  <span className="text-steel/70 font-medium">Program Studi</span>
-                  <span className="font-semibold text-ink">{user.prodi || "—"}</span>
-                </div>
-                <div className="flex items-center justify-between border-b border-steel/10 pb-2.5">
-                  <span className="text-steel/70 font-medium">Semester</span>
-                  <span className="font-semibold text-ink">{user.semester ? `Semester ${user.semester}` : "—"}</span>
-                </div>
-                <div className="flex items-center justify-between border-b border-steel/10 pb-2.5">
-                  <span className="text-steel/70 font-medium">Tipe Kolaborasi</span>
-                  <span className="font-semibold text-ink">{user.preferensiTipe || "Semua"}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-steel/70 font-medium">Sistem Kerja</span>
-                  <span className="font-semibold text-ink">{user.preferensiLokasi || "Remote"}</span>
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { label: "Universitas", value: user.universitas || "—", icon: IconUser },
+                  { label: "Program Studi", value: user.prodi || "—", icon: IconClipboard },
+                  { label: "Semester", value: user.semester ? `Semester ${user.semester}` : "—", icon: IconTarget },
+                  { label: "Tipe Kolaborasi", value: user.preferensiTipe || "Semua", icon: IconRocket },
+                ].map((f) => {
+                  const FieldIcon = f.icon;
+                  return (
+                    <div
+                      key={f.label}
+                      className="group rounded-xl p-3 transition-all duration-200 hover:-translate-y-0.5"
+                      style={{
+                        background: "#EAF2FB",
+                        boxShadow: "5px 5px 12px rgba(23,59,108,0.12), -5px -5px 12px rgba(255,255,255,0.9)",
+                      }}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-ocean"
+                          style={{ boxShadow: "inset 2px 2px 5px rgba(23,59,108,0.15), inset -2px -2px 5px rgba(255,255,255,0.8)" }}
+                        >
+                          <FieldIcon className="w-3 h-3 text-ocean" />
+                        </span>
+                        <span className="font-mono text-[9px] uppercase tracking-wide text-steel/70 font-semibold truncate">
+                          {f.label}
+                        </span>
+                      </div>
+                      <p className="text-xs font-bold text-ink truncate">{f.value}</p>
+                    </div>
+                  );
+                })}
+                <div
+                  className="col-span-2 group rounded-xl p-3 transition-all duration-200 hover:-translate-y-0.5"
+                  style={{
+                    background: "#EAF2FB",
+                    boxShadow: "5px 5px 12px rgba(23,59,108,0.12), -5px -5px 12px rgba(255,255,255,0.9)",
+                  }}
+                >
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-ocean"
+                      style={{ boxShadow: "inset 2px 2px 5px rgba(23,59,108,0.15), inset -2px -2px 5px rgba(255,255,255,0.8)" }}
+                    >
+                      <IconWrench className="w-3 h-3 text-ocean" />
+                    </span>
+                    <span className="font-mono text-[9px] uppercase tracking-wide text-steel/70 font-semibold">
+                      Sistem Kerja
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-ink">{user.preferensiLokasi || "Remote"}</p>
                 </div>
               </div>
             </RevealCard>
 
-            <RevealCard nudgeKey={`skills-${activeTab}`} delay={0.06} className="rounded-2xl border border-steel/20 bg-paper p-5">
+            <RevealCard nudgeKey={`skills-${activeTab}`} delay={0.06} className="rounded-2xl border border-border bg-card p-5">
               <h3 className="text-sm font-bold text-ink mb-3 flex items-center gap-2">
                 <IconWrench className="w-4 h-4 text-ink/60" />
                 Skill & Tools
@@ -1795,7 +1846,7 @@ export default function ProfilePage() {
                   skillsList.map((s) => (
                     <span
                       key={s}
-                      className="rounded-lg border border-steel/20 bg-paper px-2.5 py-1 text-xs font-medium text-ink/80 hover:bg-steel/10 transition-colors"
+                      className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-ink/80 hover:bg-steel/10 transition-colors"
                     >
                       {s}
                     </span>
@@ -1806,7 +1857,7 @@ export default function ProfilePage() {
               </div>
             </RevealCard>
 
-            <RevealCard nudgeKey={`minat-${activeTab}`} delay={0.09} className="rounded-2xl border border-steel/20 bg-paper p-5">
+            <RevealCard nudgeKey={`minat-${activeTab}`} delay={0.09} className="rounded-2xl border border-border bg-card p-5">
               <h3 className="text-sm font-bold text-ink mb-3 flex items-center gap-2">
                 <IconTarget className="w-4 h-4 text-ink/60" />
                 Kategori Minat
@@ -1816,9 +1867,9 @@ export default function ProfilePage() {
                   minatList.map((m) => (
                     <span
                       key={m}
-                      className="rounded-lg border border-steel/20 bg-paper px-2.5 py-1 text-xs font-medium text-ink/80 hover:bg-steel/10 transition-colors flex items-center gap-1.5"
+                      className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-ink/80 hover:bg-steel/10 transition-colors flex items-center gap-1.5"
                     >
-                      <IconCheck className="w-3 h-3 text-bridge-gold" />
+                      <IconCheck className="w-3 h-3 text-primary" />
                       {m}
                     </span>
                   ))
@@ -1848,22 +1899,22 @@ export default function ProfilePage() {
                 >
                   {/* TAB 1: DETAIL PROFIL (Pure View-Only) */}
                   {activeTab === "profile" && (
-                    <div className="rounded-2xl border border-steel/20 bg-paper p-6 sm:p-8">
+                    <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
                       <h3 className="text-base font-bold text-ink border-b border-steel/10 pb-4 mb-6 flex items-center gap-2">
                         <IconClipboard className="w-4 h-4 text-ink/60" />
                         Informasi Akun Lengkap
                       </h3>
 
                       <div className="space-y-6">
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                          <InfoField label="Nama Lengkap" value={user.nama} />
-                          <InfoField label="Email" value={user.email} />
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <InfoField label="Nama Lengkap" value={user.nama} icon={IconUser} />
+                          <InfoField label="Email" value={user.email} icon={IconFileText} />
                         </div>
 
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-steel/10 pt-5">
-                          <InfoField label="Universitas" value={user.universitas || ""} />
-                          <InfoField label="Program Studi" value={user.prodi || ""} />
-                          <InfoField label="Semester" value={user.semester ? `Semester ${user.semester}` : ""} />
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 border-t border-steel/10 pt-5">
+                          <InfoField label="Universitas" value={user.universitas || ""} icon={IconPin} />
+                          <InfoField label="Program Studi" value={user.prodi || ""} icon={IconClipboard} />
+                          <InfoField label="Semester" value={user.semester ? `Semester ${user.semester}` : ""} icon={IconTarget} />
                         </div>
 
                         <div className="border-t border-steel/10 pt-5">
@@ -1876,9 +1927,9 @@ export default function ProfilePage() {
                               minatList.map((m) => (
                                 <span
                                   key={m}
-                                  className="rounded-lg border border-steel/20 bg-paper px-3 py-1.5 text-xs font-medium text-ink/80 flex items-center gap-1.5"
+                                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-ink/80 flex items-center gap-1.5"
                                 >
-                                  <IconCheck className="w-3 h-3 text-bridge-gold" />
+                                  <IconCheck className="w-3 h-3 text-primary" />
                                   {m}
                                 </span>
                               ))
@@ -1898,7 +1949,7 @@ export default function ProfilePage() {
                               skillsList.map((s) => (
                                 <span
                                   key={s}
-                                  className="rounded-lg border border-steel/20 bg-paper px-3 py-1.5 text-xs font-medium text-ink/80"
+                                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-ink/80"
                                 >
                                   {s}
                                 </span>
@@ -1917,9 +1968,9 @@ export default function ProfilePage() {
 
                   {/* TAB 3: PENCAPAIAN */}
                   {activeTab === "pencapaian" && (
-                    <div className="rounded-2xl border border-steel/20 bg-paper p-6 sm:p-8">
+                    <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
                       <h3 className="text-base font-bold text-ink border-b border-steel/10 pb-4 mb-6 flex items-center gap-2">
-                        <IconTrophy className="w-5 h-5 text-bridge-gold" />
+                        <IconTrophy className="w-5 h-5 text-ink/60" />
                         Pencapaian & Badge Profil
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -1944,27 +1995,27 @@ export default function ProfilePage() {
                                   });
                                 }
                               }}
-                              className="group rounded-xl border border-bridge-gold/30 bg-bridge-gold/10 p-4 transition-colors duration-200 hover:border-bridge-gold/40"
+                              className="group rounded-xl border border-sky/40 bg-sky/15 p-4 transition-colors duration-200 hover:border-sky/60"
                             >
                               <div className="flex items-center justify-between">
                                 <p className="text-sm font-bold text-ink flex items-center gap-2">
-                                  <IconTrophy className="w-4 h-4 text-bridge-gold group-hover:scale-110 transition-transform" />
+                                  <IconTrophy className="w-4 h-4 text-ocean group-hover:scale-110 transition-transform" />
                                   {b.nama}
                                 </p>
-                                <IconSparkles className="w-4 h-4 text-bridge-gold opacity-60 group-hover:opacity-100 transition-opacity" />
+                                <IconSparkles className="w-4 h-4 text-ocean opacity-60 group-hover:opacity-100 transition-opacity" />
                               </div>
                               <p className="mt-2 text-xs text-steel leading-relaxed">{b.deskripsi}</p>
-                              <span className="mt-3 inline-flex items-center gap-1 rounded-md bg-bridge-gold/40 px-2 py-0.5 text-[10px] font-bold text-ink">
-                                <IconCheck className="w-3 h-3 text-bridge-gold" />
+                              <span className="mt-3 inline-flex items-center gap-1 rounded-md bg-sky/40 px-2 py-0.5 text-[10px] font-bold text-ocean">
+                                <IconCheck className="w-3 h-3 text-ocean" />
                                 Unlocked
                               </span>
                             </motion.div>
                           );
                         })}
                         {lockedBadges.map((b) => (
-                          <div key={b.id} className="rounded-xl border border-steel/20 bg-paper p-4 opacity-60">
+                          <div key={b.id} className="rounded-xl border border-border bg-card p-4 opacity-60">
                             <p className="text-sm font-bold text-steel flex items-center gap-2">
-                              <IconLock className="w-4 h-4 text-bridge-gold" />
+                              <IconLock className="w-4 h-4 text-steel" />
                               {b.nama}
                             </p>
                             <p className="mt-1 text-xs text-steel/70 leading-relaxed">{b.deskripsi}</p>
@@ -1979,13 +2030,13 @@ export default function ProfilePage() {
 
                   {/* TAB 4: STATUS KOLABORASI */}
                   {activeTab === "pengajuan" && (
-                    <div className="rounded-2xl border border-steel/20 bg-paper p-6 sm:p-8">
+                    <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
                       <div className="flex items-center justify-between border-b border-steel/10 pb-4 mb-6">
                         <h3 className="text-base font-bold text-ink flex items-center gap-2">
                           <IconRocket className="w-5 h-5 text-ink/60" />
                           Riwayat Kolaborasi
                         </h3>
-                        <Link href="/kolaborasi" className="text-xs font-semibold text-bridge-gold hover:underline flex items-center gap-1">
+                        <Link href="/kolaborasi" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
                           Cari Peluang →
                         </Link>
                       </div>

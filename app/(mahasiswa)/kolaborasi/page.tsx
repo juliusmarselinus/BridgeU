@@ -3,6 +3,7 @@
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { GradientBars } from "@/components/ui/gradient-bars-background";
 import { ApplyModal } from "@/components/ApplyModal";
 import { DetailModal } from "@/components/DetailModal";
 import { Kolaborasi } from "@/lib/types";
@@ -238,23 +239,33 @@ export default function KolaborasiPage() {
   // Tidak bergantung pada containerW untuk layout agar selalu akurat
 
   return (
-    <main className="min-h-screen bg-paper pb-24 font-sans text-ink">
-      <div className="w-full bg-paper">
-        <div className="relative w-full bg-gradient-to-b from-ink via-ink/90 to-paper pt-10 pb-8">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-4 space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-bridge-gold/20 px-3.5 py-1 text-xs font-mono font-bold text-bridge-gold border border-bridge-gold/40 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-bridge-gold animate-ping" />
+    <main className="relative overflow-hidden bg-gradient-to-b from-secondary/15 via-clouds to-clouds pb-24 font-sans text-ink">
+      {/* Soft ambient bars — sama kayak dashboard, buat break flat background */}
+      <GradientBars
+        numBars={20}
+        gradientFrom="rgb(141, 209, 255)"
+        gradientTo="transparent"
+        animationDuration={7}
+        className="opacity-70"
+      />
+
+      <div
+        className="relative w-full pt-28 pb-16 overflow-hidden rounded-b-[2.5rem] shadow-[0_20px_50px_-20px_rgba(18,40,75,0.45)]"
+        style={{ background: "linear-gradient(160deg, #12284B 0%, #1B3A63 45%, #8CC1E9 100%)" }}
+      >
+          <div className="relative z-10 mx-auto max-w-[1400px] px-6 space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-sky/20 px-3.5 py-1 text-xs font-mono font-bold text-sky border border-sky/40 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-sky animate-pulse" />
               SMART RECOMMENDATION ENGINE ACTIVE
             </div>
             <h1 className="font-display text-3xl sm:text-5xl font-extrabold tracking-tight text-white drop-shadow-md">
               Peluang Kolaborasi &amp; Magang
             </h1>
-            <p className="text-sm text-paper/80 max-w-2xl leading-relaxed">
+            <p className="text-sm text-white/75 max-w-2xl leading-relaxed">
               Jelajahi studi kasus akademik &amp; posisi magang dari perusahaan mitra terverifikasi,
               direkomendasikan secara pintar sesuai dengan profil skill dan minat kamu.
             </p>
           </div>
-        </div>
       </div>
 
       <AnimatePresence>
@@ -263,74 +274,74 @@ export default function KolaborasiPage() {
             initial={{ opacity: 0, y: -20, x: "-50%" }}
             animate={{ opacity: 1, y: 0, x: "-50%" }}
             exit={{ opacity: 0, y: -20, x: "-50%" }}
-            className="fixed top-20 left-1/2 z-[70] rounded-2xl bg-ink border-2 border-bridge-gold px-6 py-3 text-xs font-mono font-bold text-bridge-gold shadow-2xl flex items-center gap-2"
+            className="fixed top-24 left-1/2 z-[70] rounded-2xl bg-ocean border border-sky/30 px-6 py-3 text-xs font-mono font-bold text-sky shadow-2xl flex items-center gap-2"
           >
             Pengajuan kolaborasi berhasil dikirim!
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 space-y-8 -mt-2 relative z-20">
+      <div className="relative mx-auto max-w-[1400px] px-6 -mt-10 z-20 space-y-10">
         {/* ═══════ CAROUSEL — hanya kolaborasi yang lolos threshold kemiripan ═══════ */}
         <section
-          className="rounded-3xl bg-ink p-5 sm:p-7 text-paper shadow-2xl border-2 border-bridge-gold/40 relative overflow-hidden"
+          className="rounded-3xl bg-ocean p-5 sm:p-7 text-white shadow-2xl border border-sky/20 relative overflow-hidden"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          <div className="absolute -right-12 -bottom-12 h-64 w-64 rounded-full bg-bridge-gold/20 blur-3xl pointer-events-none" />
-          <div className="absolute -left-12 -top-12 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute -right-12 -bottom-12 h-64 w-64 rounded-full bg-sky/20 blur-3xl pointer-events-none" />
+          <div className="absolute -left-12 -top-12 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
           <div className="flex items-center justify-between border-b border-white/15 pb-3 mb-5 relative z-20">
             <div className="flex items-center gap-2.5">
-              <span className="p-2 rounded-xl bg-bridge-gold/20 text-bridge-gold text-xs font-bold">
+              <span className="p-2 rounded-xl bg-sky/20 text-sky text-xs font-bold">
                 AI
               </span>
               <div>
-                <div className="flex items-center gap-2 font-mono text-xs text-bridge-gold font-bold uppercase tracking-wider">
+                <div className="flex items-center gap-2 font-mono text-xs text-sky font-bold uppercase tracking-wider">
                   <span>AI Smart Match Showcase</span>
                   {isPaused && (
-                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-paper/70 font-normal">
+                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-white/70 font-normal">
                       Paused
                     </span>
                   )}
                 </div>
-                <h2 className="font-display text-base sm:text-xl font-extrabold text-paper mt-0.5">
+                <h2 className="font-display text-base sm:text-xl font-extrabold text-white mt-0.5">
                   Rekomendasi Utama {user?.prodi ? `untuk ${user.prodi}` : ""}
                 </h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-1.5 font-mono text-xs text-bridge-gold font-bold bg-white/10 px-3 py-1 rounded-full border border-white/10">
+              <div className="hidden sm:flex items-center gap-1.5 font-mono text-xs text-sky font-bold bg-white/10 px-3 py-1 rounded-full border border-white/10">
                 <span>{totalRecs > 0 ? `0${carouselIndex + 1}` : "00"}</span>
-                <span className="text-paper/40">/</span>
-                <span className="text-paper/60">0{totalRecs}</span>
+                <span className="text-white/40">/</span>
+                <span className="text-white/60">0{totalRecs}</span>
               </div>
               <button
                 onClick={prevCarousel}
-                className="h-9 w-9 rounded-full border border-white/20 bg-white/10 hover:bg-bridge-gold hover:text-ink text-paper font-mono font-bold text-xs flex items-center justify-center transition hover:scale-105 active:scale-95"
+                className="h-9 w-9 rounded-full border border-white/20 bg-white/10 hover:bg-sky hover:text-ocean text-white font-mono font-bold text-xs flex items-center justify-center transition hover:scale-105 active:scale-95"
               >
                 ←
               </button>
               <button
                 onClick={nextCarousel}
-                className="h-9 w-9 rounded-full border border-white/20 bg-white/10 hover:bg-bridge-gold hover:text-ink text-paper font-mono font-bold text-xs flex items-center justify-center transition hover:scale-105 active:scale-95"
+                className="h-9 w-9 rounded-full border border-white/20 bg-white/10 hover:bg-sky hover:text-ocean text-white font-mono font-bold text-xs flex items-center justify-center transition hover:scale-105 active:scale-95"
               >
                 →
               </button>
             </div>
           </div>
 
-          <div className="relative" style={{ height: 260 }}>
+          <div className="relative" style={{ height: 340 }}>
             {loading ? (
-              <div className="flex items-center justify-center h-full text-paper/50 font-mono text-sm">
+              <div className="flex items-center justify-center h-full text-white/50 font-mono text-sm">
                 Memuat rekomendasi...
               </div>
             ) : !mahasiswaProfile ? (
-              <div className="flex items-center justify-center h-full text-paper/50 font-mono text-sm text-center px-6">
+              <div className="flex items-center justify-center h-full text-white/50 font-mono text-sm text-center px-6">
                 Login sebagai mahasiswa untuk melihat rekomendasi yang dipersonalisasi.
               </div>
             ) : totalRecs === 0 ? (
-              <div className="flex items-center justify-center h-full text-paper/50 font-mono text-sm text-center px-6">
+              <div className="flex items-center justify-center h-full text-white/50 font-mono text-sm text-center px-6">
                 Belum ada kolaborasi yang cukup cocok dengan skill/minat kamu saat ini. Lengkapi
                 profil kamu supaya rekomendasi makin akurat.
               </div>
@@ -376,19 +387,19 @@ export default function KolaborasiPage() {
                         className={`rounded-2xl p-5 flex flex-col justify-between overflow-hidden relative
                           ${
                             isActive
-                              ? "border-2 border-bridge-gold/80 bg-gradient-to-br from-white/15 via-white/10 to-white/5 backdrop-blur-xl shadow-[0_0_35px_rgba(201,168,76,0.3)] cursor-default"
+                              ? "border border-white/30 bg-gradient-to-br from-white/[0.22] via-white/[0.1] to-white/[0.04] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_0_35px_rgba(140,193,233,0.3),inset_0_1px_0_0_rgba(255,255,255,0.35),inset_0_0_0_1px_rgba(255,255,255,0.06)] cursor-default"
                               : "border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10"
                           }`}
                       >
                         {isActive && (
-                          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-bridge-gold to-transparent" />
+                          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-sky to-transparent" />
                         )}
 
                         {isActive ? (
                           <>
                             <div>
                               <div className="flex items-center justify-between gap-2 mb-3">
-                                <span className="rounded-full bg-bridge-gold px-3.5 py-1 font-mono text-xs font-black text-ink shadow-md flex items-center gap-1">
+                                <span className="rounded-full bg-sky px-3.5 py-1 font-mono text-xs font-black text-ocean shadow-md flex items-center gap-1">
                                   {rec.match.scorePercent}% Match
                                 </span>
                                 <div className="flex items-center gap-2">
@@ -397,18 +408,18 @@ export default function KolaborasiPage() {
                                       Sesuai Prodi
                                     </span>
                                   )}
-                                  <span className="bg-white/10 text-paper/80 border border-white/10 px-3 py-0.5 rounded-full font-mono text-[10px] font-bold">
+                                  <span className="bg-white/10 text-white/80 border border-white/10 px-3 py-0.5 rounded-full font-mono text-[10px] font-bold">
                                     {rec.tipe}
                                   </span>
                                 </div>
                               </div>
-                              <h3 className="font-display text-xl sm:text-2xl font-black text-paper leading-tight drop-shadow-sm">
+                              <h3 className="font-display text-xl sm:text-2xl font-black text-white leading-tight drop-shadow-sm">
                                 {rec.judul}
                               </h3>
-                              <p className="mt-1 font-mono text-xs font-bold text-bridge-gold flex items-center gap-1.5">
+                              <p className="mt-1 font-mono text-xs font-bold text-sky flex items-center gap-1.5">
                                 {rec.perusahaan}
                               </p>
-                              <p className="mt-3 text-xs text-paper/85 line-clamp-2 leading-relaxed font-medium">
+                              <p className="mt-3 text-xs text-white/85 line-clamp-2 leading-relaxed font-medium">
                                 {rec.deskripsi}
                               </p>
                               {rec.tags && rec.tags.length > 0 && (
@@ -416,7 +427,7 @@ export default function KolaborasiPage() {
                                   {rec.tags.slice(0, 4).map((tag) => (
                                     <span
                                       key={tag}
-                                      className="rounded-md bg-white/10 px-2.5 py-0.5 font-mono text-[10px] text-paper/90 border border-white/10"
+                                      className="rounded-md bg-white/10 px-2.5 py-0.5 font-mono text-[10px] text-white/90 border border-white/10"
                                     >
                                       #{tag}
                                     </span>
@@ -425,21 +436,21 @@ export default function KolaborasiPage() {
                               )}
                             </div>
                             <div className="mt-5 pt-3.5 border-t border-white/15 flex items-center justify-between gap-3">
-                              <span className="font-mono text-xs text-paper/70 truncate">
+                              <span className="font-mono text-xs text-white/70 truncate">
                                 {rec.lokasi} &bull; Batas: {rec.batasWaktu}
                               </span>
                               <div className="flex items-center gap-2 shrink-0">
                                 <button
                                   type="button"
                                   onClick={() => setDetailTarget(rec)}
-                                  className="rounded-xl border border-white/30 px-3.5 py-1.5 font-mono text-xs font-bold text-paper hover:bg-white/10 transition"
+                                  className="rounded-xl border border-white/30 px-3.5 py-1.5 font-mono text-xs font-bold text-white hover:bg-white/10 transition"
                                 >
                                   Detail
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setApplyTarget(rec)}
-                                  className="rounded-xl bg-bridge-gold px-5 py-1.5 font-mono text-xs font-extrabold text-ink hover:bg-white transition shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center text-center"
+                                  className="rounded-xl bg-sky px-5 py-1.5 font-mono text-xs font-extrabold text-ocean hover:bg-white transition shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center text-center"
                                 >
                                   Ajukan
                                 </button>
@@ -449,20 +460,20 @@ export default function KolaborasiPage() {
                         ) : (
                           <div className="flex flex-col gap-2 h-full justify-between">
                             <div className="space-y-1.5">
-                              <div className="flex items-center justify-between text-[10px] font-mono text-paper/60">
+                              <div className="flex items-center justify-between text-[10px] font-mono text-white/60">
                                 <span>{isPrev ? "← Sebelumnya" : "Selanjutnya →"}</span>
-                                <span className="text-bridge-gold/80 font-bold">
+                                <span className="text-sky/80 font-bold">
                                   {rec.match.scorePercent}%
                                 </span>
                               </div>
-                              <h4 className="font-display text-sm font-bold text-paper line-clamp-3 leading-snug">
+                              <h4 className="font-display text-sm font-bold text-white line-clamp-3 leading-snug">
                                 {rec.judul}
                               </h4>
-                              <p className="text-[11px] font-mono text-bridge-gold/80 truncate">
+                              <p className="text-[11px] font-mono text-sky/80 truncate">
                                 {rec.perusahaan}
                               </p>
                             </div>
-                            <p className="text-[10px] text-paper/50 line-clamp-3 leading-relaxed">
+                            <p className="text-[10px] text-white/50 line-clamp-3 leading-relaxed">
                               {rec.deskripsi}
                             </p>
                           </div>
@@ -478,14 +489,14 @@ export default function KolaborasiPage() {
 
         {/* ═══════ CATALOG LIST — semua kolaborasi, tetap tampil skor, tanpa filter threshold ═══════ */}
         <section className="space-y-6 pt-2">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b-2 border-steel/15 pb-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border pb-6">
             <div className="flex-1 max-w-md">
               <input
                 type="text"
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Cari judul, perusahaan, skill (Next.js, Figma, Python)..."
-                className="w-full rounded-2xl border-2 border-steel/20 bg-white/80 backdrop-blur-md px-4 py-3 text-sm text-ink outline-none transition focus:border-ink shadow-sm font-medium"
+                className="w-full rounded-full border border-border bg-card px-4 py-3 text-sm text-ink outline-none transition focus:border-primary/40 shadow-sm font-medium"
               />
             </div>
             <div className="flex items-center gap-2 font-mono text-xs">
@@ -493,10 +504,10 @@ export default function KolaborasiPage() {
                 <button
                   key={t}
                   onClick={() => handleTipeChange(t)}
-                  className={`rounded-xl px-4 py-2 font-bold transition duration-200 shadow-sm ${
+                  className={`rounded-full px-4 py-2 font-bold transition duration-200 border ${
                     tipeFilter === t
-                      ? "bg-ink text-paper shadow-md border-2 border-ink"
-                      : "bg-white/80 backdrop-blur-md border-2 border-steel/20 text-steel hover:border-ink hover:text-ink"
+                      ? "bg-primary text-white shadow-sm border-primary"
+                      : "bg-card border-border text-steel hover:border-primary/40 hover:text-ink"
                   }`}
                 >
                   {t}
@@ -510,7 +521,7 @@ export default function KolaborasiPage() {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="rounded-3xl border-2 border-steel/15 bg-white/60 p-5 h-64 animate-pulse"
+                  className="rounded-2xl border border-border bg-surface p-5 h-64 animate-pulse"
                 />
               ))}
             </div>
@@ -529,13 +540,13 @@ export default function KolaborasiPage() {
                     whileInView={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                     viewport={{ once: false, margin: "-20px" }}
                     transition={{ duration: 0.55, delay: (index % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                    className="relative overflow-hidden rounded-3xl border-2 border-steel/15 bg-white/90 backdrop-blur-xl p-5 shadow-lg transition-all duration-300 hover:border-bridge-gold hover:shadow-[0_12px_36px_-8px_rgba(201,168,76,0.3)] flex flex-col justify-between group"
+                    className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md flex flex-col justify-between group"
                   >
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-bridge-gold to-transparent opacity-0 group-hover:opacity-100 transition duration-500" />
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition duration-500" />
                     <div>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-bridge-gold font-mono text-xs font-bold border border-bridge-gold/30 shrink-0">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-sky font-mono text-xs font-bold shrink-0">
                             {initials(k.perusahaan)}
                           </div>
                           <div className="min-w-0">
@@ -553,13 +564,13 @@ export default function KolaborasiPage() {
                           className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-extrabold shrink-0 ${
                             k.tipe === "Akademik"
                               ? "bg-slate-100 text-slate-800 border border-slate-300"
-                              : "bg-bridge-gold text-ink font-black"
+                              : "bg-primary/10 text-primary border border-primary/20 font-black"
                           }`}
                         >
                           {k.tipe}
                         </span>
                       </div>
-                      <h3 className="mt-3.5 font-display text-lg font-bold text-ink leading-snug group-hover:underline decoration-bridge-gold decoration-2 underline-offset-2 transition-colors duration-200 line-clamp-2">
+                      <h3 className="mt-3.5 font-display text-lg font-semibold text-ink leading-snug group-hover:text-primary transition-colors duration-200 line-clamp-2">
                         {k.judul}
                       </h3>
                       <p className="mt-2 text-xs font-medium text-steel line-clamp-3 leading-relaxed">
@@ -587,14 +598,14 @@ export default function KolaborasiPage() {
                         <button
                           type="button"
                           onClick={() => setDetailTarget(k)}
-                          className="flex-1 rounded-xl border-2 border-steel/20 py-2 text-center font-mono text-xs font-bold text-ink transition hover:bg-slate-50"
+                          className="flex-1 rounded-full border border-border py-2 text-center font-mono text-xs font-bold text-ink transition hover:bg-surface"
                         >
                           Detail
                         </button>
                         <button
                           type="button"
                           onClick={() => setApplyTarget(k)}
-                          className="flex-1 rounded-xl bg-ink py-2 text-center font-mono text-xs font-bold text-paper transition hover:bg-steel shadow-md flex items-center justify-center"
+                          className="flex-1 rounded-full bg-primary py-2 text-center font-mono text-xs font-bold text-white transition hover:brightness-110 shadow-sm flex items-center justify-center"
                         >
                           Ajukan
                         </button>
@@ -605,7 +616,7 @@ export default function KolaborasiPage() {
               </AnimatePresence>
 
               {paginatedItems.length === 0 && !loading && (
-                <div className="col-span-3 py-16 text-center rounded-3xl border-2 border-dashed border-steel/25 bg-white/60">
+                <div className="col-span-3 py-16 text-center rounded-2xl border-2 border-dashed border-border bg-surface">
                   <p className="font-display text-lg font-bold text-ink">
                     Tidak ada kolaborasi yang cocok
                   </p>
@@ -623,7 +634,7 @@ export default function KolaborasiPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="h-9 w-9 rounded-full border-2 border-steel/20 bg-white/80 font-mono text-sm font-bold text-ink transition hover:border-ink hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                className="h-9 w-9 rounded-full border border-border bg-card font-mono text-sm font-bold text-ink transition hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
               >
                 ←
               </button>
@@ -631,10 +642,10 @@ export default function KolaborasiPage() {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`h-9 w-9 rounded-full border-2 font-mono text-sm font-bold transition shadow-sm ${
+                  className={`h-9 w-9 rounded-full border font-mono text-sm font-bold transition shadow-sm ${
                     page === currentPage
-                      ? "border-ink bg-ink text-paper shadow-md"
-                      : "border-steel/20 bg-white/80 text-ink hover:border-ink hover:bg-slate-50"
+                      ? "border-primary bg-primary text-white shadow-md"
+                      : "border-border bg-card text-ink hover:border-primary/40 hover:bg-surface"
                   }`}
                 >
                   {page}
@@ -643,7 +654,7 @@ export default function KolaborasiPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="h-9 w-9 rounded-full border-2 border-steel/20 bg-white/80 font-mono text-sm font-bold text-ink transition hover:border-ink hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                className="h-9 w-9 rounded-full border border-border bg-card font-mono text-sm font-bold text-ink transition hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
               >
                 →
               </button>
