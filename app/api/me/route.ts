@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase, getAuthedClient } from "@/lib/supabase";
 import { checkBadgeUnlockCondition, type StudentContextForBadges } from "@/lib/badge-evaluator";
+import { calculateUpdatedStreak } from "@/lib/streak-tracker";
 
 async function getAuthUser(token: string) {
   // Verifikasi token pakai client biasa (cukup buat cek siapa yang login)
@@ -67,6 +68,28 @@ export async function GET(req: NextRequest) {
         skills: [],
         isProfileComplete: false,
       });
+    }
+
+    // Auto-update streak keaktifan mahasiswa
+    const streakResult = calculateUpdatedStreak(
+      (profile as any).streak_count ?? 0,
+      (profile as any).last_active_at ?? null
+    );
+
+    let streakCount = (profile as any).streak_count ?? 0;
+    let lastActiveAt = (profile as any).last_active_at ?? null;
+
+    if (streakResult.updated) {
+      streakCount = streakResult.newStreak;
+      lastActiveAt = streakResult.newLastActiveAt;
+
+      await db
+        .from("mahasiswa_profiles")
+        .update({
+          streak_count: streakCount,
+          last_active_at: lastActiveAt,
+        })
+        .eq("user_id", authUser.id);
     }
 
     const { data: minatRows } = await db
@@ -139,7 +162,6 @@ export async function GET(req: NextRequest) {
     const totalAccept = pengajuanList.filter((p: any) => p.status === "Diterima" || p.status === "Selesai").length;
     const totalFinish = pengajuanList.filter((p: any) => p.status === "Selesai").length;
     const studentXp = (profile as any).xp ?? 0;
-    const streakCount = (profile as any).streak_count ?? 0;
     const responseRate = (profile as any).response_rate ?? 0;
 
     const uniquePerusahaan = new Set(pengajuanList.map((p: any) => p.perusahaan)).size;
@@ -231,8 +253,8 @@ export async function GET(req: NextRequest) {
       ringkasanSelf: profile.ringkasan_self,
       fotoUrl: profile.foto_url,
       xp: currentXp,
-      streakCount: (profile as any).streak_count ?? 0,
-      lastActiveAt: (profile as any).last_active_at ?? null,
+      streakCount: streakCount,
+      lastActiveAt: lastActiveAt,
       reputationScore: (profile as any).reputation_score ?? 0,
       responseRate: (profile as any).response_rate ?? 0.0,
       minatKategori: (minatRows ?? []).map((r: any) => r.kategori_minat?.nama_kategori).filter(Boolean),

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase, getAuthedClient } from "@/lib/supabase";
 import type { DashboardApiResponse, RecommendedProject, UserBadge } from "@/app/(mahasiswa)/dashboard/types/dashboard";
 import { getGamificationMetrics } from "@/lib/gamification";
+import { checkBadgeUnlockCondition, type StudentContextForBadges } from "@/lib/badge-evaluator";
+import { calculateUpdatedStreak } from "@/lib/streak-tracker";
 
 async function getAuthUser(token: string) {
   const {
@@ -61,8 +63,25 @@ export async function GET(req: NextRequest) {
         .eq("mahasiswa_id", authUser.id);
 
       if (profile) {
-        studentXp = (profile as any).xp ?? 0;
+        // Auto-update streak keaktifan mahasiswa
+        const streakResult = calculateUpdatedStreak(
+          (profile as any).streak_count ?? 0,
+          (profile as any).last_active_at ?? null
+        );
+
         streakCount = (profile as any).streak_count ?? 0;
+        if (streakResult.updated) {
+          streakCount = streakResult.newStreak;
+          await db
+            .from("mahasiswa_profiles")
+            .update({
+              streak_count: streakCount,
+              last_active_at: streakResult.newLastActiveAt,
+            })
+            .eq("user_id", authUser.id);
+        }
+
+        studentXp = (profile as any).xp ?? 0;
         reputationScore = (profile as any).reputation_score ?? 0;
         responseRate = (profile as any).response_rate ?? 0.0;
 
@@ -114,6 +133,57 @@ export async function GET(req: NextRequest) {
         status: item.status ?? "Menunggu",
         tanggal: item.tanggal_daftar ?? new Date().toISOString(),
       }));
+    }
+
+    // 2b. Evaluate badges & auto-sync XP if new badges earned
+    const { data: allBadges } = await supabase
+      .from("badges")
+      .select("id, kode_badge, xp_bonus");
+
+    const { data: userBadgesData } = await db
+      .from("mahasiswa_badges")
+      .select("badge_id")
+      .eq("mahasiswa_id", authUser.id);
+
+    const unlockedBadgeIds = new Set((userBadgesData || []).map((b: any) => b.badge_id));
+    const totalApply = pengajuanList.length;
+    const totalAccept = pengajuanList.filter((p: any) => p.status === "Diterima" || p.status === "Selesai").length;
+    const totalFinish = pengajuanList.filter((p: any) => p.status === "Selesai").length;
+    const uniquePerusahaan = new Set(pengajuanList.map((p: any) => p.perusahaan)).size;
+    const isComplete = Boolean(userData?.universitas && userData?.prodi);
+
+    const studentCtx: StudentContextForBadges = {
+      isProfileComplete: isComplete,
+      totalPengajuan: totalApply,
+      totalDiterima: totalAccept,
+      totalSelesai: totalFinish,
+      streakCount: streakCount,
+      responseRate: responseRate,
+      xp: studentXp,
+      uniquePerusahaanCount: uniquePerusahaan,
+    };
+
+    const newBadgesToInsert: { mahasiswa_id: string; badge_id: number }[] = [];
+    let extraXpGained = 0;
+
+    (allBadges || []).forEach((b: any) => {
+      const dbUnlocked = unlockedBadgeIds.has(b.id);
+      const evalUnlocked = checkBadgeUnlockCondition(b.kode_badge, studentCtx);
+
+      if (evalUnlocked && !dbUnlocked) {
+        newBadgesToInsert.push({
+          mahasiswa_id: authUser.id,
+          badge_id: b.id,
+        });
+        extraXpGained += b.xp_bonus || 0;
+      }
+    });
+
+    if (newBadgesToInsert.length > 0) {
+      await db.from("mahasiswa_badges").upsert(newBadgesToInsert, { onConflict: "mahasiswa_id,badge_id" });
+      studentXp += extraXpGained;
+      await db.from("mahasiswa_profiles").update({ xp: studentXp }).eq("user_id", authUser.id);
+      if (userData) userData.xp = studentXp;
     }
 
     // 3. Fetch real recommendations from kolaborasi table

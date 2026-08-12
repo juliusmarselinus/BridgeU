@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { GradientBars } from "@/components/ui/gradient-bars-background";
 import type { StoredUser, DashboardStats } from "../types/dashboard";
 import { IconBook, IconTrophy, IconRocket, IconLightning, IconSparkles } from "./DashboardIcons";
+import { getGamificationMetrics } from "@/lib/gamification";
 
 interface DashboardHeroProps {
   loading: boolean;
@@ -13,7 +14,8 @@ interface DashboardHeroProps {
 }
 
 export function DashboardHero({ loading, user, stats }: DashboardHeroProps) {
-  const { level, progressPercent, sisaMenujuLevel, total, xp, streakCount, reputationScore, responseRate } = stats;
+  const { xp, streakCount, reputationScore, responseRate } = stats;
+  const gMetrics = getGamificationMetrics(xp);
 
   return (
     <div className="w-full bg-clouds">
@@ -79,11 +81,15 @@ export function DashboardHero({ loading, user, stats }: DashboardHeroProps) {
                 </span>
                 <span className="rounded-xl bg-sky text-ocean font-extrabold px-4 py-2 text-xs shadow-lg flex items-center gap-2">
                   <IconTrophy className="w-3.5 h-3.5 text-ink" />
-                  Level {level} ({xp} XP)
+                  Level {gMetrics.level} • {gMetrics.tier} ({gMetrics.tierTitle})
+                </span>
+                <span className="rounded-xl bg-amber-400 text-amber-950 font-extrabold px-4 py-2 text-xs shadow-lg flex items-center gap-1.5">
+                  <IconSparkles className="w-3.5 h-3.5 text-amber-950" />
+                  {gMetrics.pts} Pts
                 </span>
                 <span className="rounded-xl bg-white/15 border border-white/30 backdrop-blur-md px-4 py-2 text-xs font-bold text-paper shadow-md flex items-center gap-2">
                   <IconLightning className="w-3.5 h-3.5 text-sky" />
-                  {streakCount} Hari Active Streak
+                  {streakCount} Hari Streak
                 </span>
                 <span className="rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-bold px-4 py-2 text-xs shadow-md flex items-center gap-2">
                   <IconSparkles className="w-3.5 h-3.5 text-emerald-300" />
@@ -96,10 +102,10 @@ export function DashboardHero({ loading, user, stats }: DashboardHeroProps) {
             <div className="w-full md:w-80 rounded-2xl bg-white/10 p-6 backdrop-blur-md shadow-2xl space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold uppercase tracking-wider text-paper/70">
-                  Level & XP Progress
+                  Target XP = 100 × n²
                 </span>
                 <span className="font-display text-2xl font-black text-sky">
-                  Lv {level}
+                  Lv {gMetrics.level}
                 </span>
               </div>
 
@@ -107,14 +113,14 @@ export function DashboardHero({ loading, user, stats }: DashboardHeroProps) {
                 <motion.div
                   className="h-full rounded-full bg-gradient-to-r from-sky to-secondary"
                   initial={{ width: 0 }}
-                  animate={{ width: `${Math.max(progressPercent, 8)}%` }}
+                  animate={{ width: `${Math.max(gMetrics.progressPercent, 8)}%` }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 />
               </div>
 
               <div className="flex items-center justify-between font-mono text-xs text-paper/70">
-                <span>{xp} XP terkumpul</span>
-                <span className="text-sky font-bold">+{sisaMenujuLevel} XP ke Lv {level + 1}</span>
+                <span>{gMetrics.xpInCurrentLevel}/{gMetrics.xpSpanForNextLevel} XP</span>
+                <span className="text-sky font-bold">+{gMetrics.sisaMenujuLevel} XP ke Lv {gMetrics.level + 1}</span>
               </div>
             </div>
           </div>
