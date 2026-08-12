@@ -9,7 +9,6 @@ CREATE TABLE public.users (
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   username character varying UNIQUE,
-  password_hash text,
   CONSTRAINT users_pkey PRIMARY KEY (id),
   CONSTRAINT users_id_auth_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
@@ -109,7 +108,6 @@ CREATE TABLE public.kolaborasi (
   deskripsi text NOT NULL,
   lokasi_id bigint NOT NULL,
   batas_waktu date NOT NULL,
-  tanggal_selesai date,
   status_moderasi USER-DEFINED NOT NULL DEFAULT 'Menunggu'::moderasi_status,
   tingkat_kesulitan USER-DEFINED DEFAULT 'Menengah'::tingkat_kesulitan,
   gaji_stipend character varying,
@@ -117,6 +115,7 @@ CREATE TABLE public.kolaborasi (
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   slot integer,
+  tanggal_selesai date,
   CONSTRAINT kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT kolaborasi_perusahaan_id_fkey FOREIGN KEY (perusahaan_id) REFERENCES public.perusahaan_profiles(user_id),
   CONSTRAINT kolaborasi_kategori_id_fkey FOREIGN KEY (kategori_id) REFERENCES public.kategori_minat(id),
@@ -145,6 +144,8 @@ CREATE TABLE public.pendaftaran_kolaborasi (
   status USER-DEFINED NOT NULL DEFAULT 'Menunggu'::status_lamaran,
   catatan_perusahaan text,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  url_portofolio_dokumen text,
+  status_pengerjaan text DEFAULT 'Belum Dikirim'::text,
   CONSTRAINT pendaftaran_kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT pendaftaran_kolaborasi_kolaborasi_id_fkey FOREIGN KEY (kolaborasi_id) REFERENCES public.kolaborasi(id),
   CONSTRAINT pendaftaran_kolaborasi_mahasiswa_id_fkey FOREIGN KEY (mahasiswa_id) REFERENCES public.mahasiswa_profiles(user_id)
@@ -184,4 +185,66 @@ CREATE TABLE public.kota (
   nama_kota character varying NOT NULL,
   provinsi character varying,
   CONSTRAINT kota_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.kolaborasi_kategori_minat (
+  kolaborasi_id uuid NOT NULL,
+  kategori_id integer NOT NULL,
+  CONSTRAINT kolaborasi_kategori_minat_pkey PRIMARY KEY (kolaborasi_id, kategori_id),
+  CONSTRAINT kolaborasi_kategori_minat_kolaborasi_id_fkey FOREIGN KEY (kolaborasi_id) REFERENCES public.kolaborasi(id),
+  CONSTRAINT kolaborasi_kategori_minat_kategori_id_fkey FOREIGN KEY (kategori_id) REFERENCES public.kategori_minat(id)
+);
+CREATE TABLE public.riwayat_pengumpulan_kolaborasi (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  pendaftaran_id uuid NOT NULL,
+  versi integer NOT NULL DEFAULT 1,
+  url_hasil text NOT NULL,
+  catatan_mahasiswa text,
+  evaluasi_perusahaan text,
+  status_evaluasi text DEFAULT 'Menunggu Evaluasi'::text,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT riwayat_pengumpulan_kolaborasi_pkey PRIMARY KEY (id),
+  CONSTRAINT riwayat_pengumpulan_kolaborasi_pendaftaran_id_fkey FOREIGN KEY (pendaftaran_id) REFERENCES public.pendaftaran_kolaborasi(id)
+);
+CREATE TABLE public.badges (
+  id integer NOT NULL DEFAULT nextval('badges_id_seq'::regclass),
+  kode_badge character varying NOT NULL UNIQUE,
+  nama_badge character varying NOT NULL,
+  deskripsi text NOT NULL,
+  icon_url text NOT NULL,
+  kategori character varying DEFAULT 'Umum'::character varying,
+  xp_bonus integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT badges_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.mahasiswa_badges (
+  mahasiswa_id uuid NOT NULL,
+  badge_id integer NOT NULL,
+  earned_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT mahasiswa_badges_pkey PRIMARY KEY (mahasiswa_id, badge_id),
+  CONSTRAINT mahasiswa_badges_mahasiswa_id_fkey FOREIGN KEY (mahasiswa_id) REFERENCES public.mahasiswa_profiles(user_id),
+  CONSTRAINT mahasiswa_badges_badge_id_fkey FOREIGN KEY (badge_id) REFERENCES public.badges(id)
+);
+CREATE TABLE public.chat_rooms (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  pendaftaran_id uuid UNIQUE,
+  mahasiswa_id uuid NOT NULL,
+  perusahaan_id uuid NOT NULL,
+  last_message text,
+  last_message_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chat_rooms_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_rooms_pendaftaran_id_fkey FOREIGN KEY (pendaftaran_id) REFERENCES public.pendaftaran_kolaborasi(id),
+  CONSTRAINT chat_rooms_mahasiswa_id_fkey FOREIGN KEY (mahasiswa_id) REFERENCES public.mahasiswa_profiles(user_id),
+  CONSTRAINT chat_rooms_perusahaan_id_fkey FOREIGN KEY (perusahaan_id) REFERENCES public.perusahaan_profiles(user_id)
+);
+CREATE TABLE public.chat_messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  room_id uuid NOT NULL,
+  sender_id uuid NOT NULL,
+  pesan text NOT NULL,
+  is_read boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chat_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_messages_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.chat_rooms(id),
+  CONSTRAINT chat_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id)
 );

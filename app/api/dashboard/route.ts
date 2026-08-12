@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase, getAuthedClient } from "@/lib/supabase";
 import type { DashboardApiResponse, RecommendedProject, UserBadge } from "@/app/(mahasiswa)/dashboard/types/dashboard";
+import { getGamificationMetrics } from "@/lib/gamification";
 
 async function getAuthUser(token: string) {
   const {
@@ -102,7 +103,7 @@ export async function GET(req: NextRequest) {
     let pengajuanList: any[] = [];
     const { data: dbPendaftaran } = await db
       .from("pendaftaran_kolaborasi")
-      .select("id, status, created_at, updated_at, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
+      .select("id, status, tanggal_daftar, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
       .eq("mahasiswa_id", authUser.id);
 
     if (dbPendaftaran && dbPendaftaran.length > 0) {
@@ -111,7 +112,7 @@ export async function GET(req: NextRequest) {
         judul: item.kolaborasi?.judul ?? "Pengajuan Kolaborasi",
         perusahaan: item.kolaborasi?.perusahaan?.nama_perusahaan ?? "Mitra Perusahaan",
         status: item.status ?? "Menunggu",
-        tanggal: item.updated_at ?? item.created_at ?? new Date().toISOString(),
+        tanggal: item.tanggal_daftar ?? new Date().toISOString(),
       }));
     }
 
@@ -161,11 +162,8 @@ export async function GET(req: NextRequest) {
     const menunggu = pengajuanList.filter((p) => p.status === "Menunggu").length;
     const diterima = pengajuanList.filter((p) => p.status === "Diterima").length;
 
-    // Gamification metrics derived from real XP & applications
-    const level = Math.floor(studentXp / 100) + 1;
-    const currentXpProgress = studentXp % 100;
-    const progressPercent = Math.min(currentXpProgress, 100);
-    const sisaMenujuLevel = 100 - currentXpProgress;
+    // Gamification metrics using formula: Target XP Level n = 100 * n^2
+    const gMetrics = getGamificationMetrics(studentXp);
 
     const payload: DashboardApiResponse = {
       user: userData,
@@ -176,9 +174,9 @@ export async function GET(req: NextRequest) {
         total,
         menunggu,
         diterima,
-        level,
-        progressPercent,
-        sisaMenujuLevel,
+        level: gMetrics.level,
+        progressPercent: gMetrics.progressPercent,
+        sisaMenujuLevel: gMetrics.sisaMenujuLevel,
         xp: studentXp,
         streakCount,
         reputationScore,

@@ -1,6 +1,7 @@
 // app/api/me/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabase, getAuthedClient } from "@/lib/supabase";
+import { checkBadgeUnlockCondition, type StudentContextForBadges } from "@/lib/badge-evaluator";
 
 async function getAuthUser(token: string) {
   // Verifikasi token pakai client biasa (cukup buat cek siapa yang login)
@@ -80,6 +81,142 @@ export async function GET(req: NextRequest) {
 
     const isComplete = Boolean(profile.nama_lengkap && profile.universitas && profile.prodi);
 
+    let dbPendaftaran: any[] | null = null;
+
+    console.log("🔍 [DEBUG /api/me] Fetching pendaftaran for authUser.id:", authUser.id);
+
+    const { data: authedPendaftaran, error: authedErr } = await db
+      .from("pendaftaran_kolaborasi")
+      .select("id, status, tanggal_daftar, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
+      .eq("mahasiswa_id", authUser.id);
+
+    console.log("🔍 [DEBUG /api/me] authedPendaftaran count:", authedPendaftaran?.length ?? 0, "Err:", authedErr?.message);
+
+    dbPendaftaran = authedPendaftaran;
+
+    // Fallback pakai client supabase publik jika authedClient RLS 0 result
+    if (!dbPendaftaran || dbPendaftaran.length === 0) {
+      const { data: publicPendaftaran, error: pubErr } = await supabase
+        .from("pendaftaran_kolaborasi")
+        .select("id, status, tanggal_daftar, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
+        .eq("mahasiswa_id", authUser.id);
+
+      console.log("🔍 [DEBUG /api/me] publicPendaftaran count:", publicPendaftaran?.length ?? 0, "Err:", pubErr?.message);
+      dbPendaftaran = publicPendaftaran;
+    }
+
+    const pengajuanList = (dbPendaftaran || []).map((item: any) => ({
+      id: item.id,
+      judul: item.kolaborasi?.judul ?? "Pengajuan Kolaborasi",
+      perusahaan: item.kolaborasi?.perusahaan?.nama_perusahaan ?? "Mitra Perusahaan",
+      status: item.status ?? "Menunggu",
+      tujuan: item.kolaborasi?.perusahaan?.nama_perusahaan ?? "Mitra Perusahaan",
+      tanggal: item.tanggal_daftar
+        ? new Date(item.tanggal_daftar).toLocaleDateString("id-ID")
+        : "-",
+    }));
+
+    console.log("🔍 [DEBUG /api/me] Final pengajuanList count:", pengajuanList.length);
+
+    console.log("🔍 [DEBUG /api/me] Final pengajuanList count:", pengajuanList.length);
+
+    const { data: allBadges, error: badgeErr } = await supabase
+      .from("badges")
+      .select("id, kode_badge, nama_badge, deskripsi, icon_url, kategori, xp_bonus");
+
+    console.log("🔍 [DEBUG /api/me] allBadges count:", allBadges?.length ?? 0, "Err:", badgeErr?.message);
+
+    const { data: userBadgesData, error: userBadgeErr } = await db
+      .from("mahasiswa_badges")
+      .select("badge_id, earned_at")
+      .eq("mahasiswa_id", authUser.id);
+
+    console.log("🔍 [DEBUG /api/me] userBadgesData count:", userBadgesData?.length ?? 0, "Err:", userBadgeErr?.message);
+
+    const unlockedBadgeIds = new Set((userBadgesData || []).map((b: any) => b.badge_id));
+
+    const totalApply = pengajuanList.length;
+    const totalAccept = pengajuanList.filter((p: any) => p.status === "Diterima" || p.status === "Selesai").length;
+    const totalFinish = pengajuanList.filter((p: any) => p.status === "Selesai").length;
+    const studentXp = (profile as any).xp ?? 0;
+    const streakCount = (profile as any).streak_count ?? 0;
+    const responseRate = (profile as any).response_rate ?? 0;
+
+    const uniquePerusahaan = new Set(pengajuanList.map((p: any) => p.perusahaan)).size;
+
+    const studentCtx: StudentContextForBadges = {
+      isProfileComplete: isComplete,
+      totalPengajuan: totalApply,
+      totalDiterima: totalAccept,
+      totalSelesai: totalFinish,
+      streakCount: streakCount,
+      responseRate: responseRate,
+      xp: studentXp,
+      uniquePerusahaanCount: uniquePerusahaan,
+    };
+
+    const newBadgesToInsert: { mahasiswa_id: string; badge_id: number }[] = [];
+    let extraXpGained = 0;
+
+    const formattedBadges = (allBadges || []).map((b: any) => {
+      const dbUnlocked = unlockedBadgeIds.has(b.id);
+      const evalUnlocked = checkBadgeUnlockCondition(b.kode_badge, studentCtx);
+      const isUnlocked = dbUnlocked || evalUnlocked;
+
+      // Jika baru saja qualified tapi belum ada di DB mahasiswa_badges, masukkan ke daftar insert & tambah XP
+      if (evalUnlocked && !dbUnlocked) {
+        newBadgesToInsert.push({
+          mahasiswa_id: authUser.id,
+          badge_id: b.id,
+        });
+        extraXpGained += b.xp_bonus || 0;
+      }
+
+      return {
+        id: b.id,
+        kodeBadge: b.kode_badge,
+        namaBadge: b.nama_badge,
+        deskripsi: b.deskripsi,
+        iconUrl: b.icon_url,
+        kategori: b.kategori,
+        xpBonus: b.xp_bonus,
+        isUnlocked,
+        unlockedAt: (userBadgesData || []).find((ub: any) => ub.badge_id === b.id)?.earned_at ?? (isUnlocked ? new Date().toISOString() : null),
+      };
+    });
+
+    let currentXp = studentXp;
+
+    // Jika ada badge baru yang unlocked, simpan ke database mahasiswa_badges dan update XP profil
+    if (newBadgesToInsert.length > 0) {
+      console.log("⚡ [DEBUG /api/me] Auto-inserting new badges to Supabase:", newBadgesToInsert.length, "badges, Extra XP:", extraXpGained);
+      
+      const { error: insertErr } = await db
+        .from("mahasiswa_badges")
+        .upsert(newBadgesToInsert, { onConflict: "mahasiswa_id,badge_id" });
+
+      if (insertErr) {
+        console.error("❌ [DEBUG /api/me] Failed to insert mahasiswa_badges:", insertErr.message);
+      } else {
+        console.log("✅ [DEBUG /api/me] Successfully inserted badges into mahasiswa_badges!");
+      }
+
+      currentXp = studentXp + extraXpGained;
+
+      const { error: xpUpdateErr } = await db
+        .from("mahasiswa_profiles")
+        .update({ xp: currentXp })
+        .eq("user_id", authUser.id);
+
+      if (xpUpdateErr) {
+        console.error("❌ [DEBUG /api/me] Failed to update profile XP:", xpUpdateErr.message);
+      } else {
+        console.log("✅ [DEBUG /api/me] Successfully updated profile XP to:", currentXp);
+      }
+    }
+
+    console.log("🔍 [DEBUG /api/me] Final formattedBadges count:", formattedBadges.length, "Total XP:", currentXp);
+
     return NextResponse.json({
       id: userRow.id,
       email: userRow.email,
@@ -93,13 +230,15 @@ export async function GET(req: NextRequest) {
       preferensiLokasi: profile.preferensi_lokasi,
       ringkasanSelf: profile.ringkasan_self,
       fotoUrl: profile.foto_url,
-      xp: (profile as any).xp ?? 0,
+      xp: currentXp,
       streakCount: (profile as any).streak_count ?? 0,
       lastActiveAt: (profile as any).last_active_at ?? null,
       reputationScore: (profile as any).reputation_score ?? 0,
       responseRate: (profile as any).response_rate ?? 0.0,
       minatKategori: (minatRows ?? []).map((r: any) => r.kategori_minat?.nama_kategori).filter(Boolean),
       skills: (skillRows ?? []).map((r: any) => r.skills?.nama_skill).filter(Boolean),
+      pengajuan: pengajuanList,
+      badges: formattedBadges,
       isProfileComplete: isComplete,
     });
   }

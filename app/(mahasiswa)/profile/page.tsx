@@ -7,6 +7,7 @@ import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from
 import { badgeList } from "@/lib/dummy-data";
 import { ModalPicker } from "@/app/daftar/components/ModalPicker";
 import { supabase } from "@/lib/supabase";
+import { getGamificationMetrics } from "@/lib/gamification";
 
 type StoredUser = {
   nama: string;
@@ -38,6 +39,101 @@ type ReferenceData = {
   kategoriMinat: string[];
 };
 
+export type DbBadge = {
+  id: number;
+  kodeBadge: string;
+  namaBadge: string;
+  deskripsi: string;
+  iconUrl: string;
+  kategori: string;
+  xpBonus: number;
+  isUnlocked: boolean;
+  unlockedAt: string | null;
+};
+
+/* ------------------------------------------------------------------ */
+/* Badge Unlock Popup Modal Component                                  */
+/* ------------------------------------------------------------------ */
+function BadgeUnlockModal({
+  badge,
+  onClose,
+}: {
+  badge: DbBadge;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-ink/70 backdrop-blur-md"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.5, y: 30 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.8, y: -20 }}
+        transition={{ type: "spring", stiffness: 350, damping: 22 }}
+        className="relative z-10 w-full max-w-sm overflow-hidden rounded-3xl border border-sky/40 bg-card p-6 text-center shadow-2xl"
+      >
+        {/* Glow & Confetti Effect Backdrop */}
+        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-sky/30 blur-2xl" />
+        <div className="pointer-events-none absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-amber-200/30 blur-2xl" />
+
+        <div className="relative z-10 flex flex-col items-center">
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.1 }}
+            className="relative mb-4 flex h-24 w-24 items-center justify-center rounded-3xl border-2 border-sky/40 bg-sky/15 p-4 shadow-xl"
+          >
+            {badge.iconUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={badge.iconUrl} alt={badge.namaBadge} className="h-full w-full object-contain" />
+            ) : (
+              <IconTrophy className="h-12 w-12 text-ocean" />
+            )}
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+              className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-ink shadow-md"
+            >
+              <IconSparkles className="h-4 h-4 text-white" />
+            </motion.div>
+          </motion.div>
+
+          <span className="rounded-full bg-sky/20 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-ocean border border-sky/30">
+            🎉 Badge Terbuka Baru!
+          </span>
+
+          <h3 className="mt-3 text-xl font-black text-ink">{badge.namaBadge}</h3>
+          <p className="mt-1.5 text-xs text-steel leading-relaxed">{badge.deskripsi}</p>
+
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-2.5"
+          >
+            <IconSparkles className="h-4 h-4 text-emerald-600" />
+            <span className="text-sm font-extrabold text-emerald-800">
+              +{badge.xpBonus} XP & Pts Didapatkan!
+            </span>
+          </motion.div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-6 w-full rounded-xl bg-ink py-3 text-xs font-bold text-paper shadow-md transition-all hover:bg-ink/90 active:scale-95"
+          >
+            Klaim & Lanjutkan
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const SEMESTER_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
@@ -398,18 +494,9 @@ function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
 /* ------------------------------------------------------------------ */
 /* Minimal Border-based Level Gamification Progress Bar Component      */
 /* ------------------------------------------------------------------ */
-function LevelGamificationCard({ level, totalPengajuan }: { level: number; totalPengajuan: number }) {
-  const animatedLevel = useSpringNumber(level);
-
-  const xpCurrent = totalPengajuan % 2;
-  const xpNext = 2;
-  const xpPercent = Math.min(100, Math.round((xpCurrent / xpNext) * 100));
-  const xpRemaining = xpNext - xpCurrent;
-
-  let levelTitle = "Novice Explorer";
-  if (level === 2) levelTitle = "Active Collaborator";
-  if (level === 3) levelTitle = "Project Master";
-  if (level >= 4) levelTitle = "Elite Architect";
+function LevelGamificationCard({ totalXp = 0 }: { totalXp: number }) {
+  const gMetrics = getGamificationMetrics(totalXp);
+  const animatedLevel = useSpringNumber(gMetrics.level);
 
   return (
     <div className="relative group cursor-default overflow-visible z-30 w-full">
@@ -421,32 +508,35 @@ function LevelGamificationCard({ level, totalPengajuan }: { level: number; total
               <IconTrophy className="w-6 h-6 text-ocean" />
             </div>
             <div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <span className="text-base font-black text-ink">
                   Level {animatedLevel}
                 </span>
-                <span className="rounded-lg border border-sky/40 bg-sky/15 px-2.5 py-0.5 text-xs font-bold text-ink">
-                  {levelTitle}
+                <span className={`rounded-lg border px-2.5 py-0.5 text-xs font-bold ${gMetrics.tierInfo.badgeColor} ${gMetrics.tierInfo.borderColor}`}>
+                  {gMetrics.tier} • {gMetrics.tierTitle}
+                </span>
+                <span className="rounded-lg bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 text-xs font-mono font-bold">
+                  {gMetrics.pts} Pts
                 </span>
               </div>
-              <p className="text-xs text-steel font-medium mt-0.5">
-                {xpRemaining > 0
-                  ? `Selesaikan ${xpRemaining} pengajuan proyek lagi untuk naik level berikutnya`
+              <p className="text-xs text-steel font-medium mt-1">
+                {gMetrics.sisaMenujuLevel > 0
+                  ? `Butuh ${gMetrics.sisaMenujuLevel} XP lagi untuk naik ke Level ${gMetrics.level + 1}`
                   : "Siap naik ke level berikutnya!"}
               </p>
             </div>
           </div>
 
-          <div className="w-full md:w-72 shrink-0">
+          <div className="w-full md:w-80 shrink-0">
             <div className="flex justify-between items-center text-xs font-bold text-ink/80 mb-1.5">
-              <span>Progres Gamifikasi</span>
-              <span className="text-primary font-mono">{xpCurrent}/{xpNext} XP ({xpPercent}%)</span>
+              <span>Progres Level {gMetrics.level} → {gMetrics.level + 1}</span>
+              <span className="text-primary font-mono">{gMetrics.xpInCurrentLevel}/{gMetrics.xpSpanForNextLevel} XP ({gMetrics.progressPercent}%)</span>
             </div>
             <div className="h-3 w-full rounded-full bg-steel/10 overflow-hidden border border-steel/20">
               <motion.div
                 className="h-full bg-primary rounded-full"
                 initial={{ width: 0 }}
-                animate={{ width: `${xpPercent}%` }}
+                animate={{ width: `${gMetrics.progressPercent}%` }}
                 transition={{ type: "spring", stiffness: 90, damping: 16 }}
               />
             </div>
@@ -1132,11 +1222,29 @@ function InfoField({ label, value, icon: Icon }: { label: string; value: string;
 /* ------------------------------------------------------------------ */
 /* Public Activity Section Component                                   */
 /* ------------------------------------------------------------------ */
-function PublicActivitySection() {
+function PublicActivitySection({
+  user,
+  userMetrics,
+  pengajuan = [],
+}: {
+  user?: StoredUser | null;
+  userMetrics?: {
+    xp: number;
+    streakCount: number;
+    reputationScore: number;
+    responseRate: number;
+  };
+  pengajuan?: Pengajuan[];
+}) {
   const [filter, setFilter] = useState<"semua" | "kolaborasi" | "skill" | "pencapaian">("semua");
 
+  const totalPengajuan = pengajuan.length;
+  const streak = userMetrics?.streakCount ?? 0;
+  const reputation = userMetrics?.reputationScore ?? 0;
+  const responseRate = userMetrics?.responseRate ?? 0;
+
   const heatmapDays = useMemo(() => {
-    const days = [];
+    const days: Array<{ date: string; count: number }> = [];
     const today = new Date();
     for (let i = 83; i >= 0; i--) {
       const d = new Date(today);
@@ -1152,59 +1260,73 @@ function PublicActivitySection() {
   }, []);
 
   const statCards = [
-    { label: "Total Kontribusi", value: 38, suffix: "", extra: "+12%", desc: "Aksi publik dalam 30 hari", icon: IconActivity },
-    { label: "Streak Keaktifan", value: 14, suffix: " Hari", extra: "", desc: "Aktif berturut-turut", icon: IconFlame },
-    { label: "Reputasi Publik", value: 480, suffix: " Pts", extra: "", desc: "Top 5% Mahasiswa Aktif", icon: IconTrophy },
-    { label: "Respon Rate", value: 98, suffix: "%", extra: "", desc: "Respon komunikasi cepat", icon: IconCheckSquare },
+    { label: "Total Kontribusi", value: totalPengajuan, suffix: " Aksi", extra: "", desc: "Total pengajuan & aktivitas", icon: IconActivity },
+    { label: "Streak Keaktifan", value: streak, suffix: " Hari", extra: "", desc: "Aktif berturut-turut", icon: IconFlame },
+    { label: "Reputasi Publik", value: reputation, suffix: " Pts", extra: "", desc: "Skor keaktifan platform", icon: IconTrophy },
+    { label: "Respon Rate", value: Math.round(responseRate), suffix: "%", extra: "", desc: "Kecepatan balasan & partisipasi", icon: IconCheckSquare },
   ];
 
-  const rawActivities = [
-    {
-      id: "act-1",
-      kategori: "kolaborasi",
-      judul: "Pengajuan Lamaran Proyek",
-      deskripsi: "Mengajukan kolaborasi Studi Kasus: Optimasi UX Aplikasi Perbankan di Nexora Digital.",
-      waktu: "Hari ini, 14:30",
-      badgeText: "Kolaborasi",
-      badgeColor: "bg-sky/15 text-ocean border-sky/40",
-    },
-    {
-      id: "act-2",
-      kategori: "skill",
-      judul: "Pembaruan Skill & Portofolio",
-      deskripsi: "Menambahkan skill baru: TypeScript, React, dan Figma ke profil publik.",
-      waktu: "Kemarin, 09:15",
-      badgeText: "Skill & Tools",
-      badgeColor: "bg-sky/15 text-ocean border-sky/40",
-    },
-    {
-      id: "act-3",
-      kategori: "pencapaian",
-      judul: "Membuka Badge Baru",
-      deskripsi: "Berhasil mendapatkan badge 'Consistent Contributor' dari keaktifan kolaborasi.",
-      waktu: "3 Hari lalu",
-      badgeText: "Pencapaian",
-      badgeColor: "bg-sky/15 text-ocean border-sky/40",
-    },
-    {
-      id: "act-4",
-      kategori: "kolaborasi",
-      judul: "Disetujui untuk Magang Frontend",
-      deskripsi: "Lamaran magang di Skyline Fintech telah dikonfirmasi dan disetujui.",
-      waktu: "5 Hari lalu",
-      badgeText: "Kolaborasi",
-      badgeColor: "bg-sky/15 text-ocean border-sky/40",
-    },
-    {
-      id: "act-5",
-      kategori: "skill",
-      judul: "Memperbarui Preferensi Kerja",
-      deskripsi: "Mengubah preferensi sistem kerja menjadi Remote & Hybrid.",
-      waktu: "1 Minggu lalu",
-      badgeText: "Profil Update",
-      badgeColor: "bg-steel/10 text-ink/80 border-steel/20",
-    },
-  ];
+  const rawActivities = useMemo(() => {
+    const list: Array<{
+      id: string;
+      kategori: "kolaborasi" | "skill" | "pencapaian";
+      judul: string;
+      deskripsi: string;
+      waktu: string;
+      badgeText: string;
+      badgeColor: string;
+    }> = [];
+
+    pengajuan.forEach((p, idx) => {
+      list.push({
+        id: `pengajuan-${p.id || idx}`,
+        kategori: "kolaborasi",
+        judul: `Pengajuan Proyek: ${p.judul}`,
+        deskripsi: `Mengirimkan pendaftaran kolaborasi ke ${p.perusahaan} dengan status '${p.status}'.`,
+        waktu: p.tanggal || "Terbaru",
+        badgeText: "Kolaborasi",
+        badgeColor: "bg-sky/15 text-ocean border-sky/40",
+      });
+    });
+
+    if (user?.skills && user.skills.length > 0) {
+      list.push({
+        id: "act-skills",
+        kategori: "skill",
+        judul: "Pembaruan Skill & Portofolio",
+        deskripsi: `Keahlian terdaftar: ${user.skills.slice(0, 4).join(", ")}${user.skills.length > 4 ? "..." : ""}.`,
+        waktu: "Terdaftar",
+        badgeText: "Skill & Tools",
+        badgeColor: "bg-sky/15 text-ocean border-sky/40",
+      });
+    }
+
+    if (totalPengajuan > 0) {
+      list.push({
+        id: "act-badge",
+        kategori: "pencapaian",
+        judul: "Level & Pencapaian Kolaborasi",
+        deskripsi: `Aktif berpartisipasi dengan total ${totalPengajuan} pengajuan kolaborasi terverifikasi.`,
+        waktu: "Aktif",
+        badgeText: "Pencapaian",
+        badgeColor: "bg-sky/15 text-ocean border-sky/40",
+      });
+    }
+
+    if (list.length === 0) {
+      list.push({
+        id: "act-empty",
+        kategori: "kolaborasi",
+        judul: "Akun Baru Terdaftar",
+        deskripsi: "Belum ada riwayat aktivitas kolaborasi publik yang tercatat.",
+        waktu: "Baru saja",
+        badgeText: "Profil Update",
+        badgeColor: "bg-steel/10 text-ink/80 border-steel/20",
+      });
+    }
+
+    return list;
+  }, [pengajuan, user?.skills, totalPengajuan]);
 
   const filteredActivities = useMemo(() => {
     if (filter === "semua") return rawActivities;
@@ -1245,47 +1367,6 @@ function PublicActivitySection() {
             </motion.div>
           );
         })}
-      </div>
-
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-steel/10 pb-4 mb-6">
-          <div>
-            <h3 className="text-base font-bold text-ink flex items-center gap-2">
-              <IconActivity className="w-5 h-5 text-ink/60" />
-              Matriks Keaktifan Publik
-            </h3>
-            <p className="text-xs text-steel mt-0.5">Catatan aktivitas harian kamu selama 12 minggu terakhir</p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-steel/70">
-            <span>Kurang</span>
-            <span className="h-3 w-3 rounded-xs bg-steel/10 inline-block" />
-            <span className="h-3 w-3 rounded-xs bg-primary/25 inline-block" />
-            <span className="h-3 w-3 rounded-xs bg-primary/60 inline-block" />
-            <span className="h-3 w-3 rounded-xs bg-primary inline-block" />
-            <span>Banyak</span>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto pb-2">
-          <div className="min-w-[640px]">
-            <div className="grid grid-flow-col grid-rows-7 gap-1.5">
-              {heatmapDays.map((item, idx) => {
-                let colorClass = "bg-steel/10 hover:bg-steel/20";
-                if (item.count === 1) colorClass = "bg-primary/25 hover:bg-primary/40";
-                if (item.count === 2) colorClass = "bg-primary/60 hover:bg-primary/80";
-                if (item.count >= 3) colorClass = "bg-primary hover:bg-primary/80";
-
-                return (
-                  <div
-                    key={idx}
-                    title={`${item.date}: ${item.count} kontribusi`}
-                    className={`h-3.5 w-3.5 rounded-sm transition-all duration-150 hover:scale-125 cursor-pointer ${colorClass}`}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6">
@@ -1355,7 +1436,6 @@ const TABS = [
   { key: "profile", label: "Detail Profil", icon: IconUser },
   { key: "activity", label: "Aktivitas Publik", icon: IconActivity },
   { key: "pencapaian", label: "Pencapaian", icon: IconTrophy },
-  { key: "pengajuan", label: "Status Kolaborasi", icon: IconRocket },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -1384,10 +1464,19 @@ export default function ProfilePage() {
   const fotoInputRef = useRef<HTMLInputElement>(null);
 
   const [pengajuan, setPengajuan] = useState<Pengajuan[]>([]);
+  const [dbBadges, setDbBadges] = useState<DbBadge[]>([]);
+  const [badgePage, setBadgePage] = useState(1);
 
   // tracks badges seen so far in THIS session only (in-memory, not persisted)
   const seenBadgeIdsRef = useRef<Set<string> | null>(null);
   const [freshBadgeIds, setFreshBadgeIds] = useState<Set<string>>(new Set());
+
+  const [userMetrics, setUserMetrics] = useState({
+    xp: 0,
+    streakCount: 0,
+    reputationScore: 0,
+    responseRate: 0,
+  });
 
   const [loadError, setLoadError] = useState("");
 
@@ -1411,6 +1500,8 @@ export default function ProfilePage() {
     }
 
     const data = await res.json();
+    console.log("🚀 [DEBUG Client Profile] GET /api/me response:", data);
+
     const parsed: StoredUser = {
       nama: data.nama,
       email: data.email,
@@ -1425,6 +1516,74 @@ export default function ProfilePage() {
       foto: data.fotoUrl,
     };
     setUser(parsed);
+    setUserMetrics({
+      xp: data.xp ?? 0,
+      streakCount: data.streakCount ?? 0,
+      reputationScore: data.reputationScore ?? 0,
+      responseRate: data.responseRate ?? 0,
+    });
+    if (Array.isArray(data.badges)) {
+      console.log("🚀 [DEBUG Client Profile] Setting dbBadges from API:", data.badges.length, "items");
+      setDbBadges(data.badges);
+    } else {
+      console.log("🚀 [DEBUG Client Profile] data.badges is NOT an array or missing:", data.badges);
+    }
+
+    let currentPengajuan: Pengajuan[] = Array.isArray(data.pengajuan) ? data.pengajuan : [];
+    console.log("🚀 [DEBUG Client Profile] API returned pengajuan count:", currentPengajuan.length);
+
+    // Jika dari API me kosong, coba query langsung supabase client dengan auth.getUser()
+    if (currentPengajuan.length === 0) {
+      const { data: authUser } = await supabase.auth.getUser();
+      console.log("🚀 [DEBUG Client Profile] Querying direct Supabase for user:", authUser?.user?.id);
+      if (authUser?.user?.id) {
+        const { data: dbData, error: dbErr } = await supabase
+          .from("pendaftaran_kolaborasi")
+          .select("id, status, tanggal_daftar, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
+          .eq("mahasiswa_id", authUser.user.id);
+
+        console.log("🚀 [DEBUG Client Profile] Direct Supabase count:", dbData?.length ?? 0, "Err:", dbErr?.message);
+
+        if (dbData && dbData.length > 0) {
+          currentPengajuan = dbData.map((item: any) => ({
+            id: item.id,
+            judul: item.kolaborasi?.judul ?? "Pengajuan Kolaborasi",
+            perusahaan: item.kolaborasi?.perusahaan?.nama_perusahaan ?? "Mitra Perusahaan",
+            status: item.status ?? "Menunggu",
+            tujuan: item.kolaborasi?.perusahaan?.nama_perusahaan ?? "Mitra Perusahaan",
+            tanggal: item.tanggal_daftar
+              ? new Date(item.tanggal_daftar).toLocaleDateString("id-ID")
+              : "-",
+          }));
+        }
+      }
+    }
+
+    // Jika masih 0 (misalnya registrasi lokal tanpa DB pendaftaran), ambil dari localStorage bridgeu_pengajuan
+    if (currentPengajuan.length === 0) {
+      const stored = localStorage.getItem("bridgeu_pengajuan");
+      console.log("🚀 [DEBUG Client Profile] Checking localStorage bridgeu_pengajuan:", stored);
+      if (stored) {
+        try {
+          const parsedLocal = JSON.parse(stored);
+          if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
+            currentPengajuan = parsedLocal.map((item: any) => ({
+              id: item.id || `local-${Math.random()}`,
+              judul: item.judul || "Proyek Kolaborasi",
+              perusahaan: item.perusahaan || "Mitra Perusahaan",
+              status: item.status || "Menunggu",
+              tujuan: item.perusahaan || "Mitra Perusahaan",
+              tanggal: item.tanggal || "Terbaru",
+            }));
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    console.log("🚀 [DEBUG Client Profile] FINAL pengajuan state count:", currentPengajuan.length);
+    setPengajuan(currentPengajuan);
     setIsLoadingUser(false);
     if (!data.universitas || !data.prodi) {
       setIsEditModalOpen(true);
@@ -1433,16 +1592,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     loadFromDatabase();
-
-    const storedPengajuan = localStorage.getItem("bridgeu_pengajuan");
-    if (storedPengajuan) {
-      try {
-        const parsedPengajuan = JSON.parse(storedPengajuan);
-        queueMicrotask(() => setPengajuan(parsedPengajuan));
-      } catch {
-        // ignore
-      }
-    }
   }, []);
 
   const handleLogout = async () => {
@@ -1538,33 +1687,36 @@ export default function ProfilePage() {
 
   const totalPengajuan = pengajuan.length;
   const diterima = pengajuan.filter((p) => p.status === "Diterima" || p.status === "Selesai").length;
-  const level = Math.floor(totalPengajuan / 2) + 1;
+  const gMetrics = getGamificationMetrics(userMetrics.xp);
+  const level = gMetrics.level;
   const earnedBadges = badgeList.filter((b) => b.check(totalPengajuan, diterima));
   const lockedBadges = badgeList.filter((b) => !b.check(totalPengajuan, diterima));
 
-  // Badge unlock detection — compares against an in-memory snapshot from
-  // the first render of this session only. Nothing is written to storage,
-  // so this naturally resets on reload/new session (see chat discussion).
+  const [activePopupBadge, setActivePopupBadge] = useState<DbBadge | null>(null);
+
+  // Badge unlock detection for DB Badges
   useEffect(() => {
-    const currentIds = new Set(earnedBadges.map((b) => b.id));
+    if (!dbBadges || dbBadges.length === 0) return;
+
+    const unlockedDbBadges = dbBadges.filter((b) => b.isUnlocked);
+    const currentUnlockedIds = new Set(unlockedDbBadges.map((b) => b.id));
 
     if (seenBadgeIdsRef.current === null) {
-      // first run this session: treat everything already earned as "old"
-      seenBadgeIdsRef.current = currentIds;
+      // Sesi pertama: simpan semua ID badge unlocked yang sudah ada
+      seenBadgeIdsRef.current = new Set(Array.from(currentUnlockedIds).map(String));
       return;
     }
 
-    const newlyUnlocked = new Set<string>();
-    currentIds.forEach((id) => {
-      if (!seenBadgeIdsRef.current!.has(id)) newlyUnlocked.add(id);
-    });
+    // Cari badge baru yang baru saja terbuka
+    const newlyUnlockedBadge = unlockedDbBadges.find(
+      (b) => !seenBadgeIdsRef.current!.has(String(b.id))
+    );
 
-    if (newlyUnlocked.size > 0) {
-      setFreshBadgeIds((prev) => new Set([...prev, ...newlyUnlocked]));
-      seenBadgeIdsRef.current = currentIds;
+    if (newlyUnlockedBadge) {
+      setActivePopupBadge(newlyUnlockedBadge);
+      seenBadgeIdsRef.current.add(String(newlyUnlockedBadge.id));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalPengajuan, diterima]);
+  }, [dbBadges]);
 
   const skillsList = user?.skills || [];
   const minatList = user?.minatKategori || [];
@@ -1605,6 +1757,12 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-clouds text-ink pb-20 overflow-x-visible">
       <AnimatePresence>
         {showSuccessModal && <SuccessModal onClose={() => setShowSuccessModal(false)} />}
+        {activePopupBadge && (
+          <BadgeUnlockModal
+            badge={activePopupBadge}
+            onClose={() => setActivePopupBadge(null)}
+          />
+        )}
       </AnimatePresence>
 
       {pendingImage && (
@@ -1686,7 +1844,10 @@ export default function ProfilePage() {
                 <div className="mt-2.5 flex flex-wrap items-center justify-center sm:justify-start gap-2">
                   <span className="rounded-lg bg-sky/15 px-2.5 py-1 text-xs font-bold text-ink border border-sky/40 flex items-center gap-1.5">
                     <IconTrophy className="w-3.5 h-3.5 text-ocean" />
-                    Lvl {level} Mahasiswa Aktif
+                    Lvl {level} • {gMetrics.tier} ({gMetrics.tierTitle})
+                  </span>
+                  <span className="rounded-lg bg-amber-100 text-amber-900 px-2.5 py-1 text-xs font-mono font-bold border border-amber-300">
+                    {gMetrics.pts} Pts
                   </span>
                   <span className="rounded-lg bg-paper px-2.5 py-1 text-xs font-semibold text-ink/80 border border-steel/20">
                     {animatedSkillsCount} Skills
@@ -1785,7 +1946,15 @@ export default function ProfilePage() {
                 {[
                   { label: "Universitas", value: user.universitas || "—", icon: IconUser },
                   { label: "Program Studi", value: user.prodi || "—", icon: IconClipboard },
-                  { label: "Semester", value: user.semester ? `Semester ${user.semester}` : "—", icon: IconTarget },
+                  {
+                    label: "Semester",
+                    value: user.semester
+                      ? user.semester.toString().toLowerCase().includes("semester")
+                        ? user.semester
+                        : `Semester ${user.semester}`
+                      : "—",
+                    icon: IconTarget,
+                  },
                   { label: "Tipe Kolaborasi", value: user.preferensiTipe || "Semua", icon: IconRocket },
                 ].map((f) => {
                   const FieldIcon = f.icon;
@@ -1883,7 +2052,7 @@ export default function ProfilePage() {
           {/* Right Column Feed */}
           <div className="lg:col-span-8 space-y-6">
             <RevealCard delay={0.05} className="z-30 relative overflow-visible">
-              <LevelGamificationCard level={level} totalPengajuan={totalPengajuan} />
+              <LevelGamificationCard totalXp={userMetrics.xp} />
             </RevealCard>
 
             <div className="relative overflow-hidden">
@@ -1914,7 +2083,11 @@ export default function ProfilePage() {
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 border-t border-steel/10 pt-5">
                           <InfoField label="Universitas" value={user.universitas || ""} icon={IconPin} />
                           <InfoField label="Program Studi" value={user.prodi || ""} icon={IconClipboard} />
-                          <InfoField label="Semester" value={user.semester ? `Semester ${user.semester}` : ""} icon={IconTarget} />
+                          <InfoField
+                            label="Semester"
+                            value={user.semester ? (user.semester.toString().toLowerCase().includes("semester") ? user.semester : `Semester ${user.semester}`) : ""}
+                            icon={IconTarget}
+                          />
                         </div>
 
                         <div className="border-t border-steel/10 pt-5">
@@ -1964,100 +2137,122 @@ export default function ProfilePage() {
                   )}
 
                   {/* TAB 2: AKTIVITAS PUBLIK */}
-                  {activeTab === "activity" && <PublicActivitySection />}
+                  {activeTab === "activity" && (
+                    <PublicActivitySection
+                      user={user}
+                      userMetrics={userMetrics}
+                      pengajuan={pengajuan}
+                    />
+                  )}
 
                   {/* TAB 3: PENCAPAIAN */}
                   {activeTab === "pencapaian" && (
                     <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-                      <h3 className="text-base font-bold text-ink border-b border-steel/10 pb-4 mb-6 flex items-center gap-2">
-                        <IconTrophy className="w-5 h-5 text-ink/60" />
-                        Pencapaian & Badge Profil
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        {earnedBadges.map((b) => {
-                          const isFresh = freshBadgeIds.has(b.id);
-                          return (
-                            <motion.div
-                              key={b.id}
-                              initial={isFresh ? { opacity: 0, scale: 0.6 } : false}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={
-                                isFresh
-                                  ? { type: "spring", stiffness: 300, damping: 14 }
-                                  : { duration: 0 }
-                              }
-                              onAnimationComplete={() => {
-                                if (isFresh) {
-                                  setFreshBadgeIds((prev) => {
-                                    const next = new Set(prev);
-                                    next.delete(b.id);
-                                    return next;
-                                  });
-                                }
-                              }}
-                              className="group rounded-xl border border-sky/40 bg-sky/15 p-4 transition-colors duration-200 hover:border-sky/60"
-                            >
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-bold text-ink flex items-center gap-2">
-                                  <IconTrophy className="w-4 h-4 text-ocean group-hover:scale-110 transition-transform" />
-                                  {b.nama}
-                                </p>
-                                <IconSparkles className="w-4 h-4 text-ocean opacity-60 group-hover:opacity-100 transition-opacity" />
-                              </div>
-                              <p className="mt-2 text-xs text-steel leading-relaxed">{b.deskripsi}</p>
-                              <span className="mt-3 inline-flex items-center gap-1 rounded-md bg-sky/40 px-2 py-0.5 text-[10px] font-bold text-ocean">
-                                <IconCheck className="w-3 h-3 text-ocean" />
-                                Unlocked
-                              </span>
-                            </motion.div>
-                          );
-                        })}
-                        {lockedBadges.map((b) => (
-                          <div key={b.id} className="rounded-xl border border-border bg-card p-4 opacity-60">
-                            <p className="text-sm font-bold text-steel flex items-center gap-2">
-                              <IconLock className="w-4 h-4 text-steel" />
-                              {b.nama}
-                            </p>
-                            <p className="mt-1 text-xs text-steel/70 leading-relaxed">{b.deskripsi}</p>
-                            <span className="mt-3 inline-block rounded-md bg-steel/20 px-2 py-0.5 text-[10px] font-medium text-steel">
-                              Terkunci
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* TAB 4: STATUS KOLABORASI */}
-                  {activeTab === "pengajuan" && (
-                    <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-                      <div className="flex items-center justify-between border-b border-steel/10 pb-4 mb-6">
-                        <h3 className="text-base font-bold text-ink flex items-center gap-2">
-                          <IconRocket className="w-5 h-5 text-ink/60" />
-                          Riwayat Kolaborasi
-                        </h3>
-                        <Link href="/kolaborasi" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-                          Cari Peluang →
-                        </Link>
-                      </div>
-
-                      {pengajuan.length > 0 ? (
-                        <div className="divide-y divide-steel/10">
-                          {pengajuan.map((p) => (
-                            <div key={p.id} className="py-4 flex items-center justify-between hover:bg-paper px-3 rounded-xl transition">
-                              <div>
-                                <p className="text-sm font-bold text-ink">{p.judul}</p>
-                                <p className="text-xs text-steel">{p.perusahaan} • {p.tanggal}</p>
-                              </div>
-                              <span className="rounded-full bg-steel/10 px-3 py-1 text-xs font-semibold text-ink/80">
-                                {p.status}
-                              </span>
-                            </div>
-                          ))}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-steel/10 pb-4 mb-6 gap-3">
+                        <div>
+                          <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                            <IconTrophy className="w-5 h-5 text-ink/60" />
+                            Pencapaian & Badge Profil
+                          </h3>
+                          <p className="text-xs text-steel mt-0.5">
+                            Total {dbBadges.length} Badge • {dbBadges.filter(b => b.isUnlocked).length} Unlocked
+                          </p>
                         </div>
-                      ) : (
-                        <p className="text-xs text-steel/70 text-center py-8">Belum ada riwayat kolaborasi.</p>
-                      )}
+                      </div>
+
+                      {(() => {
+                        const BADGES_PER_PAGE = 10;
+                        const totalBadgePages = Math.ceil(dbBadges.length / BADGES_PER_PAGE) || 1;
+                        const currentPageBadges = dbBadges.slice((badgePage - 1) * BADGES_PER_PAGE, badgePage * BADGES_PER_PAGE);
+
+                        return (
+                          <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                              {currentPageBadges.length > 0
+                                ? currentPageBadges.map((b) => (
+                                    <div
+                                      key={b.id}
+                                      className={`group rounded-xl border p-4 transition-all duration-200 ${
+                                        b.isUnlocked
+                                          ? "border-sky/40 bg-sky/15 hover:border-sky/60"
+                                          : "border-border bg-card opacity-60"
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2.5">
+                                          {b.iconUrl ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img src={b.iconUrl} alt={b.namaBadge} className="w-7 h-7 object-contain" />
+                                          ) : (
+                                            <IconTrophy className={`w-4 h-4 ${b.isUnlocked ? "text-ocean" : "text-steel"}`} />
+                                          )}
+                                          <p className="text-xs font-bold text-ink">{b.namaBadge}</p>
+                                        </div>
+                                        {b.isUnlocked && (
+                                          <span className="font-mono text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">
+                                            +{b.xpBonus} XP
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="mt-2 text-[11px] text-steel leading-relaxed">{b.deskripsi}</p>
+                                      <div className="mt-3 flex items-center justify-between">
+                                        <span className="text-[9px] font-mono font-medium text-steel/70">{b.kategori}</span>
+                                        {b.isUnlocked ? (
+                                          <span className="inline-flex items-center gap-1 rounded-md bg-sky/40 px-2 py-0.5 text-[10px] font-bold text-ocean">
+                                            <IconCheck className="w-3 h-3 text-ocean" />
+                                            Unlocked
+                                          </span>
+                                        ) : (
+                                          <span className="inline-block rounded-md bg-steel/20 px-2 py-0.5 text-[10px] font-medium text-steel">
+                                            Terkunci
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))
+                                : earnedBadges.map((b) => (
+                                    <div key={b.id} className="group rounded-xl border border-sky/40 bg-sky/15 p-4">
+                                      <p className="text-sm font-bold text-ink flex items-center gap-2">
+                                        <IconTrophy className="w-4 h-4 text-ocean" />
+                                        {b.nama}
+                                      </p>
+                                      <p className="mt-2 text-xs text-steel leading-relaxed">{b.deskripsi}</p>
+                                      <span className="mt-3 inline-flex items-center gap-1 rounded-md bg-sky/40 px-2 py-0.5 text-[10px] font-bold text-ocean">
+                                        <IconCheck className="w-3 h-3 text-ocean" />
+                                        Unlocked
+                                      </span>
+                                    </div>
+                                  ))}
+                            </div>
+
+                            {totalBadgePages > 1 && (
+                              <div className="mt-6 flex items-center justify-between border-t border-steel/10 pt-4">
+                                <p className="text-xs text-steel font-medium">
+                                  Halaman <span className="font-bold text-ink">{badgePage}</span> dari <span className="font-bold text-ink">{totalBadgePages}</span>
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    disabled={badgePage <= 1}
+                                    onClick={() => setBadgePage((prev) => Math.max(1, prev - 1))}
+                                    className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-ink disabled:opacity-40 hover:bg-paper transition"
+                                  >
+                                    ← Sebelum
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={badgePage >= totalBadgePages}
+                                    onClick={() => setBadgePage((prev) => Math.min(totalBadgePages, prev + 1))}
+                                    className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-ink disabled:opacity-40 hover:bg-paper transition"
+                                  >
+                                    Selanjutnya →
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                 </motion.div>
