@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "BridgeU — Portal Mahasiswa",
+  title: "BridgeU | Portal Mahasiswa",
   description:
     "Platform penghubung mahasiswa dan perusahaan untuk kolaborasi akademik, magang, dan ekspansi portofolio.",
 };

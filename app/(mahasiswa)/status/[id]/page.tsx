@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
@@ -22,7 +22,9 @@ type StatusDetail = {
   tanggalPengumpulan?: string;
 };
 
-function IconCheck({ className = "w-4 h-4 text-emerald-600" }: { className?: string }) {
+type Tab = "timeline" | "pengumpulan" | "riwayat";
+
+function IconCheck({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12" />
@@ -30,38 +32,111 @@ function IconCheck({ className = "w-4 h-4 text-emerald-600" }: { className?: str
   );
 }
 
-function IconClock({ className = "w-4 h-4 text-amber-600" }: { className?: string }) {
+function IconLink({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
+      <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.41 1.41" />
+      <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.41-1.41" />
     </svg>
   );
 }
 
-function IconUpload({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
+function IconMessage({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
+}
+
+function IconSend({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  );
+}
+
+function IconX({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function IconFile({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  );
+}
+
+function statusMeta(status: StatusDetail["status"]) {
+  switch (status) {
+    case "Evaluasi":
+      return { label: "Sedang Dievaluasi", pill: "bg-amber-100 text-amber-800 border border-amber-300" };
+    case "Revisi":
+      return { label: "Perlu Revisi", pill: "bg-rose-100 text-rose-800 border border-rose-300" };
+    case "Selesai":
+      return { label: "Selesai", pill: "bg-emerald-100 text-emerald-800 border border-emerald-300" };
+    case "Diterima":
+    case "Diproses":
+      return { label: "Pelaksanaan Aktif", pill: "bg-blue-100 text-blue-800 border border-blue-300" };
+    case "Ditolak":
+      return { label: "Ditolak", pill: "bg-rose-100 text-rose-800 border border-rose-300" };
+    default:
+      return { label: "Menunggu Review", pill: "bg-steel/15 text-steel border border-steel/30" };
+  }
 }
 
 export default function StatusDetailPage() {
   const { id } = useParams();
-  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<StatusDetail | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("timeline");
 
   // Form Pengumpulan Hasil Pengerjaan
   const [urlHasil, setUrlHasil] = useState("");
   const [catatanHasil, setCatatanHasil] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{ from: "me" | "mitra"; text: string; time: string }[]>([
+    { from: "mitra", text: "Halo! Ada yang bisa kami bantu terkait pengerjaan proyek ini?", time: "10:02" },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [draftSaved, setDraftSaved] = useState(false);
   const [riwayatList, setRiwayatList] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!id) return;
+    const draft = localStorage.getItem(`bridgeu_draft_${id}`);
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        if (parsed.urlHasil) setUrlHasil(parsed.urlHasil);
+        if (parsed.catatanHasil) setCatatanHasil(parsed.catatanHasil);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [id]);
+
+  const handleSaveDraft = () => {
+    if (!id) return;
+    localStorage.setItem(
+      `bridgeu_draft_${id}`,
+      JSON.stringify({ urlHasil, catatanHasil })
+    );
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 2000);
+  };
 
   useEffect(() => {
     async function fetchDetail() {
@@ -180,6 +255,15 @@ export default function StatusDetailPage() {
     fetchDetail();
   }, [id]);
 
+  const handleSendChat = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    const now = new Date();
+    const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+    setChatMessages((prev) => [...prev, { from: "me", text: chatInput.trim(), time }]);
+    setChatInput("");
+  };
+
   const handleSubmitHasil = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!urlHasil.trim()) return;
@@ -270,7 +354,9 @@ export default function StatusDetailPage() {
     );
 
     setSubmitting(false);
+    if (id) localStorage.removeItem(`bridgeu_draft_${id}`);
     setSubmitSuccess(true);
+    setActiveTab("riwayat");
   };
 
   if (loading) {
@@ -301,367 +387,478 @@ export default function StatusDetailPage() {
     );
   }
 
-  // Tentukan langkah-langkah timeline pengerjaan proyek secara eksplisit
   const isSubmitted = Boolean(detail.tanggalDaftar);
   const isAccepted = detail.status === "Diterima" || detail.status === "Diproses" || detail.status === "Evaluasi" || detail.status === "Revisi" || detail.status === "Selesai";
   const isCompleted = detail.status === "Selesai";
   const isRejected = detail.status === "Ditolak";
   const isPending = detail.status === "Menunggu";
+  const meta = statusMeta(detail.status);
 
   const timelineSteps = [
     {
-      title: "1. Pendaftaran Berhasil Terdaftar",
+      title: "Pendaftaran Berhasil",
       date: detail.tanggalDaftar,
       desc: `Formulir permohonan berhasil terdaftar pada ${detail.tanggalDaftar}.`,
-      active: isSubmitted,
       done: true,
     },
     {
-      title: "2. Verifikasi & Seleksi Mitra Perusahaan",
+      title: "Verifikasi & Seleksi",
       date: isAccepted || isRejected ? detail.tanggalDaftar : "Dalam Proses",
       desc: isRejected
         ? "Mitra perusahaan belum dapat menerima permohonan kolaborasi saat ini."
         : isAccepted
-        ? `Permohonan telah DISETUJUI oleh ${detail.perusahaan}. Kamu dapat mulai mengerjakan proyek!`
+        ? `Permohonan telah disetujui oleh ${detail.perusahaan}. Kamu dapat mulai mengerjakan proyek.`
         : "Mitra perusahaan sedang mempelajari kesesuaian data diri dan motivasi kamu.",
-      active: isSubmitted,
       done: isAccepted,
       error: isRejected,
     },
     {
-      title: "3. Pelaksanaan Pengerjaan & Iterasi Pengumpulan Karya",
-      date: detail.tanggalPengumpulan || "Menunggu Pengumpulan",
+      title: "Pelaksanaan",
+      date: detail.batasWaktu !== "-" ? `Batas: ${detail.batasWaktu}` : "Sedang Berlangsung",
       desc: detail.status === "Evaluasi"
-        ? "Hasil pengerjaan kamu sedang DITINJAU & DIEVALUASI oleh mitra perusahaan."
+        ? "Hasil pengerjaan kamu sedang ditinjau dan dievaluasi oleh mitra perusahaan."
         : detail.status === "Revisi"
-        ? "Mitra perusahaan memberikan masukan/kritik. Silakan lakukan perbaikan & kumpulkan revisi karya!"
+        ? "Mitra perusahaan memberikan masukan. Silakan lakukan perbaikan dan kumpulkan revisi karya."
         : isCompleted
         ? "Hasil pengerjaan karya telah diperiksa dan disetujui akhir oleh mitra perusahaan."
         : isAccepted
-        ? detail.urlHasilKolaborasi
-          ? "Kamu telah mengirimkan karya. Kamu tetap bisa mengunggah revisi baru sesuai kritik/evaluasi mitra."
-          : "Tahap pengerjaan proyek aktif. Unggah link hasil karya kamu pada formulir di bawah."
-        : "Area pengerjaan & pengumpulan karya akan terbuka setelah permohonan disetujui mitra.",
-      active: isAccepted,
-      done: isCompleted || Boolean(detail.urlHasilKolaborasi),
-      error: detail.status === "Revisi",
+        ? "Tahap pengerjaan proyek aktif. Unggah hasil karya kamu di tab Pengumpulan Karya."
+        : "Area pengerjaan akan terbuka setelah permohonan disetujui mitra.",
+      done: isCompleted,
+      active: isAccepted && !isCompleted,
     },
     {
-      title: "4. Evaluasi Akhir & Penyelesaian Proyek",
-      date: isCompleted ? detail.tanggalPengumpulan || "Selesai" : "Tahap Akhir",
+      title: "Evaluasi Akhir",
+      date: isCompleted ? (detail.tanggalPengumpulan || "Selesai") : "Menunggu Pelaksanaan Selesai",
       desc: isCompleted
-        ? "Selamat! Kolaborasi telah sukses dilaksanakan dan poin reputasi telah diperbarui."
+        ? "Kolaborasi telah sukses dilaksanakan dan poin reputasi telah diperbarui."
         : "Penilaian akhir oleh mitra perusahaan setelah karya disetujui.",
-      active: isCompleted,
       done: isCompleted,
     },
   ];
 
+  const currentStepIndex = isCompleted ? 4 : isRejected ? 2 : detail.status === "Evaluasi" || detail.status === "Revisi" ? 3 : isAccepted ? 3 : isSubmitted ? 2 : 1;
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "timeline", label: "Timeline & Detail" },
+    { key: "pengumpulan", label: "Pengumpulan Karya" },
+    { key: "riwayat", label: `Riwayat & Evaluasi${riwayatList.length ? ` (${riwayatList.length})` : ""}` },
+  ];
+
   return (
-    <main className="min-h-screen bg-paper pt-24 pb-32 text-ink font-sans">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 space-y-6">
-        {/* Tombol Kembali */}
-        <button
-          onClick={() => router.push("/status")}
-          className="inline-flex items-center gap-2 font-mono text-xs text-steel hover:text-bridge-gold transition font-bold"
-        >
-          ← Kembali ke Seluruh Status Pengajuan
-        </button>
+    <main className="min-h-screen bg-paper pt-24 pb-16 text-ink font-sans">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 space-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5 items-stretch">
+          {/* SIDEBAR */}
+          <aside className="lg:sticky lg:top-24 space-y-4 flex flex-col">
+            <div className="rounded-3xl border border-steel/15 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+              <div className="h-16 bg-gradient-to-br from-ink via-ink to-steel" />
+              <div className="p-6 -mt-8 space-y-4">
+                <span className={`inline-block rounded-full px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${meta.pill}`}>
+                  {meta.label}
+                </span>
 
-        {/* HEADER PROYEK DETAIL */}
-        <div className="rounded-3xl border border-steel/15 bg-white p-6 sm:p-8 shadow-sm space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel/10 pb-4">
-            <div>
-              <span className="font-mono text-xs font-bold text-bridge-gold uppercase tracking-wider block">
-                {detail.perusahaan}
-              </span>
-              <h1 className="font-display text-2xl sm:text-3xl font-black text-ink mt-0.5">
-                {detail.judul}
-              </h1>
+                <div>
+                  <h1 className="font-display text-xl font-black text-ink leading-tight">
+                    {detail.judul}
+                  </h1>
+                  <p className="font-mono text-xs text-amber-700 font-bold mt-1">
+                    {detail.perusahaan}
+                  </p>
+                </div>
+
+                {detail.deskripsi && (
+                  <div>
+                    <span className="font-mono text-[10px] uppercase font-bold text-steel block mb-1">Deskripsi Proyek</span>
+                    <p className="text-xs text-steel leading-relaxed">{detail.deskripsi}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-steel/10 font-mono text-[11px]">
+                  <div>
+                    <span className="text-steel block">Tipe Proyek</span>
+                    <strong className="text-ink">{detail.tipe}</strong>
+                  </div>
+                  <div>
+                    <span className="text-steel block">Tanggal Daftar</span>
+                    <strong className="text-ink">{detail.tanggalDaftar}</strong>
+                  </div>
+                  {detail.batasWaktu !== "-" && (
+                    <div className="col-span-2">
+                      <span className="text-steel block">Batas Pelaksanaan</span>
+                      <strong className="text-ink">{detail.batasWaktu}</strong>
+                    </div>
+                  )}
+                </div>
+
+                <div className="font-mono text-[11px] pt-2 border-t border-steel/10">
+                  <span className="text-steel block">Tautan Portofolio</span>
+                  {detail.urlPortofolioDokumen ? (
+                    <a href={detail.urlPortofolioDokumen} target="_blank" rel="noreferrer" className="text-bridge-gold underline font-bold truncate block">
+                      Lihat Portofolio →
+                    </a>
+                  ) : (
+                    <span className="text-steel">—</span>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs text-steel">Status:</span>
-              <span className={`rounded-full px-4 py-1 font-mono text-xs font-bold uppercase tracking-wider ${
-                detail.status === "Evaluasi" ? "bg-purple-100 text-purple-800 border border-purple-300"
-                : detail.status === "Revisi" ? "bg-orange-100 text-orange-800 border border-orange-300"
-                : isCompleted ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                : isAccepted ? "bg-blue-100 text-blue-800 border border-blue-300"
-                : isRejected ? "bg-rose-100 text-rose-800 border border-rose-300"
-                : "bg-amber-100 text-amber-800 border border-amber-300"
-              }`}>
-                {detail.status === "Evaluasi" ? "Sedang Dievaluasi" : detail.status === "Revisi" ? "Perlu Revisi" : detail.status}
-              </span>
+            {/* CTA klarifikasi */}
+            <div className="rounded-3xl border border-steel/15 bg-white shadow-sm hover:shadow-md transition-shadow p-6 space-y-3 text-center flex-1 flex flex-col justify-center">
+              <IconMessage className="w-5 h-5 text-steel mx-auto" />
+              <p className="text-xs text-steel">Butuh klarifikasi lebih lanjut dengan mitra?</p>
+              <button
+                onClick={() => setChatOpen(true)}
+                className="w-full rounded-2xl border border-ink/20 bg-paper px-4 py-2.5 font-mono text-xs font-bold text-ink hover:bg-ink hover:text-paper transition"
+              >
+                Kirim Pesan
+              </button>
             </div>
-          </div>
+          </aside>
 
-          {/* DESKRIPSI & INFORMASI RINGKAS */}
-          {detail.deskripsi && (
-            <div className="text-xs text-steel leading-relaxed bg-paper/60 p-4 rounded-2xl border border-steel/10">
-              <span className="font-bold text-ink uppercase text-[10px] block mb-1">Deskripsi Proyek:</span>
-              <p>{detail.deskripsi}</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs pt-1">
-            <div>
-              <span className="text-steel/70 text-[10px] uppercase block font-semibold">Tipe Proyek:</span>
-              <strong className="text-ink">{detail.tipe}</strong>
-            </div>
-            <div>
-              <span className="text-steel/70 text-[10px] uppercase block font-semibold">Tanggal Mendaftar:</span>
-              <strong className="text-ink">{detail.tanggalDaftar}</strong>
-            </div>
-            <div>
-              <span className="text-steel/70 text-[10px] uppercase block font-semibold">Portofolio Pendaftaran:</span>
-              {detail.urlPortofolioDokumen ? (
-                <a href={detail.urlPortofolioDokumen} target="_blank" rel="noreferrer" className="text-bridge-gold underline font-semibold truncate block">
-                  Lihat Tautan Portofolio →
-                </a>
-              ) : (
-                <span className="text-steel">—</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* TIMELINE RINCI PENGERJAAN PROYEK */}
-        <div className="rounded-3xl border border-steel/15 bg-white p-6 sm:p-8 shadow-md space-y-6">
-          <div className="border-b border-steel/10 pb-4">
-            <h2 className="font-display text-lg font-bold text-ink">
-              Timeline Progress &amp; Tahapan Kolaborasi
-            </h2>
-            <p className="text-xs text-steel">
-              Rincian perjalanan status permohonan dan progres pengerjaan karya kolaborasi.
-            </p>
-          </div>
-
-          <div className="relative pl-6 space-y-8 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-steel/20">
-            {timelineSteps.map((step, idx) => {
-              return (
-                <div key={idx} className="relative flex items-start gap-4">
-                  {/* Step Indicator */}
-                  <span
-                    className={`absolute -left-6 flex h-5 w-5 items-center justify-center rounded-full border-2 text-[10px] font-bold ${
-                      step.error
-                        ? "bg-rose-100 border-rose-500 text-rose-700"
-                        : step.done
-                        ? "bg-emerald-100 border-emerald-500 text-emerald-700"
-                        : step.active
-                        ? "bg-amber-100 border-amber-500 text-amber-800"
-                        : "bg-paper border-steel/30 text-steel/50"
+          {/* MAIN CONTENT */}
+          <div className="space-y-5 flex flex-col">
+            {/* Tabs */}
+            <div className="rounded-3xl border border-steel/15 bg-white shadow-sm hover:shadow-md transition-shadow flex-1 flex flex-col">
+              <div className="flex border-b border-steel/10 px-2">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`px-4 py-4 font-mono text-xs font-bold transition border-b-2 -mb-px ${
+                      activeTab === tab.key
+                        ? "border-bridge-gold text-ink"
+                        : "border-transparent text-steel/60 hover:text-ink"
                     }`}
                   >
-                    {step.error ? "✕" : step.done ? "✓" : idx + 1}
-                  </span>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-                  <div className="space-y-1 w-full">
-                    <div className="flex items-center justify-between">
-                      <h3 className={`font-display text-sm font-bold ${step.error ? "text-rose-600" : step.done ? "text-emerald-800" : step.active ? "text-ink" : "text-steel/60"}`}>
-                        {step.title}
-                      </h3>
-                      <span className="font-mono text-[10px] text-steel/60">{step.date}</span>
+              <div className="p-6 sm:p-8 flex-1">
+                {/* TAB: TIMELINE & DETAIL */}
+                {activeTab === "timeline" && (
+                  <div className="space-y-6">
+                    <div className="relative pl-7 space-y-7 before:absolute before:left-3 before:top-3 before:bottom-3 before:w-0.5 before:bg-steel/15">
+                      {timelineSteps.map((step, idx) => {
+                        const stepNum = idx + 1;
+                        const isDone = step.done;
+                        const isActive = !isDone && stepNum === currentStepIndex;
+                        return (
+                          <div key={idx} className="relative flex items-start gap-4">
+                            <span
+                              className={`absolute -left-7 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
+                                step.error
+                                  ? "bg-rose-100 text-rose-700 border-2 border-rose-400"
+                                  : isDone
+                                  ? "bg-ink text-paper"
+                                  : isActive
+                                  ? "bg-bridge-gold/20 text-bridge-gold border-2 border-bridge-gold"
+                                  : "bg-paper text-steel/50 border-2 border-steel/25"
+                              }`}
+                            >
+                              {step.error ? "✕" : isDone ? <IconCheck className="w-3.5 h-3.5" /> : stepNum}
+                            </span>
+                            <div className="space-y-1 w-full">
+                              <div className="flex items-center justify-between flex-wrap gap-1">
+                                <h3 className={`font-display text-sm font-bold ${step.error ? "text-rose-600" : isDone ? "text-ink" : isActive ? "text-ink" : "text-steel/50"}`}>
+                                  {step.title}
+                                </h3>
+                                <span className="font-mono text-[10px] text-steel/60">{step.date}</span>
+                              </div>
+                              <p className="text-xs text-steel leading-relaxed">{step.desc}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <p className="text-xs text-steel leading-relaxed">
-                      {step.desc}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* REVIU / CATATAN EVALUASI PERUSAHAAN (JIKA ADA REVISI / KRITIK) */}
-        {detail.catatanPerusahaan && (
-          <div className="rounded-3xl border border-amber-300 bg-amber-50/60 p-6 space-y-2">
-            <span className="font-mono text-[10px] uppercase font-bold text-amber-800 tracking-wider">
-              Evaluasi &amp; Catatan Perusahaan
-            </span>
-            <p className="text-xs text-amber-950 font-medium leading-relaxed">
-              &ldquo;{detail.catatanPerusahaan}&rdquo;
-            </p>
-          </div>
-        )}
-
-        {/* SECTION FORM PENGUMPULAN HASIL KARYA (HANYA DITAMPILKAN JIKA DITERIMA / DIPROSES / SELESAI) */}
-        {!isPending && !isRejected ? (
-          isCompleted ? (
-            <div className="rounded-3xl border border-emerald-300 bg-emerald-50/70 p-6 sm:p-8 space-y-3 shadow-xs text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 border border-emerald-300">
-                <IconCheck className="h-6 w-6 text-emerald-700" />
-              </div>
-              <h2 className="font-display text-xl font-bold text-emerald-950">
-                Proyek Kolaborasi Telah Selesai &amp; Disetujui
-              </h2>
-              <p className="text-xs text-emerald-900 max-w-lg mx-auto leading-relaxed">
-                Mitra perusahaan telah menyetujui hasil akhir pengerjaan karya kamu. Pengumpulan tugas telah ditutup dan poin reputasi kamu telah ditambahkan.
-              </p>
-              {detail.catatanPerusahaan && (
-                <div className="mt-4 pt-3 border-t border-emerald-200 text-left bg-white/80 p-4 rounded-2xl border font-mono text-xs">
-                  <span className="text-[10px] text-emerald-800 font-bold uppercase block mb-1">Catatan Evaluasi Akhir Perusahaan:</span>
-                  <p className="font-sans text-xs text-ink italic">&ldquo;{detail.catatanPerusahaan}&rdquo;</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-3xl border-2 border-bridge-gold/40 bg-white p-6 sm:p-8 shadow-lg space-y-6">
-              <div className="border-b border-steel/10 pb-4 space-y-1">
-                <span className="font-mono text-[10px] uppercase font-bold text-bridge-gold bg-bridge-gold/15 px-3 py-1 rounded-full border border-bridge-gold/30">
-                  Pengumpulan &amp; Iterasi Karya
-                </span>
-                <h2 className="font-display text-xl font-bold text-ink mt-2">
-                  {detail.urlHasilKolaborasi ? "Kumpulkan Revisi / Perbarui Hasil Karya" : "Unggah Hasil Pengerjaan Kolaborasi"}
-                </h2>
-                <p className="text-xs text-steel">
-                  Kamu dapat mengunggah link hasil karya (GitHub, Drive, Figma) dan memperbaruinya berkali-kali sesuai masukan/kritik perusahaan.
-                </p>
-              </div>
-
-              {submitSuccess && (
-                <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-xs text-emerald-900 flex items-center gap-3">
-                  <IconCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-                  <span>Hasil karya / revisi pengerjaan kolaborasi kamu berhasil dikirim ke mitra perusahaan!</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmitHasil} className="space-y-5">
-                <div>
-                  <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5">
-                    URL Link Hasil Kolaborasi (GitHub / Google Drive / Figma) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={urlHasil}
-                    onChange={(e) => setUrlHasil(e.target.value)}
-                    placeholder="https://github.com/username/project-hasil atau https://drive.google.com/..."
-                    className="w-full rounded-2xl border border-steel/20 bg-paper px-4 py-3 text-sm text-ink outline-none focus:border-ink transition font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5">
-                    Catatan Revisi / Penjelasan Pengumpulan
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={catatanHasil}
-                    onChange={(e) => setCatatanHasil(e.target.value)}
-                    placeholder="Tuliskan catatan perbaikan atau penjelasan karya baru yang kamu serahkan..."
-                    className="w-full rounded-2xl border border-steel/20 bg-paper px-4 py-3 text-sm text-ink outline-none focus:border-ink transition font-medium"
-                  />
-                </div>
-
-                {detail.urlHasilKolaborasi && (
-                  <div className="rounded-2xl border border-steel/15 bg-steel/5 p-4 text-xs space-y-1">
-                    <span className="font-mono text-[10px] uppercase font-bold text-steel">Pengumpulan Terakhir Terdaftar:</span>
-                    <a href={detail.urlHasilKolaborasi} target="_blank" rel="noreferrer" className="block text-bridge-gold font-bold underline truncate">
-                      {detail.urlHasilKolaborasi}
-                    </a>
-                    {detail.tanggalPengumpulan && (
-                      <p className="text-[10px] text-steel">Dikirim pada: {detail.tanggalPengumpulan}</p>
+                    {detail.catatanPerusahaan && (
+                      <div className="rounded-2xl border border-bridge-gold/30 bg-bridge-gold/5 p-5 space-y-2">
+                        <span className="font-mono text-[10px] uppercase font-bold text-bridge-gold tracking-wider">
+                          Evaluasi & Catatan Perusahaan
+                        </span>
+                        <p className="text-xs text-ink font-medium leading-relaxed italic">
+                          &ldquo;{detail.catatanPerusahaan}&rdquo;
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}
 
-                <div className="pt-2 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={submitting || !urlHasil.trim()}
-                    className="rounded-2xl bg-bridge-gold px-8 py-3 font-mono text-xs font-bold text-ink hover:bg-bridge-gold/90 transition shadow-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <IconUpload className="w-4 h-4 text-ink" />
-                    {submitting ? "Mengirim..." : detail.urlHasilKolaborasi ? "Kirim Revisi Karya Baru →" : "Serahkan Hasil Kolaborasi →"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )
-        ) : isPending ? (
-          <div className="rounded-3xl border border-amber-200 bg-amber-50/50 p-6 text-center space-y-2">
-            <span className="font-mono text-[11px] font-bold text-amber-800 uppercase tracking-wider">
-              Status Pendaftaran: Menunggu Review
-            </span>
-            <p className="text-xs text-steel max-w-lg mx-auto">
-              Area pengumpulan karya akan terbuka secara otomatis setelah pendaftaran kamu disetujui oleh pihak perusahaan.
-            </p>
-          </div>
-        ) : null}
-
-        {/* SECTION DAFTAR RIWAYAT PENGUMPULAN KARYA (LOG ITERASI BERKALI-KALI) */}
-        {riwayatList.length > 0 && (
-          <div className="rounded-3xl border border-steel/15 bg-white p-6 sm:p-8 shadow-md space-y-6">
-            <div className="border-b border-steel/10 pb-4 flex items-center justify-between">
-              <div>
-                <h2 className="font-display text-lg font-bold text-ink">
-                  Riwayat Iterasi Pengumpulan Karya ({riwayatList.length})
-                </h2>
-                <p className="text-xs text-steel">
-                  Seluruh versi tautan hasil karya dan catatan evaluasi/kritik dari perusahaan mitra.
-                </p>
-              </div>
-              <span className="font-mono text-[10px] uppercase font-bold text-ink bg-steel/10 px-3 py-1 rounded-full">
-                Audit Log
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              {riwayatList.map((item, idx) => {
-                const itemDate = item.created_at
-                  ? new Date(item.created_at).toLocaleDateString("id-ID", {
-                      day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
-                    })
-                  : "-";
-
-                return (
-                  <div
-                    key={item.id || idx}
-                    className="rounded-2xl border border-steel/15 bg-steel/5 p-5 space-y-3 font-mono text-xs"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel/10 pb-2">
-                      <span className="font-bold text-ink text-sm">
-                        Versi #{item.versi || riwayatList.length - idx}
-                      </span>
-                      <span className="text-[11px] text-steel">{itemDate}</span>
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-steel/70 block">Tautan Karya:</span>
-                      <a
-                        href={item.url_hasil}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-bridge-gold font-bold underline truncate block text-xs"
-                      >
-                        {item.url_hasil}
-                      </a>
-                    </div>
-
-                    {item.catatan_mahasiswa && (
-                      <div className="space-y-1">
-                        <span className="text-[10px] uppercase font-bold text-steel/70 block">Catatan Mahasiswa:</span>
-                        <p className="text-ink font-sans text-xs italic bg-white p-3 rounded-xl border border-steel/10">
-                          &ldquo;{item.catatan_mahasiswa}&rdquo;
+                {/* TAB: PENGUMPULAN KARYA */}
+                {activeTab === "pengumpulan" && (
+                  <div>
+                    {isPending && (
+                      <div className="rounded-2xl border border-steel/15 bg-paper/60 p-6 text-center space-y-2">
+                        <span className="font-mono text-[11px] font-bold text-steel uppercase tracking-wider">
+                          Menunggu Review
+                        </span>
+                        <p className="text-xs text-steel max-w-md mx-auto">
+                          Tahap pengumpulan karya akan terbuka otomatis setelah pendaftaran kamu disetujui oleh pihak perusahaan.
                         </p>
                       </div>
                     )}
 
-                    {item.evaluasi_perusahaan && (
-                      <div className="space-y-1 pt-1">
-                        <span className="text-[10px] uppercase font-bold text-amber-800 block">Kritik &amp; Evaluasi Perusahaan:</span>
-                        <p className="text-amber-950 font-sans text-xs bg-amber-100/60 p-3 rounded-xl border border-amber-300">
-                          &ldquo;{item.evaluasi_perusahaan}&rdquo;
+                    {isRejected && (
+                      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center space-y-2">
+                        <span className="font-mono text-[11px] font-bold text-rose-700 uppercase tracking-wider">
+                          Pendaftaran Tidak Dilanjutkan
+                        </span>
+                        <p className="text-xs text-rose-900 max-w-md mx-auto">
+                          Mitra perusahaan belum dapat menerima permohonan kolaborasi ini.
                         </p>
+                      </div>
+                    )}
+
+                    {isCompleted && (
+                      <div className="rounded-2xl border border-verified/30 bg-verified/5 p-6 space-y-3 text-center">
+                        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-verified/15">
+                          <IconCheck className="h-5 w-5 text-verified" />
+                        </div>
+                        <h2 className="font-display text-lg font-bold text-ink">
+                          Proyek Telah Selesai & Disetujui
+                        </h2>
+                        <p className="text-xs text-steel max-w-md mx-auto leading-relaxed">
+                          Mitra perusahaan telah menyetujui hasil akhir pengerjaan karya kamu. Pengumpulan telah ditutup dan poin reputasi kamu telah ditambahkan.
+                        </p>
+                      </div>
+                    )}
+
+                    {!isPending && !isRejected && !isCompleted && (
+                      <div className="space-y-5">
+                        <div className="flex items-start gap-3 pb-4 border-b border-steel/10">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink/5 shrink-0">
+                            <IconFile className="w-4 h-4 text-ink" />
+                          </div>
+                          <div>
+                            <h2 className="font-display text-base font-bold text-ink">
+                              {detail.urlHasilKolaborasi ? "Kumpulkan Revisi Hasil Karya" : "Kumpulkan Hasil Pekerjaan"}
+                            </h2>
+                            <p className="text-xs text-steel mt-0.5">
+                              Tahap pelaksanaan · Iterasi {riwayatList.length + 1}
+                            </p>
+                          </div>
+                        </div>
+
+                        {submitSuccess && (
+                          <div className="rounded-2xl border border-verified/30 bg-verified/5 p-4 text-xs text-ink flex items-center gap-3">
+                            <IconCheck className="w-5 h-5 text-verified shrink-0" />
+                            <span>Hasil karya berhasil dikirim ke mitra perusahaan. Cek tab Riwayat & Evaluasi.</span>
+                          </div>
+                        )}
+
+                        <form onSubmit={handleSubmitHasil} className="space-y-5">
+                          <div>
+                            <label className="block text-xs font-bold text-ink mb-1.5">
+                              Tautan URL Pekerjaan <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <IconLink className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-steel/50" />
+                              <input
+                                type="url"
+                                required
+                                value={urlHasil}
+                                onChange={(e) => setUrlHasil(e.target.value)}
+                                placeholder="https://github.com/username/project-hasil"
+                                className="w-full rounded-2xl border border-steel/20 bg-paper pl-10 pr-4 py-3 text-sm text-ink outline-none focus:border-ink transition font-medium"
+                              />
+                            </div>
+                            <p className="text-[10px] text-steel/70 mt-1.5">Pastikan tautan dapat diakses publik oleh pihak perusahaan.</p>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-ink mb-1.5">
+                              Catatan Tambahan
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={catatanHasil}
+                              onChange={(e) => setCatatanHasil(e.target.value)}
+                              placeholder="Jelaskan progres iterasi ini atau hal yang perlu diperhatikan..."
+                              className="w-full rounded-2xl border border-steel/20 bg-paper px-4 py-3 text-sm text-ink outline-none focus:border-ink transition font-medium resize-none"
+                            />
+                          </div>
+
+                          {detail.urlHasilKolaborasi && (
+                            <div className="rounded-2xl border border-steel/15 bg-steel/5 p-4 text-xs space-y-1">
+                              <span className="font-mono text-[10px] uppercase font-bold text-steel">Pengumpulan Terakhir</span>
+                              <a href={detail.urlHasilKolaborasi} target="_blank" rel="noreferrer" className="block text-bridge-gold font-bold underline truncate">
+                                {detail.urlHasilKolaborasi}
+                              </a>
+                              {detail.tanggalPengumpulan && (
+                                <p className="text-[10px] text-steel">Dikirim pada: {detail.tanggalPengumpulan}</p>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="pt-2 flex items-center justify-end gap-3">
+                            {draftSaved && (
+                              <span className="font-mono text-[10px] text-verified font-bold">Draft tersimpan</span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={handleSaveDraft}
+                              className="rounded-2xl px-5 py-2.5 font-mono text-xs font-bold text-steel hover:text-ink transition"
+                            >
+                              Simpan Draft
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={submitting || !urlHasil.trim()}
+                              className="rounded-2xl bg-ink px-6 py-2.5 font-mono text-xs font-bold text-paper hover:bg-steel transition shadow-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {submitting ? "Mengirim..." : "Kirim Iterasi →"}
+                            </button>
+                          </div>
+                        </form>
                       </div>
                     )}
                   </div>
-                );
-              })}
+                )}
+
+                {/* TAB: RIWAYAT & EVALUASI */}
+                {activeTab === "riwayat" && (
+                  <div className="space-y-4">
+                    {riwayatList.length === 0 ? (
+                      <div className="rounded-2xl border border-steel/15 bg-paper/60 p-8 text-center">
+                        <p className="text-xs text-steel">Belum ada riwayat pengumpulan karya untuk kolaborasi ini.</p>
+                      </div>
+                    ) : (
+                      riwayatList.map((item, idx) => {
+                        const itemDate = item.created_at
+                          ? new Date(item.created_at).toLocaleDateString("id-ID", {
+                              day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+                            })
+                          : "-";
+                        const hasEvaluasi = Boolean(item.evaluasi_perusahaan);
+
+                        return (
+                          <div
+                            key={item.id || idx}
+                            className={`rounded-2xl border bg-white p-5 space-y-3 border-l-4 ${
+                              hasEvaluasi ? "border-l-rose-400 border-steel/15" : "border-l-steel/30 border-steel/15"
+                            }`}
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-display font-bold text-ink text-sm">
+                                  Iterasi {item.versi || riwayatList.length - idx}
+                                </span>
+                                {hasEvaluasi && (
+                                  <span className="rounded-full bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase">
+                                    Perlu Revisi
+                                  </span>
+                                )}
+                              </div>
+                              <span className="font-mono text-[10px] text-steel">Dikirim {itemDate}</span>
+                            </div>
+
+                            <a
+                              href={item.url_hasil}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-bridge-gold font-bold underline truncate text-xs"
+                            >
+                              <IconLink className="w-3.5 h-3.5 shrink-0" />
+                              Tautan Kiriman
+                            </a>
+
+                            {item.catatan_mahasiswa && (
+                              <p className="text-ink font-sans text-xs italic bg-paper/60 p-3 rounded-xl border border-steel/10">
+                                &ldquo;{item.catatan_mahasiswa}&rdquo;
+                              </p>
+                            )}
+
+                            {hasEvaluasi && (
+                              <div className="space-y-1 pt-1">
+                                <span className="text-[10px] uppercase font-bold text-rose-700 block">Catatan Ulasan Perusahaan</span>
+                                <p className="text-rose-900 font-sans text-xs bg-rose-50 p-3 rounded-xl border border-rose-200">
+                                  &ldquo;{item.evaluasi_perusahaan}&rdquo;
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
+
+      {/* CHAT MODAL */}
+      {chatOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink/40 p-0 sm:p-4"
+          onClick={() => setChatOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full sm:max-w-md h-[85vh] sm:h-[600px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-steel/10 bg-gradient-to-br from-ink to-steel text-paper">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper/15 font-mono text-xs font-bold">
+                  {detail.perusahaan.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-display text-sm font-bold">{detail.perusahaan}</p>
+                  <p className="font-mono text-[10px] text-paper/70">{detail.judul}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setChatOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-paper/10 transition"
+              >
+                <IconX className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-paper/40">
+              {chatMessages.map((msg, idx) => (
+                <div key={idx} className={`flex ${msg.from === "me" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
+                    msg.from === "me"
+                      ? "bg-ink text-paper rounded-br-sm"
+                      : "bg-white text-ink border border-steel/15 rounded-bl-sm"
+                  }`}>
+                    <p>{msg.text}</p>
+                    <p className={`font-mono text-[9px] mt-1 ${msg.from === "me" ? "text-paper/60" : "text-steel/60"}`}>
+                      {msg.time}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Input */}
+            <form onSubmit={handleSendChat} className="flex items-center gap-2 px-4 py-3 border-t border-steel/10 bg-white">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Tulis pesan..."
+                className="flex-1 rounded-full border border-steel/20 bg-paper px-4 py-2.5 text-xs text-ink outline-none focus:border-ink transition"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-paper hover:bg-steel transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <IconSend className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
