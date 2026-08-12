@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { notifyPengajuanDiterima, notifyPengajuanDitolak } from "@/lib/notifications";
 
 type StatusKey = "Menunggu" | "Diproses" | "Diterima" | "Evaluasi" | "Revisi" | "Ditolak" | "Selesai";
 
@@ -244,6 +245,40 @@ export default function StatusPage() {
                 url_hasil_kolaborasi: latestSubmission?.url_hasil || item.url_hasil_kolaborasi,
               };
             });
+
+            // ─── Status Change Detection ──────────────────────────────────────────
+            // Baca peta status sebelumnya dari localStorage
+            const PREV_STATUS_KEY = "bridgeu_status_prev";
+            let prevStatuses: Record<string, string> = {};
+            try {
+              const raw = localStorage.getItem(PREV_STATUS_KEY);
+              if (raw) prevStatuses = JSON.parse(raw);
+            } catch {
+              // ignore parse errors
+            }
+
+            // Cek perubahan status dan kirim notifikasi jika relevan
+            for (const item of mapped) {
+              const prev = prevStatuses[item.id];
+              const curr = item.status;
+              if (prev && prev !== curr) {
+                if (curr === "Diterima") {
+                  // fire-and-forget, jangan block UI
+                  notifyPengajuanDiterima(currentUserId, item.judul, item.perusahaan).catch(() => {});
+                } else if (curr === "Ditolak") {
+                  notifyPengajuanDitolak(currentUserId, item.judul, item.perusahaan, item.catatan_perusahaan).catch(() => {});
+                }
+              }
+            }
+
+            // Simpan peta status terkini ke localStorage
+            const newPrevStatuses: Record<string, string> = {};
+            for (const item of mapped) {
+              newPrevStatuses[item.id] = item.status;
+            }
+            localStorage.setItem(PREV_STATUS_KEY, JSON.stringify(newPrevStatuses));
+            // ─────────────────────────────────────────────────────────────────────
+
             setList(mapped);
             setLoading(false);
             return;

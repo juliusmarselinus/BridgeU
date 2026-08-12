@@ -7,6 +7,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { SearchBar } from "./SearchBar";
 import { supabase } from "@/lib/supabase";
+import { useRealtimeNotifications } from "@/lib/hooks/useRealtimeNotifications";
+import type { NotifikasiItem } from "@/lib/hooks/useRealtimeNotifications";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
@@ -23,17 +25,6 @@ type StoredUser = {
 
 type NotificationType = "success" | "info" | "warning";
 
-type AppNotification = {
-  id: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-};
-
-const NOTIF_STORAGE_KEY = "bridgeu_notifications";
-
 function initials(name: string) {
   return name
     .split(" ")
@@ -41,48 +32,6 @@ function initials(name: string) {
     .map((w) => w[0])
     .join("")
     .toUpperCase();
-}
-
-
-
-const defaultNotifications: AppNotification[] = [];
-
-const NOTIF_TYPES: NotificationType[] = ["success", "info", "warning"];
-
-function sanitizeNotification(raw: unknown, fallbackId: string): AppNotification {
-  const n = (raw ?? {}) as Partial<AppNotification>;
-  return {
-    id: typeof n.id === "string" && n.id ? n.id : fallbackId,
-    type: NOTIF_TYPES.includes(n.type as NotificationType)
-      ? (n.type as NotificationType)
-      : "info",
-    title: typeof n.title === "string" && n.title ? n.title : "Notifikasi",
-    message: typeof n.message === "string" ? n.message : "",
-    time: typeof n.time === "string" ? n.time : "",
-    read: Boolean(n.read),
-  };
-}
-
-function readStoredNotifications(): AppNotification[] {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem(NOTIF_STORAGE_KEY);
-
-  if (!stored) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(stored);
-    if (!Array.isArray(parsed)) throw new Error("invalid shape");
-
-    return parsed.map((item, i) => sanitizeNotification(item, `n-${i}`));
-  } catch {
-    return [];
-  }
-}
-
-function writeStoredNotifications(notifications: AppNotification[]) {
-  localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(notifications));
 }
 
 type NotifIconConfig = {
@@ -144,11 +93,11 @@ function NotificationPanel({
   onMarkAsRead,
   onMarkAllAsRead,
 }: {
-  notifications: AppNotification[];
+  notifications: NotifikasiItem[];
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
 }) {
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
     <div className="absolute right-0 top-13 w-96 overflow-hidden rounded-3xl border border-border bg-card shadow-[0_20px_50px_-12px_rgba(23,59,108,0.25)]">
@@ -182,41 +131,45 @@ function NotificationPanel({
             <p className="font-mono text-xs text-steel/60">Belum ada notifikasi</p>
           </div>
         ) : (
-          notifications.map((n, i) => (
-            <button
-              key={n.id}
-              onClick={() => onMarkAsRead(n.id)}
-              className={`flex w-full items-start gap-3 px-5 py-4 text-left transition ${
-                i !== notifications.length - 1 ? "border-b border-border" : ""
-              } ${n.read ? "hover:bg-surface" : "bg-primary/[0.05] hover:bg-primary/[0.08]"}`}
-            >
-              <NotifIcon type={n.type} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={`truncate font-display text-[13px] font-semibold ${
-                      n.read ? "text-steel" : "text-ink"
-                    }`}
-                  >
-                    {n.title}
+          notifications.map((n, i) => {
+            const type = deriveNotifType(n.judul);
+            const isRead = n.is_read;
+            return (
+              <button
+                key={n.id}
+                onClick={() => onMarkAsRead(String(n.id))}
+                className={`flex w-full items-start gap-3 px-5 py-4 text-left transition ${
+                  i !== notifications.length - 1 ? "border-b border-border" : ""
+                } ${isRead ? "hover:bg-surface" : "bg-primary/[0.05] hover:bg-primary/[0.08]"}`}
+              >
+                <NotifIcon type={type} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`truncate font-display text-[13px] font-semibold ${
+                        isRead ? "text-steel" : "text-ink"
+                      }`}
+                    >
+                      {n.judul}
+                    </span>
+                    {!isRead && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
+                  </div>
+                  {n.pesan && (
+                    <p
+                      className={`mt-1 font-mono text-[11px] leading-relaxed ${
+                        isRead ? "text-steel/50" : "text-steel"
+                      }`}
+                    >
+                      {n.pesan}
+                    </p>
+                  )}
+                  <span className="mt-1.5 block font-mono text-[10px] text-steel/40">
+                    {formatNotifTime(n.created_at)}
                   </span>
-                  {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
                 </div>
-                {n.message && (
-                  <p
-                    className={`mt-1 font-mono text-[11px] leading-relaxed ${
-                      n.read ? "text-steel/50" : "text-steel"
-                    }`}
-                  >
-                    {n.message}
-                  </p>
-                )}
-                {n.time && (
-                  <span className="mt-1.5 block font-mono text-[10px] text-steel/40">{n.time}</span>
-                )}
-              </div>
-            </button>
-          ))
+              </button>
+            );
+          })
         )}
       </div>
 
@@ -232,76 +185,59 @@ function NotificationPanel({
   );
 }
 
+// ───────────────────────────────────────────────────────────────────────────
+// Notification type derivation — single source of truth for icon+color
+// ───────────────────────────────────────────────────────────────────────────
+function deriveNotifType(judul: string): NotificationType {
+  const j = judul.toLowerCase();
+  if (
+    j.includes("diterima") ||
+    j.includes("berhasil") ||
+    j.includes("badge") ||
+    j.includes("level") ||
+    j.includes("selamat")
+  )
+    return "success";
+  if (j.includes("ditolak") || j.includes("tidak lolos") || j.includes("gagal"))
+    return "warning";
+  return "info";
+}
+
+function formatNotifTime(createdAt: string): string {
+  if (!createdAt) return "Baru";
+  const date = new Date(createdAt);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "Baru saja";
+  if (diffMin < 60) return `${diffMin} mnt lalu`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} jam lalu`;
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// NotificationBell — powered by realtime Supabase subscription
+// ───────────────────────────────────────────────────────────────────────────
 function NotificationBell() {
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [open, setOpen] = useState(false);
+  const [userId, setUserId] = useState<string | undefined>(undefined);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Resolve userId dari sesi Supabase satu kali
   useEffect(() => {
-    let isMounted = true;
-
-    async function fetchDbNotifications() {
-      console.log("🔍 [DEBUG NotificationBell] Fetching user auth...");
-      const { data: authData, error: authErr } = await supabase.auth.getUser();
-      const userId = authData?.user?.id;
-
-      if (authErr || !userId) {
-        console.warn("⚠️ [DEBUG NotificationBell] User not logged in or auth error:", authErr?.message);
-        setNotifications(readStoredNotifications());
-        return;
-      }
-
-      console.log("🔍 [DEBUG NotificationBell] Querying Supabase `notifikasi` for userId:", userId);
-      const { data, error } = await supabase
-        .from("notifikasi")
-        .select("id, judul, pesan, is_read, created_at")
-        .eq("recipient_user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (error) {
-        console.error("❌ [DEBUG NotificationBell] Error fetching notifikasi from Supabase:", error.message);
-        if (isMounted) setNotifications(readStoredNotifications());
-        return;
-      }
-
-      console.log("✅ [DEBUG NotificationBell] Raw DB notifications count:", data?.length ?? 0, data);
-
-      if (data && data.length > 0) {
-        const mapped: AppNotification[] = data.map((n: any) => ({
-          id: n.id.toString(),
-          type: n.judul.toLowerCase().includes("terbuka") || n.judul.toLowerCase().includes("diterima")
-            ? "success"
-            : n.judul.toLowerCase().includes("ditolak")
-            ? "warning"
-            : "info",
-          title: n.judul,
-          message: n.pesan,
-          time: n.created_at ? new Date(n.created_at).toLocaleDateString("id-ID") : "Terbaru",
-          read: Boolean(n.is_read),
-        }));
-        console.log("🔔 [DEBUG NotificationBell] Setting mapped notifications state:", mapped);
-        if (isMounted) setNotifications(mapped);
-      } else {
-        console.log("ℹ️ [DEBUG NotificationBell] DB notifications empty, reading fallback/localStorage...");
-        if (isMounted) setNotifications(readStoredNotifications());
-      }
-    }
-
-    fetchDbNotifications();
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === NOTIF_STORAGE_KEY) {
-        setNotifications(readStoredNotifications());
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => {
-      isMounted = false;
-      window.removeEventListener("storage", handleStorage);
-    };
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? undefined);
+    });
+    return () => listener.subscription.unsubscribe();
   }, []);
 
+  const { notifications, unreadCount, markAsRead } = useRealtimeNotifications(userId);
+
+  // Tutup panel saat klik di luar
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -312,32 +248,13 @@ function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const handleMarkAsRead = (id: string) => {
+    markAsRead(parseInt(id, 10));
+  };
 
-  async function markAsRead(id: string) {
-    setNotifications((prev) => {
-      const updated = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
-      writeStoredNotifications(updated);
-      return updated;
-    });
-
-    if (/^\d+$/.test(id)) {
-      await supabase.from("notifikasi").update({ is_read: true }).eq("id", parseInt(id, 10));
-    }
-  }
-
-  async function markAllAsRead() {
-    setNotifications((prev) => {
-      const updated = prev.map((n) => ({ ...n, read: true }));
-      writeStoredNotifications(updated);
-      return updated;
-    });
-
-    const { data: authData } = await supabase.auth.getUser();
-    if (authData?.user?.id) {
-      await supabase.from("notifikasi").update({ is_read: true }).eq("recipient_user_id", authData.user.id);
-    }
-  }
+  const handleMarkAllAsRead = () => {
+    markAsRead();
+  };
 
   return (
     <div className="relative" ref={ref}>
@@ -359,8 +276,8 @@ function NotificationBell() {
       {open && (
         <NotificationPanel
           notifications={notifications}
-          onMarkAsRead={markAsRead}
-          onMarkAllAsRead={markAllAsRead}
+          onMarkAsRead={handleMarkAsRead}
+          onMarkAllAsRead={handleMarkAllAsRead}
         />
       )}
     </div>

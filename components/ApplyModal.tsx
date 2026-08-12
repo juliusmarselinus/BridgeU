@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { notifyPengajuanBerhasil } from "@/lib/notifications";
 
 type StoredUser = {
   nama: string;
@@ -118,20 +119,8 @@ export function ApplyModal({
         if (insertErr) {
           console.error("❌ [ApplyModal] Gagal menyimpan pendaftaran ke Supabase:", insertErr.message);
         } else {
-          console.log("✅ [ApplyModal] Pendaftaran berhasil disimpan ke Supabase. Mengirim notifikasi ke tabel `notifikasi`...");
-          const { data: notifData, error: notifErr } = await supabase.from("notifikasi").insert({
-            recipient_user_id: currentUserId,
-            judul: "Pengajuan Kolaborasi Berhasil",
-            pesan: `Pengajuan kamu untuk proyek '${data.judul}' di ${data.perusahaan} telah berhasil dikirim.`,
-            is_read: false,
-            created_at: new Date().toISOString(),
-          }).select();
-
-          if (notifErr) {
-            console.error("❌ [ApplyModal] Gagal insert notifikasi ke Supabase:", notifErr.message);
-          } else {
-            console.log("✅ [ApplyModal] Notifikasi berhasil dibuat di tabel `notifikasi`:", notifData);
-          }
+          console.log("✅ [ApplyModal] Pendaftaran berhasil disimpan. Mengirim notifikasi...");
+          await notifyPengajuanBerhasil(currentUserId, data.judul, data.perusahaan);
         }
       }
     } catch (err) {

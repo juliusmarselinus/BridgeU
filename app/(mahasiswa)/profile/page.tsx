@@ -8,6 +8,7 @@ import { badgeList } from "@/lib/dummy-data";
 import { ModalPicker } from "@/app/daftar/components/ModalPicker";
 import { supabase } from "@/lib/supabase";
 import { getGamificationMetrics } from "@/lib/gamification";
+import { notifyBadgeUnlocked, notifyLevelUp } from "@/lib/notifications";
 
 type StoredUser = {
   nama: string;
@@ -1463,6 +1464,9 @@ export default function ProfilePage() {
   const seenBadgeIdsRef = useRef<Set<string> | null>(null);
   const [freshBadgeIds, setFreshBadgeIds] = useState<Set<string>>(new Set());
 
+  // tracks level seen in this session to detect level-up
+  const seenLevelRef = useRef<number | null>(null);
+
   const [userMetrics, setUserMetrics] = useState({
     xp: 0,
     pts: 0,
@@ -1531,6 +1535,19 @@ export default function ProfilePage() {
     } else {
       console.log("🚀 [DEBUG Client Profile] data.badges is NOT an array or missing:", data.badges);
     }
+
+    // ─── Level-up Detection ───────────────────────────────────────────────────
+    const currentXp = data.xp ?? 0;
+    const currentLevel = getGamificationMetrics(currentXp).level;
+    const { data: authUserForNotif } = await supabase.auth.getUser();
+    const notifUserId = authUserForNotif?.user?.id;
+
+    if (notifUserId && seenLevelRef.current !== null && currentLevel > seenLevelRef.current) {
+      const tierTitle = getGamificationMetrics(currentXp).tierTitle;
+      notifyLevelUp(notifUserId, currentLevel, tierTitle).catch(() => {});
+    }
+    seenLevelRef.current = currentLevel;
+    // ─────────────────────────────────────────────────────────────────────────
 
     let currentPengajuan: Pengajuan[] = Array.isArray(data.pengajuan) ? data.pengajuan : [];
     console.log("🚀 [DEBUG Client Profile] API returned pengajuan count:", currentPengajuan.length);
@@ -1718,6 +1735,14 @@ export default function ProfilePage() {
     if (newlyUnlockedBadge) {
       setActivePopupBadge(newlyUnlockedBadge);
       seenBadgeIdsRef.current.add(String(newlyUnlockedBadge.id));
+
+      // Kirim notifikasi DB untuk badge baru
+      supabase.auth.getUser().then(({ data: authUser }) => {
+        const uid = authUser?.user?.id;
+        if (uid) {
+          notifyBadgeUnlocked(uid, newlyUnlockedBadge.namaBadge, newlyUnlockedBadge.xpBonus).catch(() => {});
+        }
+      });
     }
   }, [dbBadges]);
 
