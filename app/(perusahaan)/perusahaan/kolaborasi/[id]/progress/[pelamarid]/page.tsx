@@ -42,7 +42,10 @@ export default function DetailProgresPage() {
 
       if (error || !isMounted) return;
 
-      setNama(pendaftaran.mahasiswa_profiles?.nama_lengkap || "Mahasiswa");
+      const prof = Array.isArray(pendaftaran.mahasiswa_profiles)
+        ? pendaftaran.mahasiswa_profiles[0]
+        : pendaftaran.mahasiswa_profiles;
+      setNama(prof?.nama_lengkap || "Mahasiswa");
       const sorted = (pendaftaran.riwayat_pengumpulan_kolaborasi || []).sort(
         (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
@@ -106,12 +109,13 @@ export default function DetailProgresPage() {
             Hasil Terbaru (Versi {latest.versi})
           </h3>
           
+          <a
             href={latest.url_hasil}
             target="_blank"
             rel="noreferrer"
             className="inline-block font-mono text-xs text-bridge-gold underline hover:text-ink"
           >
-            Lihat Dokumen Hasil →
+            Lihat Dokumen Hasil &rarr;
           </a>
           <p className="font-mono text-xs text-steel leading-relaxed">
             {latest.catatan_mahasiswa || "Tidak ada catatan dari mahasiswa."}

@@ -137,6 +137,7 @@ export default function KolaborasiPage() {
   const [user, setUser] = useState<StoredUser | null>(null);
   const [applicantProfile, setApplicantProfile] = useState<StoredUser | null>(null);
   const [mahasiswaProfile, setMahasiswaProfile] = useState<MahasiswaMatchProfile | null>(null);
+  const [registeredIds, setRegisteredIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [tipeFilter, setTipeFilter] = useState<"Semua" | "Akademik" | "Magang">("Semua");
   const [applyTarget, setApplyTarget] = useState<Kolaborasi | null>(null);
@@ -169,26 +170,47 @@ export default function KolaborasiPage() {
     // Profil buat SCORING (skills, minat, prodi_id) WAJIB dari Supabase, by session login
     fetchMahasiswaMatchProfile().then(setMahasiswaProfile);
 
+    // Kolaborasi yang sudah pernah didaftar — untuk disembunyikan dari katalog
+    supabase.auth.getUser().then(({ data: authData }) => {
+      const uid = authData?.user?.id;
+      if (!uid) return;
+      supabase
+        .from("pendaftaran_kolaborasi")
+        .select("kolaborasi_id")
+        .eq("mahasiswa_id", uid)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setRegisteredIds(new Set(data.map((r: any) => r.kolaborasi_id).filter(Boolean)));
+          }
+        });
+    });
+
     fetchKolaborasiFromSupabase().then((rows) => {
       setKolaborasiList(rows);
       setLoading(false);
     });
   }, []);
 
+  // Kolaborasi yang belum pernah didaftar user
+  const unregisteredList = useMemo(
+    () => kolaborasiList.filter((k) => !registeredIds.has(k.id)),
+    [kolaborasiList, registeredIds]
+  );
+
   // Semua kolaborasi + skor, TANPA filter threshold (dipakai buat katalog/search di bawah)
   const kolaborasiWithScores = useMemo(() => {
-    return rankKolaborasiByMatch(kolaborasiList, mahasiswaProfile, {
+    return rankKolaborasiByMatch(unregisteredList, mahasiswaProfile, {
       onlyPassingThreshold: false,
     });
-  }, [kolaborasiList, mahasiswaProfile]);
+  }, [unregisteredList, mahasiswaProfile]);
 
   // Rekomendasi utama buat carousel: HANYA yang lolos threshold kemiripan, top 5
   const smartRecommendations = useMemo(() => {
-    return rankKolaborasiByMatch(kolaborasiList, mahasiswaProfile, {
+    return rankKolaborasiByMatch(unregisteredList, mahasiswaProfile, {
       onlyPassingThreshold: true,
       topN: 5,
     });
-  }, [kolaborasiList, mahasiswaProfile]);
+  }, [unregisteredList, mahasiswaProfile]);
 
   const totalRecs = smartRecommendations.length;
 
@@ -219,6 +241,10 @@ export default function KolaborasiPage() {
   );
 
   const handleApplySuccess = () => {
+    // Langsung sembunyikan dari katalog tanpa perlu reload
+    if (applyTarget) {
+      setRegisteredIds((prev) => new Set([...prev, applyTarget.id]));
+    }
     setApplyTarget(null);
     setSuccessToast(true);
     setTimeout(() => setSuccessToast(false), 3000);
