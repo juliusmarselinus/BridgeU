@@ -1,799 +1,107 @@
 "use client";
 
-import { useEffect, useState, FormEvent, useMemo } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { companyService, companyServiceExtended } from "../../dashboard/services/companyServices";
-import { pelamarService } from "../../pelamar/services/pelamarService";
-import { PelamarProfilModal } from "../../pelamar/components/PelamarProfilModal";
-import { PelamarCard } from "../../pelamar/components/PelamarCard";
-import { StatusLamaran, PelamarDetail } from "../../pelamar/types/pelamar";
-
-interface ProdiOption {
-  id: number;
-  nama_prodi: string;
-  jenjang: string;
-}
-
-interface SkillOption {
-  id: number;
-  nama_skill: string;
-}
-
-// Rekomendasi Kategori Minat based on Title
-function recommendKategori(judul: string, kategoriList: any[]): number[] {
-  if (!judul) return [];
-  const normalizedTitle = judul.toLowerCase();
-
-  const mapping: { [key: string]: string[] } = {
-    "Riset & Pengembangan": ["riset", "research", "pengembangan", "development", "ai", "machine learning", "deep learning", "science", "sains", "data", "analisis", "analyst", "survei", "survey", "academic", "akademik", "studi", "study"],
-    "Teknologi & Produk Digital": ["web", "app", "mobile", "software", "developer", "coding", "program", "programmer", "database", "jaringan", "it", "cyber", "ai", "machine learning", "data scientist", "data analyst", "system", "sistem", "komputer", "frontend", "backend", "fullstack", "react", "python", "sql", "flutter", "aws", "cloud"],
-    "Desain & Kreatif": ["desain", "design", "ui", "ux", "figma", "illustrator", "photoshop", "graphic", "visual", "art", "creative", "multimedia", "dkv", "video", "editing", "animasi", "content", "konten", "copywriter", "writer", "penulis", "creative direction"],
-    "Bisnis & Pemasaran": ["marketing", "pemasaran", "seo", "sem", "social media", "content", "copywriting", "bisnis", "business", "manajemen", "management", "project", "product", "sales", "penjualan", "hr", "sumber daya", "startup", "growth"],
-    "Keuangan & Akuntansi": ["finance", "keuangan", "akuntansi", "accounting", "pajak", "tax", "audit", "excel", "investasi", "bank", "perbankan", "fintech"],
-    "Sains & Teknologi": ["sains", "science", "teknologi", "technology", "lab", "laboratorium", "fisika", "kimia", "biologi", "matematika", "statistika", "bio", "rekayasa"],
-    "Sosial & Humaniora": ["sosial", "social", "humaniora", "psikologi", "hukum", "politik", "sejarah", "bahasa", "sastra", "komunikasi", "sosiologi", "antropologi"]
-  };
-
-  const scored: { id: number; score: number }[] = [];
-
-  kategoriList.forEach(k => {
-    const kName = k.nama_kategori;
-    let score = 0;
-
-    const words = kName.toLowerCase().split(/[\s&]+/);
-    words.forEach((w: string) => {
-      if (w.length > 2 && normalizedTitle.includes(w)) {
-        score += 2.0;
-      }
-    });
-
-    const keywords = mapping[kName] || [];
-    keywords.forEach(kw => {
-      if (normalizedTitle.includes(kw)) {
-        score += 1.0;
-        const kwRegex = new RegExp(`\\b${kw}\\b`);
-        if (kwRegex.test(normalizedTitle)) {
-          score += 1.0;
-        }
-      }
-    });
-
-    if (score > 0) {
-      scored.push({ id: k.id, score });
-    }
-  });
-
-  return scored
-    .sort((a, b) => b.score - a.score)
-    .map(s => s.id);
-}
-
-// Rekomendasi Program Studi & Skills based on Title & Kategori Minat
-function recommendItems(
-  judul: string,
-  selectedKategoriIds: number[],
-  kategoriList: any[],
-  items: any[],
-  nameField: string
-): number[] {
-  if (!judul && selectedKategoriIds.length === 0) return [];
-
-  const normalizedTitle = judul.toLowerCase();
-
-  const selectedKategoriNames = selectedKategoriIds
-    .map(id => kategoriList.find(k => k.id === id)?.nama_kategori || "")
-    .filter(Boolean)
-    .map(name => name.toLowerCase());
-
-  const searchString = `${normalizedTitle} ${selectedKategoriNames.join(" ")}`;
-
-  const associations: { [key: string]: string[] } = {
-    "ai": ["python", "machine learning", "deep learning", "kecerdasan buatan", "data science", "tensorflow", "pytorch", "artificial intelligence", "informatika", "komputer", "sistem informasi"],
-    "machine": ["python", "machine learning", "data science", "artificial intelligence", "informatika", "komputer"],
-    "learning": ["python", "machine learning", "data science", "artificial intelligence", "informatika", "komputer"],
-    "web": ["react", "javascript", "typescript", "html", "css", "frontend", "backend", "fullstack", "node", "next.js", "nextjs", "vue", "angular", "web", "website", "informatika", "sistem informasi"],
-    "aplikasi": ["react", "javascript", "typescript", "frontend", "backend", "fullstack", "android", "ios", "flutter", "mobile", "informatika", "sistem informasi"],
-    "mobile": ["react", "flutter", "react native", "swift", "kotlin", "android", "ios", "mobile", "informatika", "sistem informasi"],
-    "software": ["react", "javascript", "typescript", "node", "python", "java", "c++", "git", "software", "development", "informatika", "sistem informasi"],
-    "data": ["python", "sql", "pandas", "data analyst", "data scientist", "tableau", "power bi", "excel", "statistika", "informatika", "sistem informasi", "matematika"],
-    "database": ["sql", "mysql", "postgresql", "mongodb", "database", "sistem informasi", "informatika"],
-    "jaringan": ["jaringan", "networking", "cisco", "cybersecurity", "keamanan", "informatika", "sistem komputer"],
-    "desain": ["desain", "design", "ui", "ux", "figma", "illustrator", "photoshop", "graphic", "visual", "art", "creative", "multimedia", "dkv"],
-    "design": ["desain", "design", "ui", "ux", "figma", "illustrator", "photoshop", "graphic", "visual", "art", "creative", "multimedia", "dkv"],
-    "ui": ["desain", "design", "ui", "ux", "figma", "frontend", "visual", "dkv"],
-    "ux": ["desain", "design", "ui", "ux", "figma", "visual", "sistem informasi"],
-    "video": ["video", "editing", "premiere", "after effects", "creative", "multimedia", "dkv"],
-    "konten": ["content", "konten", "creative", "writing", "copywriting", "marketing", "sosial media", "dkv", "ilmu komunikasi"],
-    "marketing": ["marketing", "pemasaran", "seo", "sem", "social media", "content", "copywriting", "digital marketing", "manajemen", "ilmu komunikasi"],
-    "pemasaran": ["marketing", "pemasaran", "seo", "sem", "social media", "content", "copywriting", "digital marketing", "manajemen", "ilmu komunikasi"],
-    "bisnis": ["business", "bisnis", "manajemen", "sistem informasi", "analisis bisnis", "akuntansi", "keuangan"],
-    "business": ["business", "bisnis", "manajemen", "sistem informasi", "analisis bisnis", "akuntansi", "keuangan"],
-    "keuangan": ["finance", "keuangan", "akuntansi", "accounting", "pajak", "excel", "manajemen"],
-    "finance": ["finance", "keuangan", "akuntansi", "accounting", "pajak", "excel", "manajemen"],
-    "akuntansi": ["akuntansi", "accounting", "audit", "pajak", "tax", "excel", "keuangan"],
-    "accounting": ["akuntansi", "accounting", "audit", "pajak", "tax", "excel", "keuangan"],
-    "audit": ["akuntansi", "accounting", "audit", "excel"],
-    "manajemen": ["manajemen", "management", "project", "product", "hr", "sumber daya", "bisnis", "business"],
-    "management": ["manajemen", "management", "project", "product", "hr", "sumber daya", "bisnis", "business"]
-  };
-
-  const targetTerms = new Set<string>();
-  const words = searchString.split(/[\s,./()_-]+/).filter(w => w.length > 1);
-
-  words.forEach(word => {
-    const lowerWord = word.toLowerCase();
-    targetTerms.add(lowerWord);
-    if (associations[lowerWord]) {
-      associations[lowerWord].forEach(term => targetTerms.add(term.toLowerCase()));
-    }
-  });
-
-  const recommendations: { id: number; score: number }[] = [];
-
-  items.forEach(item => {
-    const name = item[nameField].toLowerCase();
-    let score = 0;
-
-    targetTerms.forEach(term => {
-      if (name.includes(term)) {
-        score += 1;
-        const termRegex = new RegExp(`\\b${term}\\b`);
-        if (termRegex.test(name)) {
-          score += 1.5;
-        }
-      }
-    });
-
-    if (score > 0) {
-      recommendations.push({ id: item.id, score });
-    }
-  });
-
-  return recommendations
-    .sort((a, b) => b.score - a.score)
-    .map(r => r.id);
-}
+import { useKolaborasiDetail } from "./hooks/useKolaborasiDetail";
 
 export default function DetailKolaborasiPage() {
-  const { id } = useParams();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialTab = (searchParams.get("tab") as "pelamar" | "progress" | "settings") || "pelamar";
-
-  // Tab State
-  const [activeTab, setActiveTab] = useState<"pelamar" | "progress" | "settings">(initialTab);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Data State
-  const [kolaborasi, setKolaborasi] = useState<any>(null);
-  const [pelamarList, setPelamarList] = useState<PelamarDetail[]>([]);
-  const [selectedPelamar, setSelectedPelamar] = useState<PelamarDetail | null>(null);
-
-  const [statusVerifikasi, setStatusVerifikasi] = useState<string>("Menunggu Verifikasi");
-  const [successModal, setSuccessModal] = useState<{ isOpen: boolean; title: string; message: string; redirectOnClose?: boolean }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    redirectOnClose: false,
-  });
-
-  const isVerified = statusVerifikasi === "Terverifikasi";
-
-  // Master Options (for Settings form)
-  const [kategoriList, setKategoriList] = useState<any[]>([]);
-  const [kotaList, setKotaList] = useState<any[]>([]);
-  const [prodiList, setProdiList] = useState<ProdiOption[]>([]);
-  const [skillList, setSkillList] = useState<SkillOption[]>([]);
-
-  // Recommendation State
-  const [recKategoriIds, setRecKategoriIds] = useState<number[]>([]);
-  const [recProdiIds, setRecProdiIds] = useState<number[]>([]);
-  const [recSkillIds, setRecSkillIds] = useState<number[]>([]);
-
-  // Display limits for pagination (expand each 10)
-  const [kategoriLimit, setKategoriLimit] = useState(10);
-  const [prodiLimit, setProdiLimit] = useState(10);
-  const [skillLimit, setSkillLimit] = useState(10);
-
-  // Modal Pickers State
-  const [isKotaModalOpen, setIsKotaModalOpen] = useState(false);
-  const [isProdiModalOpen, setIsProdiModalOpen] = useState(false);
-  const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
-  const [isKategoriModalOpen, setIsKategoriModalOpen] = useState(false);
-
-  // Search queries inside modals
-  const [kotaSearch, setKotaSearch] = useState("");
-  const [prodiSearch, setProdiSearch] = useState("");
-  const [skillSearch, setSkillSearch] = useState("");
-  const [kategoriSearch, setKategoriSearch] = useState("");
-
-  const [isCreatingCustom, setIsCreatingCustom] = useState(false);
-
-  // Settings Form State
-  const [formData, setFormData] = useState({
-    judul: "",
-    tipe: "Akademik" as "Akademik" | "Magang",
-    selectedKategoriIds: [] as number[],
-    lokasi_id: 1,
-    tingkat_kesulitan: "Menengah" as "Pemula" | "Menengah" | "Lanjut",
-    slot: 5,
-    batas_waktu: "",
-    tanggal_selesai: "",
-    gaji_stipend: "",
-    deskripsi: "",
-    selectedProdiIds: [] as number[],
-    selectedSkillIds: [] as number[],
-  });
-
-  // Progress Tab States
-  const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
-  const [evalCatatan, setEvalCatatan] = useState("");
-
-  useEffect(() => {
-    if (!id) return;
-
-    let isMounted = true;
-
-    async function loadData() {
-      setIsLoading(true);
-      try {
-        const [categories, kotas, prodis, skills, profile] = await Promise.all([
-          companyService.fetchKategoriMinat(),
-          companyService.fetchKotaList(),
-          companyServiceExtended.fetchProdiList(),
-          companyServiceExtended.fetchSkillsList(),
-          companyService.fetchCompanyProfile(),
-        ]);
-
-        if (isMounted) {
-          setKategoriList(categories);
-          setKotaList(kotas);
-          setProdiList(prodis);
-          setSkillList(skills);
-          if (profile) {
-            setStatusVerifikasi(profile.status_verifikasi);
-          }
-        }
-
-        const { data: row, error } = await supabase
-          .from("kolaborasi")
-          .select(`
-            id, judul, tipe, deskripsi, lokasi_id, batas_waktu, tanggal_selesai, status_moderasi,
-            tingkat_kesulitan, gaji_stipend, slot, kategori_id,
-            kategori_minat:kategori_id ( nama_kategori ),
-            kota ( nama_kota ),
-            kolaborasi_target_prodi ( prodi_id ),
-            kolaborasi_skills ( skill_id ),
-            pendaftaran_kolaborasi (
-              id,
-              kolaborasi_id,
-              mahasiswa_id,
-              tanggal_daftar,
-              status,
-              catatan_perusahaan,
-              url_portofolio_dokumen,
-              mahasiswa_profiles (
-                nama_lengkap,
-                semester,
-                ringkasan_self,
-                foto_url,
-                reputation_score,
-                universitas ( nama_universitas ),
-                program_studi ( nama_prodi )
-              ),
-              riwayat_pengumpulan_kolaborasi (
-                id,
-                versi,
-                url_hasil,
-                catatan_mahasiswa,
-                evaluasi_perusahaan,
-                status_evaluasi,
-                created_at
-              )
-            )
-          `)
-          .eq("id", id as string)
-          .single();
-
-        if (error) {
-          console.error("Gagal memuat detail kolaborasi:", error.message);
-          return;
-        }
-
-        if (row && isMounted) {
-          let selectedKategoriIds: number[] = [];
-          try {
-            const { data: pivotData, error: pivotError } = await supabase
-              .from("kolaborasi_kategori_minat")
-              .select("kategori_id")
-              .eq("kolaborasi_id", id as string);
-
-            if (!pivotError && pivotData && pivotData.length > 0) {
-              selectedKategoriIds = pivotData.map((d: any) => d.kategori_id);
-            } else {
-              if (row.kategori_id) {
-                selectedKategoriIds = [row.kategori_id];
-              }
-            }
-          } catch (err) {
-            console.error("Gagal kueri kolaborasi_kategori_minat, fallback ke kategori_id:", err);
-            if (row.kategori_id) {
-              selectedKategoriIds = [row.kategori_id];
-            }
-          }
-
-          setKolaborasi(row);
-
-          const mappedPelamar: PelamarDetail[] = (row.pendaftaran_kolaborasi || []).map((p: any) => {
-            const mProfile = p.mahasiswa_profiles;
-            const riwayat = (p.riwayat_pengumpulan_kolaborasi || []).sort(
-              (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            );
-            const latestSubmission = riwayat[0] || null;
-
-            return {
-              id: p.id,
-              kolaborasi_id: p.kolaborasi_id,
-              mahasiswa_id: p.mahasiswa_id,
-              nama_lengkap: mProfile?.nama_lengkap || "Mahasiswa",
-              universitas: mProfile?.universitas?.nama_universitas || "Universitas Tidak Diketahui",
-              program_studi: mProfile?.program_studi?.nama_prodi || "Program Studi Tidak Diketahui",
-              semester: mProfile?.semester || "-",
-              ringkasan_self: mProfile?.ringkasan_self || "Tidak ada deskripsi profil.",
-              foto_url: mProfile?.foto_url,
-              reputation_score: mProfile?.reputation_score || 0,
-              tanggal_daftar: p.tanggal_daftar,
-              status: p.status,
-              catatan_perusahaan: latestSubmission?.evaluasi_perusahaan || p.catatan_perusahaan,
-              url_portofolio_dokumen: p.url_portofolio_dokumen,
-              url_hasil_kolaborasi: latestSubmission?.url_hasil,
-              catatan_hasil_kolaborasi: latestSubmission?.catatan_mahasiswa,
-              riwayat_pengumpulan: riwayat,
-            };
-          });
-          setPelamarList(mappedPelamar);
-
-          const activeProdis = (row.kolaborasi_target_prodi || []).map((p: any) => p.prodi_id);
-          const activeSkills = (row.kolaborasi_skills || []).map((s: any) => s.skill_id);
-
-          setFormData({
-            judul: row.judul || "",
-            tipe: row.tipe === "Magang" ? "Magang" : "Akademik",
-            selectedKategoriIds: selectedKategoriIds,
-            lokasi_id: row.lokasi_id || (kotas[0]?.id || 1),
-            tingkat_kesulitan: row.tingkat_kesulitan || "Menengah",
-            slot: row.slot || 5,
-            batas_waktu: row.batas_waktu || "",
-            tanggal_selesai: row.tanggal_selesai || "",
-            gaji_stipend: row.gaji_stipend || "",
-            deskripsi: row.deskripsi || "",
-            selectedProdiIds: activeProdis,
-            selectedSkillIds: activeSkills,
-          });
-        }
-      } catch (err) {
-        console.error("Gagal memuat detail kolaborasi:", err);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-
-    loadData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
-
-  useEffect(() => {
-    const recommendedKats = recommendKategori(formData.judul, kategoriList);
-    setRecKategoriIds(recommendedKats);
-  }, [formData.judul, kategoriList]);
-
-  useEffect(() => {
-    const recommendedProdis = recommendItems(
-      formData.judul,
-      formData.selectedKategoriIds,
-      kategoriList,
-      prodiList,
-      "nama_prodi"
-    );
-    const recommendedSkills = recommendItems(
-      formData.judul,
-      formData.selectedKategoriIds,
-      kategoriList,
-      skillList,
-      "nama_skill"
-    );
-    setRecProdiIds(recommendedProdis);
-    setRecSkillIds(recommendedSkills);
-  }, [formData.judul, formData.selectedKategoriIds, kategoriList, prodiList, skillList]);
-
-  const handleUpdateStatus = async (
-    pendaftaranId: string,
-    newStatus: StatusLamaran,
-    catatan?: string
-  ) => {
-    const confirmMsg =
-      newStatus === "Diterima"
-        ? "Apakah Anda yakin ingin menerima pelamar ini?"
-        : newStatus === "Ditolak"
-        ? "Apakah Anda yakin ingin menolak pelamar ini?"
-        : "Apakah Anda yakin ingin menandai proyek selesai untuk mahasiswa ini?";
-
-    if (!confirm(confirmMsg)) return;
-
-    const isSuccess = await pelamarService.updateStatusPelamar(pendaftaranId, newStatus, catatan);
-
-    if (isSuccess) {
-      setPelamarList((prev) =>
-        prev.map((p) =>
-          p.id === pendaftaranId
-            ? { ...p, status: newStatus, catatan_perusahaan: catatan || p.catatan_perusahaan }
-            : p
-        )
-      );
-      if (selectedPelamar && selectedPelamar.id === pendaftaranId) {
-        setSelectedPelamar((prev) =>
-          prev ? { ...prev, status: newStatus, catatan_perusahaan: catatan || prev.catatan_perusahaan } : null
-        );
-      }
-      setEvaluatingId(null);
-      setEvalCatatan("");
-
-      setSuccessModal({
-        isOpen: true,
-        title: "Status Diperbarui",
-        message: `Status pelamar telah berhasil diubah menjadi: ${newStatus}.`,
-      });
-    } else {
-      alert("Gagal memperbarui status pendaftaran.");
-    }
-  };
-
-  const handleSaveSettings = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!id) return;
-
-    if (formData.selectedKategoriIds.length === 0) {
-      alert("Pilih minimal satu Kategori Minat.");
-      return;
-    }
-
-    setIsSaving(true);
-    const success = await companyServiceExtended.updateFullKolaborasi(id as string, {
-      judul: formData.judul,
-      tipe: formData.tipe,
-      kategori_id: formData.selectedKategoriIds[0] || 1,
-      deskripsi: formData.deskripsi,
-      lokasi_id: formData.lokasi_id,
-      batas_waktu: formData.batas_waktu,
-      tanggal_selesai: formData.tanggal_selesai || undefined,
-      tingkat_kesulitan: formData.tingkat_kesulitan,
-      gaji_stipend: formData.gaji_stipend,
-      slot: formData.slot,
-      target_prodi_ids: formData.selectedProdiIds,
-      skill_ids: formData.selectedSkillIds,
-      target_kategori_ids: formData.selectedKategoriIds,
-    });
-    setIsSaving(false);
-
-    if (success) {
-      setSuccessModal({
-        isOpen: true,
-        title: "Perubahan Disimpan",
-        message: "Detail kolaborasi telah berhasil diperbarui.",
-      });
-      const matchedKategoriNames = formData.selectedKategoriIds
-        .map(katId => kategoriList.find(k => k.id === katId)?.nama_kategori || "")
-        .filter(Boolean)
-        .join(", ");
-
-      const matchedKota = kotaList.find((k) => k.id === formData.lokasi_id);
-
-      setKolaborasi((prev: any) => ({
-        ...prev,
-        judul: formData.judul,
-        tipe: formData.tipe,
-        deskripsi: formData.deskripsi,
-        batas_waktu: formData.batas_waktu,
-        tingkat_kesulitan: formData.tingkat_kesulitan,
-        gaji_stipend: formData.gaji_stipend,
-        slot: formData.slot,
-        kategori_minat: { nama_kategori: matchedKategoriNames || "Umum" },
-        kota: matchedKota ? { nama_kota: matchedKota.nama_kota } : prev.kota,
-      }));
-    } else {
-      alert("Gagal memperbarui kolaborasi. Periksa kembali input Anda.");
-    }
-  };
-
-  const handleDeleteProyek = async () => {
-    if (!id || !kolaborasi) return;
-
-    const confirmFirst = confirm(`Apakah Anda yakin ingin menghapus kolaborasi "${kolaborasi.judul}"?`);
-    if (!confirmFirst) return;
-
-    setIsDeleting(true);
-    const isSuccess = await companyService.deleteKolaborasi(id as string);
-    setIsDeleting(false);
-
-    if (isSuccess) {
-      setSuccessModal({
-        isOpen: true,
-        title: "Proyek Dihapus",
-        message: "Proyek kolaborasi berhasil dihapus dari database.",
-        redirectOnClose: true,
-      });
-    } else {
-      alert("Gagal menghapus proyek. Periksa kembali hak akses Anda.");
-    }
-  };
-
-  const toggleProdi = (prodiId: number) => {
-    setFormData((prev) => {
-      const exists = prev.selectedProdiIds.includes(prodiId);
-      return {
-        ...prev,
-        selectedProdiIds: exists
-          ? prev.selectedProdiIds.filter((pId) => pId !== prodiId)
-          : [...prev.selectedProdiIds, prodiId],
-      };
-    });
-  };
-
-  const toggleSkill = (skillId: number) => {
-    setFormData((prev) => {
-      const exists = prev.selectedSkillIds.includes(skillId);
-      return {
-        ...prev,
-        selectedSkillIds: exists
-          ? prev.selectedSkillIds.filter((sId) => sId !== skillId)
-          : [...prev.selectedSkillIds, skillId],
-      };
-    });
-  };
-
-  const toggleKategori = (katId: number) => {
-    setFormData((prev) => {
-      const exists = prev.selectedKategoriIds.includes(katId);
-      return {
-        ...prev,
-        selectedKategoriIds: exists
-          ? prev.selectedKategoriIds.filter((kId) => kId !== katId)
-          : [...prev.selectedKategoriIds, katId],
-      };
-    });
-  };
-
-  const handleAddCustomKategori = async (namaKategori: string) => {
-    if (!namaKategori.trim()) return;
-    setIsCreatingCustom(true);
-    try {
-      const { data, error } = await supabase
-        .from("kategori_minat")
-        .insert([{ nama_kategori: namaKategori }])
-        .select("id, nama_kategori")
-        .single();
-
-      if (!error && data) {
-        setKategoriList(prev => [...prev, data]);
-        toggleKategori(data.id);
-        setKategoriSearch("");
-      } else {
-        const { data: existing } = await supabase
-          .from("kategori_minat")
-          .select("id, nama_kategori")
-          .eq("nama_kategori", namaKategori)
-          .maybeSingle();
-
-        if (existing) {
-          if (!kategoriList.some(k => k.id === existing.id)) {
-            setKategoriList(prev => [...prev, existing]);
-          }
-          toggleKategori(existing.id);
-          setKategoriSearch("");
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsCreatingCustom(false);
-    }
-  };
-
-  const handleAddCustomProdi = async (namaProdi: string) => {
-    if (!namaProdi.trim()) return;
-    setIsCreatingCustom(true);
-    try {
-      const { data, error } = await supabase
-        .from("program_studi")
-        .insert([{ nama_prodi: namaProdi, jenjang: "Umum" }])
-        .select("id, nama_prodi, jenjang")
-        .single();
-
-      if (!error && data) {
-        setProdiList(prev => [...prev, data]);
-        toggleProdi(data.id);
-        setProdiSearch("");
-      } else {
-        const { data: existing } = await supabase
-          .from("program_studi")
-          .select("id, nama_prodi, jenjang")
-          .eq("nama_prodi", namaProdi)
-          .maybeSingle();
-
-        if (existing) {
-          if (!prodiList.some(p => p.id === existing.id)) {
-            setProdiList(prev => [...prev, existing]);
-          }
-          toggleProdi(existing.id);
-          setProdiSearch("");
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsCreatingCustom(false);
-    }
-  };
-
-  const handleAddCustomSkill = async (namaSkill: string) => {
-    if (!namaSkill.trim()) return;
-    setIsCreatingCustom(true);
-    try {
-      const { data, error } = await supabase
-        .from("skills")
-        .insert([{ nama_skill: namaSkill }])
-        .select("id, nama_skill")
-        .single();
-
-      if (!error && data) {
-        setSkillList(prev => [...prev, data]);
-        toggleSkill(data.id);
-        setSkillSearch("");
-      } else {
-        const { data: existing } = await supabase
-          .from("skills")
-          .select("id, nama_skill")
-          .eq("nama_skill", namaSkill)
-          .maybeSingle();
-
-        if (existing) {
-          if (!skillList.some(s => s.id === existing.id)) {
-            setSkillList(prev => [...prev, existing]);
-          }
-          toggleSkill(existing.id);
-          setSkillSearch("");
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsCreatingCustom(false);
-    }
-  };
-
-  const cleanProdiList = prodiList.filter(p => p && p.nama_prodi);
-  const prodisWithLainnya = cleanProdiList.some(p => p.nama_prodi === "Lainnya")
-    ? cleanProdiList
-    : [{ id: -999, nama_prodi: "Lainnya", jenjang: "Umum" }, ...cleanProdiList];
-
-  const top10RecProdiIds = useMemo(() => recProdiIds.slice(0, 10), [recProdiIds]);
-  const top10RecSkillIds = useMemo(() => recSkillIds.slice(0, 10), [recSkillIds]);
-
-  const sortedKategoris = useMemo(() => {
-    return [...kategoriList].sort((a, b) => {
-      const aSel = formData.selectedKategoriIds.includes(a.id);
-      const bSel = formData.selectedKategoriIds.includes(b.id);
-      if (aSel && !bSel) return -1;
-      if (!aSel && bSel) return 1;
-
-      const aRecIdx = recKategoriIds.indexOf(a.id);
-      const bRecIdx = recKategoriIds.indexOf(b.id);
-      const aRec = aRecIdx !== -1;
-      const bRec = bRecIdx !== -1;
-      if (aRec && !bRec) return -1;
-      if (!aRec && bRec) return 1;
-      if (aRec && bRec) return aRecIdx - bRecIdx;
-
-      return 0;
-    });
-  }, [kategoriList, formData.selectedKategoriIds, recKategoriIds]);
-
-  const sortedProdis = useMemo(() => {
-    return [...prodisWithLainnya].sort((a, b) => {
-      const aSel = formData.selectedProdiIds.includes(a.id);
-      const bSel = formData.selectedProdiIds.includes(b.id);
-      if (aSel && !bSel) return -1;
-      if (!aSel && bSel) return 1;
-
-      const aRecIdx = recProdiIds.indexOf(a.id);
-      const bRecIdx = recProdiIds.indexOf(b.id);
-      const aRec = aRecIdx !== -1;
-      const bRec = bRecIdx !== -1;
-      if (aRec && !bRec) return -1;
-      if (!aRec && bRec) return 1;
-      if (aRec && bRec) return aRecIdx - bRecIdx;
-
-      return 0;
-    });
-  }, [prodisWithLainnya, formData.selectedProdiIds, recProdiIds]);
-
-  const sortedSkills = useMemo(() => {
-    return [...skillList].sort((a, b) => {
-      const aSel = formData.selectedSkillIds.includes(a.id);
-      const bSel = formData.selectedSkillIds.includes(b.id);
-      if (aSel && !bSel) return -1;
-      if (!aSel && bSel) return 1;
-
-      const aRecIdx = recSkillIds.indexOf(a.id);
-      const bRecIdx = recSkillIds.indexOf(b.id);
-      const aRec = aRecIdx !== -1;
-      const bRec = bRecIdx !== -1;
-      if (aRec && !bRec) return -1;
-      if (!aRec && bRec) return 1;
-      if (aRec && bRec) return aRecIdx - bRecIdx;
-
-      return 0;
-    });
-  }, [skillList, formData.selectedSkillIds, recSkillIds]);
-
-  const visibleKategoris = sortedKategoris.slice(0, kategoriLimit);
-  const visibleProdis = sortedProdis.slice(0, prodiLimit);
-  const visibleSkills = sortedSkills.slice(0, skillLimit);
-
-  const searchedKotaOptions = kotaList.filter(k =>
-    k.nama_kota.toLowerCase().includes(kotaSearch.toLowerCase())
-  );
-  const searchedKategoriOptions = kategoriList.filter(k =>
-    k.nama_kategori.toLowerCase().includes(kategoriSearch.toLowerCase())
-  );
-  const isKategoriSearchEmpty = searchedKategoriOptions.length === 0 && kategoriSearch.trim() !== "";
-
-  const searchedProdiOptions = prodisWithLainnya.filter(p =>
-    p.nama_prodi.toLowerCase().includes(prodiSearch.toLowerCase())
-  );
-  const isProdiSearchEmpty = searchedProdiOptions.length === 0 && prodiSearch.trim() !== "";
-
-  const searchedSkillOptions = skillList.filter(s =>
-    s.nama_skill.toLowerCase().includes(skillSearch.toLowerCase())
-  );
-  const isSkillSearchEmpty = searchedSkillOptions.length === 0 && skillSearch.trim() !== "";
-
-  const selectedKotaObj = kotaList.find(k => k.id === formData.lokasi_id);
-
-  const stats = {
-    total: pelamarList.length,
-    menunggu: pelamarList.filter((p) => p.status === "Menunggu").length,
-    diterima: pelamarList.filter((p) => p.status === "Diterima").length,
-    ditolak: pelamarList.filter((p) => p.status === "Ditolak").length,
-    selesai: pelamarList.filter((p) => p.status === "Selesai").length,
-  };
-
-  const activeTeamCount = stats.diterima + stats.selesai;
-  let progressState = "Seleksi Pelamar";
-  let progressDesc = "Sedang mengevaluasi profil pendaftar mahasiswa.";
-  if (stats.selesai > 0 && stats.diterima === 0) {
-    progressState = "Selesai";
-    progressDesc = "Seluruh rangkaian kolaborasi selesai dijalankan.";
-  } else if (activeTeamCount > 0) {
-    progressState = "Kolaborasi Berjalan";
-    progressDesc = "Sedang berkolaborasi aktif dengan tim mahasiswa terpilih.";
-  }
-
-  const getKategoriDisplay = () => {
-    return kolaborasi.kategori_minat?.nama_kategori || "Umum";
-  };
+  const {
+    router,
+    currentUserId,
+    activeTab,
+    setActiveTab,
+    isLoading,
+    isSaving,
+    isDeleting,
+    kolaborasi,
+    pelamarList,
+    selectedPelamar,
+    setSelectedPelamar,
+    chatMessages,
+    chatInput,
+    setChatInput,
+    isSendingChat,
+    handleKirimChat,
+    evaluasiInput,
+    setEvaluasiInput,
+    isSubmittingEvaluasi,
+    handleKirimEvaluasi,
+    isSubmittingRevisi,
+    handleMintaRevisi,
+    deleteCatatanPerusahaan,
+    setDeleteCatatanPerusahaan,
+    statusVerifikasi,
+    isVerified,
+    successModal,
+    setSuccessModal,
+    recKategoriIds,
+    top10RecProdiIds,
+    top10RecSkillIds,
+    kategoriLimit,
+    setKategoriLimit,
+    prodiLimit,
+    setProdiLimit,
+    skillLimit,
+    setSkillLimit,
+    isKotaModalOpen,
+    setIsKotaModalOpen,
+    isProdiModalOpen,
+    setIsProdiModalOpen,
+    isSkillModalOpen,
+    setIsSkillModalOpen,
+    isKategoriModalOpen,
+    setIsKategoriModalOpen,
+    isDeleteModalOpen,
+    setIsDeleteModalOpen,
+    kotaSearch,
+    setKotaSearch,
+    prodiSearch,
+    setProdiSearch,
+    skillSearch,
+    setSkillSearch,
+    kategoriSearch,
+    setKategoriSearch,
+    isCreatingCustom,
+    formData,
+    setFormData,
+    handleUpdateStatus,
+    handleSaveSettings,
+    handleDeleteProyek,
+    handleRequestDeleteProyek,
+    toggleProdi,
+    toggleSkill,
+    toggleKategori,
+    handleAddCustomKategori,
+    handleAddCustomProdi,
+    handleAddCustomSkill,
+    visibleKategoris,
+    visibleProdis,
+    visibleSkills,
+    sortedKategoris,
+    sortedProdis,
+    sortedSkills,
+    searchedKotaOptions,
+    searchedKategoriOptions,
+    isKategoriSearchEmpty,
+    searchedProdiOptions,
+    isProdiSearchEmpty,
+    searchedSkillOptions,
+    isSkillSearchEmpty,
+    selectedKotaObj,
+    stats,
+    hasPelamarAktif,
+    getKategoriDisplay,
+  } = useKolaborasiDetail();
 
   if (isLoading) {
     return (
       <div className="flex h-96 items-center justify-center font-mono text-xs text-steel">
-        Memuat detail proyek kolaborasi...
+        <div className="flex items-center gap-2">
+          <svg className="animate-spin h-5 w-5 text-bridge-gold" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Memuat detail proyek kolaborasi...
+        </div>
       </div>
     );
   }
@@ -841,49 +149,27 @@ export default function DetailKolaborasiPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 pb-16">
-      {/* Breadcrumb & Header */}
-      <div className="border-b border-steel/15 pb-6">
-        <div className="flex items-center gap-2 font-mono text-xs text-steel">
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 pt-6 pb-16 font-sans">
+      {/* Header Utama (Tanpa Badge Gambar 1) */}
+      <div className="border-b border-steel/15 pb-4">
+        <div className="flex items-center gap-2 font-mono text-xs text-steel mb-2">
           <Link href="/perusahaan/kolaborasi" className="hover:text-ink transition">
             Kelola Kolaborasi
           </Link>
-          <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+          <svg className="h-3 w-3 shrink-0 text-steel/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
             <polyline points="9 18 15 12 9 6" />
           </svg>
-          <span className="text-ink font-medium truncate max-w-[200px] sm:max-w-xs">{kolaborasi.judul}</span>
+          <span className="text-ink font-medium truncate max-w-[250px] sm:max-w-md">{kolaborasi.judul}</span>
         </div>
 
-        <div className="mt-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-steel/10 px-3 py-1 font-mono text-[11px] font-medium text-steel">
-                {getKategoriDisplay()}
-              </span>
-              <span
-                className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-semibold border ${
-                  kolaborasi.tipe === "Magang"
-                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                    : "bg-blue-50 text-blue-800 border-blue-200"
-                }`}
-              >
-                {kolaborasi.tipe}
-              </span>
-              <span className="rounded-full bg-bridge-gold/15 border border-bridge-gold/30 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-ink">
-                Slot: {kolaborasi.slot || 0}
-              </span>
-              <span className="rounded-full bg-steel/5 border border-steel/15 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-steel">
-                Moderasi: {kolaborasi.status_moderasi}
-              </span>
-            </div>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink leading-tight">
-              {kolaborasi.judul}
-            </h1>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink leading-tight">
+            {kolaborasi.judul}
+          </h1>
 
           <Link
             href="/perusahaan/kolaborasi"
-            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-steel/20 bg-white px-4 py-2 font-mono text-xs font-medium text-ink hover:bg-steel/5 transition shadow-sm self-start md:self-auto"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-steel/20 bg-white px-5 py-2 font-mono text-xs font-semibold text-ink hover:bg-steel/5 transition shadow-sm shrink-0"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <polyline points="15 18 9 12 15 6" />
@@ -893,421 +179,339 @@ export default function DetailKolaborasiPage() {
         </div>
       </div>
 
-      {/* Tabs Selector */}
-      <div className="mt-6 flex border-b border-steel/10 font-mono text-xs">
-        <button
-          onClick={() => setActiveTab("pelamar")}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 transition font-medium ${
-            activeTab === "pelamar"
-              ? "border-bridge-gold text-ink font-semibold"
-              : "border-transparent text-steel hover:text-ink"
-          }`}
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-          </svg>
-          Daftar Pelamar ({stats.menunggu})
-        </button>
+      {/* Tabs Selector Modern Segmented Control (Gambar 2 Perbagus Web Style) */}
+      <div className="mt-5">
+        <div className="inline-flex p-1 bg-steel/10 rounded-2xl font-mono text-xs shadow-inner border border-steel/10">
+          <button
+            onClick={() => setActiveTab("pelamar")}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all duration-200 ${
+              activeTab === "pelamar"
+                ? "bg-white text-ink shadow-md transform scale-[1.02]"
+                : "text-steel hover:text-ink hover:bg-white/40"
+            }`}
+          >
+            <svg className="h-4 w-4 text-bridge-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+            </svg>
+            Pelamar &amp; Evaluasi ({stats.total})
+          </button>
 
-        <button
-          onClick={() => setActiveTab("progress")}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 transition font-medium ${
-            activeTab === "progress"
-              ? "border-bridge-gold text-ink font-semibold"
-              : "border-transparent text-steel hover:text-ink"
-          }`}
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-          </svg>
-          Progres & Hasil ({activeTeamCount})
-        </button>
-
-        <button
-          onClick={() => setActiveTab("settings")}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 transition font-medium ${
-            activeTab === "settings"
-              ? "border-bridge-gold text-ink font-semibold"
-              : "border-transparent text-steel hover:text-ink"
-          }`}
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
-          Settings
-        </button>
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all duration-200 ${
+              activeTab === "settings"
+                ? "bg-white text-ink shadow-md transform scale-[1.02]"
+                : "text-steel hover:text-ink hover:bg-white/40"
+            }`}
+          >
+            <svg className="h-4 w-4 text-steel" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            Settings &amp; Proyek
+          </button>
+        </div>
       </div>
 
       {/* Tab Contents */}
-      <div className="mt-8 font-sans">
-        {/* ==================== TAB 1: DAFTAR PELAMAR ==================== */}
+      <div className="mt-6">
+        {/* ==================== TAB 1: PELAMAR & EVALUASI ==================== */}
         {activeTab === "pelamar" && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="rounded-2xl border border-steel/15 bg-white p-4">
-                <span className="font-mono text-[10px] text-steel block">Total Pelamar</span>
-                <strong className="font-display text-xl font-bold text-ink">{stats.total}</strong>
+          <div className="space-y-6">
+            
+            {/* BARIS ATAS: Kartu Opsi Pemilihan Pelamar */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between font-mono text-xs text-steel px-1">
+                <span className="font-bold text-ink">Daftar Pelamar Proyek ({pelamarList.length})</span>
+                <span>Pilih mahasiswa untuk membuka chat &amp; evaluasi</span>
               </div>
-              <div className="rounded-2xl border border-steel/15 bg-white p-4">
-                <span className="font-mono text-[10px] text-steel block">Menunggu Review</span>
-                <strong className="font-display text-xl font-bold text-amber-600">{stats.menunggu}</strong>
-              </div>
-              <div className="rounded-2xl border border-steel/15 bg-white p-4">
-                <span className="font-mono text-[10px] text-steel block">Diterima</span>
-                <strong className="font-display text-xl font-bold text-emerald-700">{stats.diterima}</strong>
-              </div>
-              <div className="rounded-2xl border border-steel/15 bg-white p-4">
-                <span className="font-mono text-[10px] text-steel block">Ditolak</span>
-                <strong className="font-display text-xl font-bold text-red-700">{stats.ditolak}</strong>
-              </div>
-            </div>
 
-            {/* Grid Card Pelamar */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {pelamarList.length === 0 ? (
-                <div className="col-span-full rounded-2xl border border-dashed border-steel/20 bg-white p-12 text-center font-mono text-xs text-steel">
-                  Belum ada mahasiswa yang melamar pada proyek kolaborasi ini.
+                <div className="rounded-2xl border border-dashed border-steel/20 bg-white p-8 text-center font-mono text-xs text-steel">
+                  Belum ada mahasiswa yang melamar pada proyek ini.
                 </div>
               ) : (
-                pelamarList.map((pelamar) => (
-                  <PelamarCard
-                    key={pelamar.id}
-                    pelamar={pelamar}
-                    onViewDetail={setSelectedPelamar}
-                    onUpdateStatus={handleUpdateStatus}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ==================== TAB 2: PROGRES & HASIL ==================== */}
-        {activeTab === "progress" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-            <div className="lg:col-span-1 space-y-6">
-              <div className="rounded-2xl border border-steel/15 bg-white p-6 space-y-4">
-                <h3 className="font-display font-bold text-ink text-base">Status Progres Kolaborasi</h3>
-                <div>
-                  <span
-                    className={`rounded-full px-3 py-1 font-mono text-xs font-bold ${
-                      progressState === "Selesai"
-                        ? "bg-blue-50 text-blue-800 border border-blue-200"
-                        : progressState === "Kolaborasi Berjalan"
-                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                        : "bg-amber-50 text-amber-800 border border-amber-200"
-                    }`}
-                  >
-                    {progressState}
-                  </span>
-                  <p className="mt-3 text-xs text-steel font-medium leading-relaxed">
-                    {progressDesc}
-                  </p>
-                </div>
-
-                <div className="pt-4 border-t border-steel/10 grid grid-cols-2 gap-4 text-center font-mono">
-                  <div className="bg-steel/5 rounded-xl p-3">
-                    <span className="text-[10px] text-steel block">Tim Aktif</span>
-                    <strong className="text-lg text-ink font-bold">{activeTeamCount}</strong>
-                  </div>
-                  <div className="bg-steel/5 rounded-xl p-3">
-                    <span className="text-[10px] text-steel block">Lulus/Selesai</span>
-                    <strong className="text-lg text-emerald-700 font-bold">{stats.selesai}</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-steel/15 bg-white p-6 space-y-5">
-                <h3 className="font-display font-bold text-ink text-base">Milestone Pelaksanaan</h3>
-                <div className="relative border-l border-steel/15 pl-4 space-y-6 font-mono text-xs">
-                  <div className="relative">
-                    <div className="absolute -left-[21px] top-1.5 h-3 w-3 rounded-full bg-emerald-600 border border-white" />
-                    <strong className="text-ink text-[11px] block">1. Persiapan & Publikasi</strong>
-                    <p className="text-[10px] text-steel mt-0.5 font-sans leading-relaxed">Peluang kolaborasi dipublikasikan di platform.</p>
-                  </div>
-                  <div className="relative">
-                    <div className={`absolute -left-[21px] top-1.5 h-3 w-3 rounded-full border border-white ${
-                      stats.total > 0 ? "bg-emerald-600" : "bg-amber-500"
-                    }`} />
-                    <strong className="text-ink text-[11px] block">2. Seleksi Mahasiswa</strong>
-                    <p className="text-[10px] text-steel mt-0.5 font-sans leading-relaxed">Mengevaluasi lamaran pendaftaran mahasiswa.</p>
-                  </div>
-                  <div className="relative">
-                    <div className={`absolute -left-[21px] top-1.5 h-3 w-3 rounded-full border border-white ${
-                      activeTeamCount > 0 ? "bg-emerald-600" : "bg-steel/30"
-                    }`} />
-                    <strong className="text-ink text-[11px] block">3. Kolaborasi Aktif</strong>
-                    <p className="text-[10px] text-steel mt-0.5 font-sans leading-relaxed">Melaksanakan pengerjaan proyek bersama tim terpilih.</p>
-                  </div>
-                  <div className="relative">
-                    <div className={`absolute -left-[21px] top-1.5 h-3 w-3 rounded-full border border-white ${
-                      stats.selesai > 0 && stats.diterima === 0 ? "bg-emerald-600" : "bg-steel/30"
-                    }`} />
-                    <strong className="text-ink text-[11px] block">4. Evaluasi & Selesai</strong>
-                    <p className="text-[10px] text-steel mt-0.5 font-sans leading-relaxed">Pemberian review akhir serta sertifikat kelulusan.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-2 space-y-6">
-              <div className="rounded-2xl border border-steel/15 bg-white p-6 space-y-4">
-                <h3 className="font-display font-bold text-ink text-base">Daftar Tim Mahasiswa</h3>
-                <div className="space-y-4">
-                  {pelamarList.filter((p) => p.status === "Diterima" || p.status === "Diproses" || p.status === "Evaluasi" || p.status === "Revisi" || p.status === "Selesai").length === 0 ? (
-                    <div className="py-8 text-center font-mono text-xs text-steel">
-                      Belum ada mahasiswa yang berstatus diterima/aktif.
-                    </div>
-                  ) : (
-                    pelamarList
-                      .filter((p) => p.status === "Diterima" || p.status === "Diproses" || p.status === "Evaluasi" || p.status === "Revisi" || p.status === "Selesai")
-                      .map((member) => (
-                        <div
-                          key={member.id}
-                          className="rounded-xl border border-steel/10 bg-steel/5 p-4 space-y-3 shadow-xs"
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bridge-gold/30 font-display font-bold text-ink text-sm">
-                                {member.nama_lengkap.charAt(0)}
-                              </div>
-                              <div>
-                                <h4 className="font-display font-bold text-ink text-sm">{member.nama_lengkap}</h4>
-                                <p className="font-mono text-[10px] text-steel">
-                                  {member.program_studi} • {member.universitas}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`rounded-full px-2.5 py-0.5 font-mono text-[9px] font-bold border ${
-                                  member.status === "Evaluasi"
-                                    ? "bg-purple-100 text-purple-800 border-purple-300"
-                                    : member.status === "Revisi"
-                                    ? "bg-orange-100 text-orange-800 border-orange-300"
-                                    : member.status === "Selesai"
-                                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                    : "bg-blue-100 text-blue-800 border-blue-200"
-                                }`}
-                              >
-                                {member.status === "Evaluasi" ? "Menunggu Evaluasi" : member.status === "Revisi" ? "Perlu Revisi" : member.status}
-                              </span>
-                              {member.status !== "Selesai" && evaluatingId !== member.id && (
-                                <button
-                                  onClick={() => {
-                                    setEvaluatingId(member.id);
-                                    setEvalCatatan("");
-                                  }}
-                                  className="rounded-full bg-bridge-gold px-3.5 py-1.5 font-mono text-[10px] font-bold text-ink hover:bg-bridge-gold/90 transition shadow-xs"
-                                >
-                                  Evaluasi &amp; Beri Masukan
-                                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {pelamarList.map((pelamar) => {
+                    const isSelected = selectedPelamar?.id === pelamar.id;
+                    return (
+                      <div
+                        key={pelamar.id}
+                        onClick={() => setSelectedPelamar(pelamar)}
+                        className={`rounded-2xl border p-4 cursor-pointer transition-all duration-200 shadow-sm relative ${
+                          isSelected
+                            ? "border-bridge-gold bg-amber-50/40 ring-2 ring-bridge-gold/50 shadow-md transform -translate-y-0.5"
+                            : "border-steel/15 bg-white hover:border-steel/30 hover:bg-steel/5"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 shrink-0 rounded-full bg-steel/10 border border-steel/20 flex items-center justify-center font-display font-bold text-ink overflow-hidden text-xs">
+                              {pelamar.foto_url ? (
+                                <img src={pelamar.foto_url} alt={pelamar.nama_lengkap} className="h-full w-full object-cover" />
+                              ) : (
+                                pelamar.nama_lengkap.charAt(0).toUpperCase()
                               )}
+                            </div>
+                            <div>
+                              <h4 className="font-display text-xs font-bold text-ink leading-tight truncate max-w-[120px]">
+                                {pelamar.nama_lengkap}
+                              </h4>
+                              <p className="font-mono text-[10px] text-steel truncate max-w-[120px]">
+                                {pelamar.program_studi}
+                              </p>
                             </div>
                           </div>
 
-                          {member.url_hasil_kolaborasi ? (
-                            <div className="mt-2 border-t border-steel/10 pt-2 font-mono text-xs space-y-1">
-                              <span className="text-[10px] text-steel font-bold uppercase block">Tautan Karya Mahasiswa:</span>
-                              <a
-                                href={member.url_hasil_kolaborasi}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-bridge-gold font-bold underline truncate block text-xs"
-                              >
-                                {member.url_hasil_kolaborasi} ↗
-                              </a>
-                              {member.catatan_hasil_kolaborasi && (
-                                <p className="font-sans text-[11px] text-ink italic bg-white p-2 rounded border border-steel/10">
-                                  &ldquo;{member.catatan_hasil_kolaborasi}&rdquo;
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="mt-2 border-t border-steel/10 pt-2 font-mono text-[10px] text-steel italic">
-                              Belum mengunggah tautan hasil karya.
-                            </div>
-                          )}
-
-                          {evaluatingId === member.id && (
-                            <div className="mt-3 border-t border-steel/10 pt-3 space-y-3">
-                              <div>
-                                <label className="block font-mono text-[10px] font-semibold text-steel uppercase mb-1">
-                                  Catatan Evaluasi / Rekomendasi Perusahaan
-                                </label>
-                                <textarea
-                                  rows={3}
-                                  value={evalCatatan}
-                                  onChange={(e) => setEvalCatatan(e.target.value)}
-                                  placeholder="Berikan feedback atau ulasan penyelesaian tugas mahasiswa pada proyek ini..."
-                                  className="w-full rounded-xl border border-steel/15 px-3 py-2 text-xs outline-none focus:border-bridge-gold bg-white"
-                                />
-                              </div>
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setEvaluatingId(null)}
-                                  className="rounded-full border border-steel/20 bg-white px-3 py-1 font-mono text-[10px] text-steel"
-                                >
-                                  Batal
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateStatus(member.id, "Revisi", evalCatatan)}
-                                  className="rounded-full border border-orange-300 bg-orange-50 px-4 py-1 font-mono text-[10px] font-bold text-orange-800 hover:bg-orange-100"
-                                >
-                                  Minta Revisi Karya
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateStatus(member.id, "Selesai", evalCatatan)}
-                                  className="rounded-full bg-emerald-600 px-4 py-1 font-mono text-[10px] font-bold text-white hover:bg-emerald-700"
-                                >
-                                  Setujui &amp; Selesai ✓
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {member.status === "Selesai" && member.catatan_perusahaan && (
-                            <div className="mt-2 text-xs border-t border-steel/10 pt-2 font-mono">
-                              <span className="text-steel font-semibold text-[10px] block">Catatan Evaluasi:</span>
-                              <p className="font-sans text-[11px] text-ink italic mt-1 bg-white/70 rounded-lg p-2.5 border border-steel/5">
-                                "{member.catatan_perusahaan}"
-                              </p>
-                            </div>
-                          )}
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 font-mono text-[9px] font-semibold border ${
+                              pelamar.status === "Diterima"
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                : pelamar.status === "Ditolak"
+                                ? "bg-red-50 text-red-800 border-red-200"
+                                : pelamar.status === "Selesai"
+                                ? "bg-blue-50 text-blue-800 border-blue-200"
+                                : pelamar.status === "Minta Revisi"
+                                ? "bg-purple-50 text-purple-800 border-purple-200"
+                                : "bg-amber-50 text-amber-800 border-amber-200"
+                            }`}
+                          >
+                            {pelamar.status}
+                          </span>
                         </div>
-                      ))
-                  )}
-                </div>
-              </div>
 
-              {activeTeamCount > 0 && (
-                <div className="rounded-2xl border border-steel/15 bg-white p-6 space-y-4">
-                  <h3 className="font-display font-bold text-ink text-base">Laporan &amp; Pengumpulan Karya Real Mahasiswa</h3>
-                  <div className="space-y-4 font-mono text-xs">
-                    {pelamarList.filter(p => p.url_hasil_kolaborasi || (p.riwayat_pengumpulan && p.riwayat_pengumpulan.length > 0)).length === 0 ? (
-                      <p className="text-[11px] text-steel py-4 text-center">Belum ada mahasiswa yang mengunggah hasil karya kolaborasi.</p>
-                    ) : (
-                      pelamarList
-                        .filter(p => p.url_hasil_kolaborasi || (p.riwayat_pengumpulan && p.riwayat_pengumpulan.length > 0))
-                        .map((item) => {
-                          const historyItems = item.riwayat_pengumpulan || [];
-                          return (
-                            <div key={item.id} className="p-5 border border-steel/15 rounded-2xl bg-steel/5 space-y-4 shadow-xs">
-                              <div className="flex items-center justify-between border-b border-steel/10 pb-3">
-                                <div className="space-y-0.5">
-                                  <strong className="text-ink text-sm font-bold block">{item.nama_lengkap}</strong>
-                                  <span className="text-[10px] text-steel font-sans">{item.program_studi} • {item.universitas}</span>
-                                </div>
-                                <span className={`rounded-full px-3 py-1 text-[10px] font-bold border ${
-                                  item.status === "Evaluasi" ? "bg-purple-100 text-purple-800 border-purple-300"
-                                  : item.status === "Revisi" ? "bg-orange-100 text-orange-800 border-orange-300"
-                                  : item.status === "Selesai" ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                  : "bg-blue-100 text-blue-800 border-blue-300"
-                                }`}>
-                                  {item.status === "Evaluasi" ? "Menunggu Evaluasi Perusahaan" : item.status === "Revisi" ? "Perlu Revisi" : item.status}
-                                </span>
-                              </div>
-
-                              <div className="space-y-3">
-                                <span className="text-[10px] uppercase font-bold text-steel block">
-                                  Log Riwayat Pengumpulan &amp; Evaluasi ({historyItems.length > 0 ? historyItems.length : 1}):
-                                </span>
-                                {historyItems.length > 0 ? (
-                                  historyItems.map((h: any, hIdx: number) => (
-                                    <div key={h.id || hIdx} className="bg-white p-3.5 rounded-xl border border-steel/10 space-y-2">
-                                      <div className="flex items-center justify-between border-b border-steel/10 pb-1.5">
-                                        <span className="font-bold text-ink text-[11px]">Versi #{h.versi || historyItems.length - hIdx}</span>
-                                        <span className="text-[10px] text-steel">
-                                          {h.created_at ? new Date(h.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-"}
-                                        </span>
-                                      </div>
-                                      <div>
-                                        <span className="text-[9px] uppercase font-bold text-steel block">Tautan Karya:</span>
-                                        <a href={h.url_hasil} target="_blank" rel="noreferrer" className="text-bridge-gold font-bold underline truncate block text-xs">
-                                          {h.url_hasil} ↗
-                                        </a>
-                                      </div>
-                                      {h.catatan_mahasiswa && (
-                                        <div>
-                                          <span className="text-[9px] uppercase font-bold text-steel block">Catatan Mahasiswa:</span>
-                                          <p className="font-sans text-[11px] text-ink italic bg-steel/5 p-2 rounded border border-steel/5">
-                                            &ldquo;{h.catatan_mahasiswa}&rdquo;
-                                          </p>
-                                        </div>
-                                      )}
-                                      {h.evaluasi_perusahaan && (
-                                        <div className="pt-1">
-                                          <span className="text-[9px] uppercase font-bold text-amber-800 block">Kritik / Evaluasi Perusahaan:</span>
-                                          <p className="font-sans text-[11px] text-amber-950 bg-amber-100/60 p-2 rounded border border-amber-300">
-                                            &ldquo;{h.evaluasi_perusahaan}&rdquo;
-                                          </p>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))
-                                ) : (
-                                  <div className="bg-white p-3.5 rounded-xl border border-steel/10 space-y-2">
-                                    <div>
-                                      <span className="text-[9px] uppercase font-bold text-steel block">Tautan Karya Terakhir:</span>
-                                      <a href={item.url_hasil_kolaborasi} target="_blank" rel="noreferrer" className="text-bridge-gold font-bold underline truncate block text-xs">
-                                        {item.url_hasil_kolaborasi} ↗
-                                      </a>
-                                    </div>
-                                    {item.catatan_hasil_kolaborasi && (
-                                      <div>
-                                        <span className="text-[9px] uppercase font-bold text-steel block">Catatan Mahasiswa:</span>
-                                        <p className="font-sans text-[11px] text-ink italic bg-steel/5 p-2 rounded border border-steel/5">
-                                          &ldquo;{item.catatan_hasil_kolaborasi}&rdquo;
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="pt-2 border-t border-steel/10 flex items-center justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const catatanRevisi = prompt("Masukkan masukan/kritik revisi untuk mahasiswa ini:");
-                                    if (catatanRevisi !== null) {
-                                      handleUpdateStatus(item.id, "Revisi", catatanRevisi);
-                                    }
-                                  }}
-                                  className="rounded-full border border-orange-300 bg-orange-50 px-3.5 py-1.5 font-mono text-[10px] font-bold text-orange-800 hover:bg-orange-100 transition"
-                                >
-                                  Minta Revisi Karya
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const catatanSelesai = prompt("Masukkan catatan evaluasi kelulusan/penyelesaian proyek:");
-                                    if (catatanSelesai !== null) {
-                                      handleUpdateStatus(item.id, "Selesai", catatanSelesai);
-                                    }
-                                  }}
-                                  className="rounded-full bg-emerald-600 px-4 py-1.5 font-mono text-[10px] font-bold text-white hover:bg-emerald-700 transition"
-                                >
-                                  Setujui &amp; Tandai Selesai ✓
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })
-                    )}
-                  </div>
+                        <div className="mt-3 pt-2 border-t border-steel/10 flex items-center justify-between font-mono text-[10px] text-steel">
+                          <span>⭐ {pelamar.reputation_score} Pts</span>
+                          <span>{pelamar.riwayat_pengumpulan?.length || 0} Versi Hasil</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
+
+            {/* MAIN BOTTOM SPLIT VIEW: Left Chat 1-on-1, Right Progres & Evaluasi Gede */}
+            {selectedPelamar ? (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in pt-2">
+                
+                {/* LEFT COLUMN: Live Chat 1-on-1 Sidebar (5 cols) */}
+                <div className="lg:col-span-5 rounded-2xl border border-steel/15 bg-white p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-steel/10 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                        💬
+                      </div>
+                      <div>
+                        <h4 className="font-display text-xs font-bold text-ink">
+                          Chat 1-on-1 ({selectedPelamar.nama_lengkap})
+                        </h4>
+                        <span className="font-mono text-[9px] text-steel">Realtime Supabase Channel</span>
+                      </div>
+                    </div>
+                    <span className="font-mono text-[9px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      ● Active
+                    </span>
+                  </div>
+
+                  {/* Chat Stream */}
+                  <div className="h-[460px] overflow-y-auto space-y-3 p-3 bg-steel/5 rounded-xl border border-steel/10 font-sans text-xs">
+                    {chatMessages.length === 0 ? (
+                      <div className="flex h-full items-center justify-center font-mono text-[11px] text-steel text-center p-4">
+                        Belum ada percakapan. Mulai kirim pesan 1-on-1 ke pelamar ini.
+                      </div>
+                    ) : (
+                      chatMessages.map((msg) => {
+                        const isMe = msg.tipe_pengirim === "perusahaan";
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+                          >
+                            <div
+                              className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-sm leading-relaxed ${
+                                isMe
+                                  ? "bg-ink text-paper rounded-br-none"
+                                  : "bg-white text-ink border border-steel/15 rounded-bl-none"
+                              }`}
+                            >
+                              {msg.pesan}
+                            </div>
+                            <span className="font-mono text-[9px] text-steel/60 mt-1 px-1">
+                              {new Date(msg.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Input Chat */}
+                  <form onSubmit={handleKirimChat} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder={`Ketik pesan ke ${selectedPelamar.nama_lengkap}...`}
+                      className="flex-1 rounded-xl border border-steel/20 px-3.5 py-2.5 text-xs outline-none focus:border-bridge-gold bg-white"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSendingChat || !chatInput.trim()}
+                      className="rounded-xl bg-ink px-4 py-2.5 font-mono text-xs font-bold text-white hover:bg-steel transition disabled:opacity-50 shrink-0"
+                    >
+                      {isSendingChat ? "..." : "Kirim"}
+                    </button>
+                  </form>
+                </div>
+
+                {/* RIGHT COLUMN: Minimal Student Info + Progres & Evaluasi Gede (Gambar 3 Diperbagus) */}
+                <div className="lg:col-span-7 space-y-6">
+                  
+                  {/* Minimal Header Info Pelamar Terpilih */}
+                  <div className="rounded-2xl border border-steel/15 bg-white p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-bridge-gold/20 border border-bridge-gold/40 flex items-center justify-center font-display text-sm font-bold text-ink overflow-hidden">
+                        {selectedPelamar.foto_url ? (
+                          <img src={selectedPelamar.foto_url} alt={selectedPelamar.nama_lengkap} className="h-full w-full object-cover" />
+                        ) : (
+                          selectedPelamar.nama_lengkap.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-display text-sm font-bold text-ink">
+                            {selectedPelamar.nama_lengkap}
+                          </h3>
+                          <span className="rounded-full bg-bridge-gold/20 px-2 py-0.5 font-mono text-[9px] font-bold text-ink">
+                            ⭐ {selectedPelamar.reputation_score} Pts
+                          </span>
+                        </div>
+                        <p className="font-mono text-[11px] text-steel">
+                          {selectedPelamar.universitas} &bull; {selectedPelamar.program_studi} (Semester {selectedPelamar.semester})
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedPelamar.url_portofolio_dokumen && (
+                      <a
+                        href={selectedPelamar.url_portofolio_dokumen}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs text-bridge-gold font-bold hover:underline shrink-0"
+                      >
+                        Dokumen Portofolio ↗
+                      </a>
+                    )}
+                  </div>
+
+                  {/* PROGRES & HASIL KOLABORASI + FORM EVALUASI GEDE (Gambar 3 Diperbagus & Ditingkatkan) */}
+                  <div className="rounded-2xl border border-steel/15 bg-white p-6 shadow-sm space-y-5">
+                    <div className="flex items-center justify-between border-b border-steel/10 pb-4">
+                      <h4 className="font-display text-base font-bold text-ink flex items-center gap-2">
+                        <svg className="h-5 w-5 text-bridge-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Progres &amp; Hasil Kolaborasi
+                      </h4>
+                      <span className="font-mono text-xs text-steel font-bold bg-steel/5 px-3 py-1 rounded-full border border-steel/10">
+                        {selectedPelamar.riwayat_pengumpulan?.length || 0} Versi Dikirim
+                      </span>
+                    </div>
+
+                    {/* List Riwayat Versi Hasil */}
+                    {(!selectedPelamar.riwayat_pengumpulan || selectedPelamar.riwayat_pengumpulan.length === 0) ? (
+                      <div className="rounded-xl border border-dashed border-steel/20 bg-steel/5 p-6 text-center font-mono text-xs text-steel">
+                        Mahasiswa belum melakukan pengumpulan hasil pengerjaan proyek.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {selectedPelamar.riwayat_pengumpulan.map((item: any) => (
+                          <div key={item.id} className="rounded-xl border border-steel/15 bg-steel/5 p-4 space-y-2 font-mono text-xs shadow-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-ink text-sm">Versi #{item.versi}</span>
+                              <span className="text-[10px] text-steel">
+                                {new Date(item.created_at).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                              </span>
+                            </div>
+                            <div className="pt-1">
+                              <a
+                                href={item.url_hasil}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-bridge-gold underline hover:text-ink font-bold break-all text-xs block"
+                              >
+                                {item.url_hasil} ↗
+                              </a>
+                            </div>
+                            {item.catatan_mahasiswa && (
+                              <p className="text-xs text-steel bg-white p-3 rounded-xl border border-steel/10 leading-relaxed">
+                                &ldquo;{item.catatan_mahasiswa}&rdquo;
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* FORM EVALUASI & INSTRUKSI REVISI (Gambar 3 Ditingkatkan & Diberi Tombol Aksi Gede) */}
+                    <form onSubmit={handleKirimEvaluasi} className="pt-4 border-t border-steel/10 space-y-4">
+                      <div>
+                        <label className="block font-mono text-xs font-bold text-ink mb-1.5">
+                          Evaluasi &amp; Catatan Masukan Perusahaan:
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={evaluasiInput}
+                          onChange={(e) => setEvaluasiInput(e.target.value)}
+                          placeholder="Tulis masukan, apresiasi, atau instruksi bagian yang perlu direvisi oleh mahasiswa..."
+                          className="w-full rounded-2xl border border-steel/20 p-4 text-xs outline-none focus:border-bridge-gold font-sans leading-relaxed bg-white shadow-inner"
+                        />
+                      </div>
+
+                      {/* Tombol Aksi Evaluasi Gede & Tegas */}
+                      <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleMintaRevisi(evaluasiInput)}
+                          disabled={isSubmittingRevisi || !evaluasiInput.trim()}
+                          className="w-full sm:w-auto rounded-full bg-purple-600 hover:bg-purple-700 text-white px-7 py-3 font-mono text-xs font-bold transition shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          {isSubmittingRevisi ? "Memproses..." : "Minta Revisi Mahasiswa"}
+                        </button>
+
+                        <button
+                          type="submit"
+                          disabled={isSubmittingEvaluasi || !evaluasiInput.trim()}
+                          className="w-full sm:w-auto rounded-full bg-bridge-gold hover:bg-bridge-gold/90 text-ink px-7 py-3 font-mono text-xs font-bold transition shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          {isSubmittingEvaluasi ? "Menyimpan..." : "Kirim Evaluasi & Masukan"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                </div>
+
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-steel/20 bg-white p-12 text-center font-mono text-xs text-steel space-y-2">
+                <p className="font-bold text-ink text-sm">Pilih Pelamar dari Baris di Atas</p>
+                <p>Pilih salah satu pelamar di bagian atas untuk membuka obrolan 1-on-1 dan melihat progres hasil proyek.</p>
+              </div>
+            )}
+
           </div>
         )}
 
-        {/* ==================== TAB 3: SETTINGS ==================== */}
+        {/* ==================== TAB 2: SETTINGS PROYEK ==================== */}
         {activeTab === "settings" && (
           <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
             <form onSubmit={handleSaveSettings} className="space-y-6">
@@ -1364,14 +568,14 @@ export default function DetailKolaborasiPage() {
                   </div>
                 </div>
 
-                {/* Kategori Minat (Top 10 / Pagination) */}
+                {/* Kategori Minat */}
                 <div>
                   <label className="block font-mono text-xs font-medium text-ink mb-2">
                     Kategori Minat (Pilih minimal satu) *
                   </label>
                   <div className="p-3 border border-steel/15 rounded-xl bg-steel/5 space-y-3 font-mono text-xs">
                     <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
-                      {visibleKategoris.map((kat) => {
+                      {visibleKategoris.map((kat: any) => {
                         const isSelected = formData.selectedKategoriIds.includes(kat.id);
                         const isRec = recKategoriIds.includes(kat.id);
                         return (
@@ -1397,7 +601,7 @@ export default function DetailKolaborasiPage() {
                       <div className="pt-1">
                         <button
                           type="button"
-                          onClick={() => setKategoriLimit(prev => prev + 10)}
+                          onClick={() => setKategoriLimit((prev) => prev + 10)}
                           className="font-mono text-[10px] text-steel hover:text-ink font-bold transition"
                         >
                           Tampilkan lebih banyak (+10)
@@ -1418,7 +622,7 @@ export default function DetailKolaborasiPage() {
 
                 <div>
                   <label className="block font-mono text-xs font-medium text-ink mb-1">
-                    Deskripsi Detail Proyek & Ekspektasi Luaran *
+                    Deskripsi Detail Proyek &amp; Ekspektasi Luaran *
                   </label>
                   <textarea
                     rows={6}
@@ -1435,6 +639,11 @@ export default function DetailKolaborasiPage() {
                 <h3 className="font-display text-base font-bold text-ink border-b border-steel/10 pb-3">
                   Ketentuan Proyek
                 </h3>
+                {hasPelamarAktif && (
+                  <p className="text-[10px] font-mono text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    ⚠ Perubahan pada batas waktu, tanggal selesai, atau gaji/stipend akan mengirim notifikasi ke pelamar terkait proyek ini.
+                  </p>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div>
@@ -1527,9 +736,9 @@ export default function DetailKolaborasiPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setFormData(prev => ({
+                          setFormData((prev) => ({
                             ...prev,
-                            selectedProdiIds: Array.from(new Set([...prev.selectedProdiIds, ...top10RecProdiIds]))
+                            selectedProdiIds: Array.from(new Set([...prev.selectedProdiIds, ...top10RecProdiIds])),
                           }));
                         }}
                         className="font-mono text-[10px] font-bold text-emerald-700 hover:text-emerald-800 transition"
@@ -1546,7 +755,7 @@ export default function DetailKolaborasiPage() {
                           Tidak ada rekomendasi program studi otomatis untuk judul ini.
                         </div>
                       ) : (
-                        visibleProdis.map((prodi) => {
+                        visibleProdis.map((prodi: any) => {
                           const isSelected = formData.selectedProdiIds.includes(prodi.id);
                           const isRec = top10RecProdiIds.includes(prodi.id);
                           return (
@@ -1584,7 +793,7 @@ export default function DetailKolaborasiPage() {
                       <div className="pt-1">
                         <button
                           type="button"
-                          onClick={() => setProdiLimit(prev => prev + 10)}
+                          onClick={() => setProdiLimit((prev) => prev + 10)}
                           className="font-mono text-[10px] text-steel hover:text-ink font-bold transition"
                         >
                           Tampilkan lebih banyak (+10)
@@ -1613,9 +822,9 @@ export default function DetailKolaborasiPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setFormData(prev => ({
+                          setFormData((prev) => ({
                             ...prev,
-                            selectedSkillIds: Array.from(new Set([...prev.selectedSkillIds, ...top10RecSkillIds]))
+                            selectedSkillIds: Array.from(new Set([...prev.selectedSkillIds, ...top10RecSkillIds])),
                           }));
                         }}
                         className="font-mono text-[10px] font-bold text-emerald-700 hover:text-emerald-800 transition"
@@ -1632,7 +841,7 @@ export default function DetailKolaborasiPage() {
                           Tidak ada rekomendasi keahlian otomatis untuk judul ini.
                         </div>
                       ) : (
-                        visibleSkills.map((skill) => {
+                        visibleSkills.map((skill: any) => {
                           const isSelected = formData.selectedSkillIds.includes(skill.id);
                           const isRec = top10RecSkillIds.includes(skill.id);
                           return (
@@ -1659,7 +868,7 @@ export default function DetailKolaborasiPage() {
                       <div className="pt-1">
                         <button
                           type="button"
-                          onClick={() => setSkillLimit(prev => prev + 10)}
+                          onClick={() => setSkillLimit((prev) => prev + 10)}
                           className="font-mono text-[10px] text-steel hover:text-ink font-bold transition"
                         >
                           Tampilkan lebih banyak (+10)
@@ -1677,40 +886,43 @@ export default function DetailKolaborasiPage() {
                     </button>
                   </div>
                 </div>
-                        {/* Submit Buttons */}
-              <div className="flex items-center justify-end gap-3">
-                {!isVerified ? (
-                  <button
-                    type="button"
-                    disabled
-                    title="Fitur terkunci. Harap tunggu verifikasi akun perusahaan oleh administrator."
-                    className="rounded-full bg-steel/20 px-8 py-3 font-mono text-xs font-bold text-steel/40 cursor-not-allowed border border-dashed border-steel/30 flex items-center gap-1.5"
-                  >
-                    <svg className="h-4 w-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                    Simpan Perubahan (Menunggu Verifikasi)
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="rounded-full bg-bridge-gold px-8 py-3 font-mono text-xs font-bold text-ink hover:bg-bridge-gold/90 transition shadow-md disabled:opacity-50"
-                  >
-                    {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
-                  </button>
-                )}
+
+                {/* Submit Buttons */}
+                <div className="flex items-center justify-end gap-3">
+                  {!isVerified ? (
+                    <button
+                      type="button"
+                      disabled
+                      title="Fitur terkunci. Harap tunggu verifikasi akun perusahaan oleh administrator."
+                      className="rounded-full bg-steel/20 px-8 py-3 font-mono text-xs font-bold text-steel/40 cursor-not-allowed border border-dashed border-steel/30 flex items-center gap-1.5"
+                    >
+                      <svg className="h-4 w-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      Simpan Perubahan (Menunggu Verifikasi)
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="rounded-full bg-bridge-gold px-8 py-3 font-mono text-xs font-bold text-ink hover:bg-bridge-gold/90 transition shadow-md disabled:opacity-50"
+                    >
+                      {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          </form>
+            </form>
 
             {/* Danger Zone */}
             <div className="rounded-2xl border border-red-200 bg-red-50 p-6 space-y-4">
               <div>
                 <h4 className="font-display text-base font-bold text-red-800">Zona Bahaya</h4>
                 <p className="text-xs text-red-600 font-medium mt-1 font-sans">
-                  Tindakan ini tidak dapat dibatalkan. Menghapus kolaborasi akan menghapus permanen data proyek dan seluruh pendaftaran mahasiswa yang masuk.
+                  {hasPelamarAktif
+                    ? "Sudah ada pelamar pada proyek ini. Menghapus proyek akan mengirim permintaan persetujuan & kompensasi ke pelamar terkait terlebih dahulu."
+                    : "Tindakan ini tidak dapat dibatalkan. Menghapus kolaborasi akan menghapus permanen data proyek."}
                 </p>
               </div>
               {!isVerified ? (
@@ -1729,11 +941,11 @@ export default function DetailKolaborasiPage() {
               ) : (
                 <button
                   type="button"
-                  onClick={handleDeleteProyek}
+                  onClick={() => setIsDeleteModalOpen(true)}
                   disabled={isDeleting}
                   className="rounded-full bg-red-600 px-6 py-2.5 font-mono text-xs font-bold text-white hover:bg-red-700 transition shadow-sm disabled:opacity-50"
                 >
-                  {isDeleting ? "Menghapus..." : "Hapus Kolaborasi"}
+                  {isDeleting ? "Memproses..." : hasPelamarAktif ? "Ajukan Hapus Kolaborasi" : "Hapus Kolaborasi"}
                 </button>
               )}
             </div>
@@ -1741,13 +953,88 @@ export default function DetailKolaborasiPage() {
         )}
       </div>
 
-      {/* Modal Detail Profil Pelamar */}
-      {selectedPelamar && (
-        <PelamarProfilModal
-          pelamar={selectedPelamar}
-          onClose={() => setSelectedPelamar(null)}
-          onUpdateStatus={(pendaftaranId, newStatus) => handleUpdateStatus(pendaftaranId, newStatus)}
-        />
+      {/* ==================== MODAL: KONFIRMASI HAPUS PROYEK ==================== */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-sans text-xs">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-steel/20 space-y-4">
+            <div className="flex items-center justify-between border-b border-steel/10 pb-3">
+              <h3 className="font-display text-base font-bold text-red-800">
+                {hasPelamarAktif ? "Ajukan Penghapusan Proyek" : "Hapus Kolaborasi"}
+              </h3>
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="text-steel hover:text-ink transition"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {hasPelamarAktif ? (
+              <div className="space-y-3 font-mono">
+                <p className="text-[11px] text-ink leading-relaxed">
+                  Proyek ini sudah punya <strong>{stats.total}</strong> pelamar ({stats.diterima} diterima, {stats.menunggu} menunggu). Proyek tidak bisa langsung dihapus.
+                </p>
+                <div>
+                  <label className="block text-[10px] font-bold text-ink mb-1">
+                    Catatan Perusahaan / Penawaran Kompensasi:
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={deleteCatatanPerusahaan}
+                    onChange={(e) => setDeleteCatatanPerusahaan(e.target.value)}
+                    placeholder="Tulis alasan pembatalan & penawaran kompensasi (misal: Insentif Rp 500rb / Sertifikat khusus)..."
+                    className="w-full rounded-xl border border-steel/20 p-2.5 text-xs outline-none focus:border-bridge-gold bg-white"
+                  />
+                </div>
+                <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-[10px] text-amber-800 leading-relaxed">
+                  Sistem akan membuat record persetujuan hapus &amp; notifikasi otomatis ke semua pelamar aktif. Proyek terhapus setelah semua pelamar menyetujui.
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="rounded-full border border-steel/20 bg-white px-4 py-2 text-[11px] text-steel"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRequestDeleteProyek}
+                    disabled={isDeleting}
+                    className="rounded-full bg-red-600 px-4 py-2 text-[11px] font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {isDeleting ? "Mengirim..." : "Kirim Permintaan Hapus"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 font-mono">
+                <p className="text-[11px] text-ink leading-relaxed">
+                  Apakah Anda yakin ingin menghapus kolaborasi <strong>&ldquo;{kolaborasi.judul}&rdquo;</strong>? Tindakan ini tidak dapat dibatalkan.
+                </p>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="rounded-full border border-steel/20 bg-white px-4 py-2 text-[11px] text-steel"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteProyek}
+                    disabled={isDeleting}
+                    className="rounded-full bg-red-600 px-4 py-2 text-[11px] font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {isDeleting ? "Menghapus..." : "Ya, Hapus"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ==================== MODAL PICKER: KOTA LOKASI ==================== */}
@@ -1789,14 +1076,14 @@ export default function DetailKolaborasiPage() {
                   Kota tidak ditemukan.
                 </div>
               ) : (
-                searchedKotaOptions.map((k) => {
+                searchedKotaOptions.map((k: any) => {
                   const isSelected = formData.lokasi_id === k.id;
                   return (
                     <button
                       type="button"
                       key={k.id}
                       onClick={() => {
-                        setFormData(prev => ({ ...prev, lokasi_id: k.id }));
+                        setFormData((prev) => ({ ...prev, lokasi_id: k.id }));
                         setIsKotaModalOpen(false);
                         setKotaSearch("");
                       }}
@@ -1865,7 +1152,7 @@ export default function DetailKolaborasiPage() {
                   Tidak ada kategori minat yang cocok.
                 </div>
               ) : (
-                searchedKategoriOptions.map((k) => {
+                searchedKategoriOptions.map((k: any) => {
                   const isSelected = formData.selectedKategoriIds.includes(k.id);
                   return (
                     <button
@@ -1949,7 +1236,7 @@ export default function DetailKolaborasiPage() {
                   Tidak ada program studi yang cocok.
                 </div>
               ) : (
-                searchedProdiOptions.map((p) => {
+                searchedProdiOptions.map((p: any) => {
                   const isSelected = formData.selectedProdiIds.includes(p.id);
                   return (
                     <button
@@ -2041,7 +1328,7 @@ export default function DetailKolaborasiPage() {
                   Tidak ada keahlian yang cocok.
                 </div>
               ) : (
-                searchedSkillOptions.map((s) => {
+                searchedSkillOptions.map((s: any) => {
                   const isSelected = formData.selectedSkillIds.includes(s.id);
                   return (
                     <button
@@ -2074,13 +1361,14 @@ export default function DetailKolaborasiPage() {
           </div>
         </div>
       )}
+
       {/* Success Modal */}
       <SuccessModal
         isOpen={successModal.isOpen}
         title={successModal.title}
         message={successModal.message}
         onClose={() => {
-          setSuccessModal(prev => ({ ...prev, isOpen: false }));
+          setSuccessModal((prev) => ({ ...prev, isOpen: false }));
           if (successModal.redirectOnClose) {
             router.push("/perusahaan/kolaborasi");
           }
