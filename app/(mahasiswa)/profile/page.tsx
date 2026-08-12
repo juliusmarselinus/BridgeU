@@ -103,8 +103,9 @@ function BadgeUnlockModal({
             </motion.div>
           </motion.div>
 
-          <span className="rounded-full bg-sky/20 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-ocean border border-sky/30">
-            🎉 Badge Terbuka Baru!
+          <span className="rounded-full bg-sky/20 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-ocean border border-sky/30 flex items-center gap-1.5">
+            <IconSparkles className="w-3.5 h-3.5 text-ocean" />
+            Badge Terbuka Baru!
           </span>
 
           <h3 className="mt-3 text-xl font-black text-ink">{badge.namaBadge}</h3>
@@ -494,8 +495,8 @@ function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
 /* ------------------------------------------------------------------ */
 /* Minimal Border-based Level Gamification Progress Bar Component      */
 /* ------------------------------------------------------------------ */
-function LevelGamificationCard({ totalXp = 0 }: { totalXp: number }) {
-  const gMetrics = getGamificationMetrics(totalXp);
+function LevelGamificationCard({ totalXp = 0, pts }: { totalXp: number; pts?: number }) {
+  const gMetrics = getGamificationMetrics(totalXp, pts);
   const animatedLevel = useSpringNumber(gMetrics.level);
 
   return (
@@ -1226,43 +1227,30 @@ function PublicActivitySection({
   user,
   userMetrics,
   pengajuan = [],
+  dbBadges = [],
 }: {
   user?: StoredUser | null;
   userMetrics?: {
     xp: number;
+    pts?: number;
     streakCount: number;
     reputationScore: number;
     responseRate: number;
   };
   pengajuan?: Pengajuan[];
+  dbBadges?: DbBadge[];
 }) {
   const [filter, setFilter] = useState<"semua" | "kolaborasi" | "skill" | "pencapaian">("semua");
 
   const totalPengajuan = pengajuan.length;
   const streak = userMetrics?.streakCount ?? 0;
-  const reputation = userMetrics?.reputationScore ?? 0;
+  const ptsValue = userMetrics?.pts ?? userMetrics?.xp ?? 0;
   const responseRate = userMetrics?.responseRate ?? 0;
-
-  const heatmapDays = useMemo(() => {
-    const days: Array<{ date: string; count: number }> = [];
-    const today = new Date();
-    for (let i = 83; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dayNum = d.getDate();
-      const count = (dayNum % 7 === 0 || dayNum % 5 === 0) ? Math.floor((dayNum % 4) + 1) : (dayNum % 3 === 0 ? 1 : 0);
-      days.push({
-        date: d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
-        count,
-      });
-    }
-    return days;
-  }, []);
 
   const statCards = [
     { label: "Total Kontribusi", value: totalPengajuan, suffix: " Aksi", extra: "", desc: "Total pengajuan & aktivitas", icon: IconActivity },
     { label: "Streak Keaktifan", value: streak, suffix: " Hari", extra: "", desc: "Aktif berturut-turut", icon: IconFlame },
-    { label: "Reputasi Publik", value: reputation, suffix: " Pts", extra: "", desc: "Skor keaktifan platform", icon: IconTrophy },
+    { label: "Reputasi Publik", value: ptsValue, suffix: " Pts", extra: "", desc: "Skor Pts keaktifan platform", icon: IconTrophy },
     { label: "Respon Rate", value: Math.round(responseRate), suffix: "%", extra: "", desc: "Kecepatan balasan & partisipasi", icon: IconCheckSquare },
   ];
 
@@ -1277,6 +1265,21 @@ function PublicActivitySection({
       badgeColor: string;
     }> = [];
 
+    // 1. Tambahkan Badge Unlocked sebagai Aktivitas Pencapaian
+    const unlockedBadges = dbBadges.filter((b) => b.isUnlocked);
+    unlockedBadges.forEach((b) => {
+      list.push({
+        id: `badge-${b.id}`,
+        kategori: "pencapaian",
+        judul: `Badge Peroleh: ${b.namaBadge}`,
+        deskripsi: `${b.deskripsi} (+${b.xpBonus} XP/Pts)`,
+        waktu: b.unlockedAt ? new Date(b.unlockedAt).toLocaleDateString("id-ID") : "Terbaru",
+        badgeText: `Badge (${b.kategori})`,
+        badgeColor: "bg-amber-100 text-amber-900 border-amber-300",
+      });
+    });
+
+    // 2. Tambahkan Pengajuan Kolaborasi
     pengajuan.forEach((p, idx) => {
       list.push({
         id: `pengajuan-${p.id || idx}`,
@@ -1289,6 +1292,7 @@ function PublicActivitySection({
       });
     });
 
+    // 3. Tambahkan Pembaruan Skill
     if (user?.skills && user.skills.length > 0) {
       list.push({
         id: "act-skills",
@@ -1297,18 +1301,6 @@ function PublicActivitySection({
         deskripsi: `Keahlian terdaftar: ${user.skills.slice(0, 4).join(", ")}${user.skills.length > 4 ? "..." : ""}.`,
         waktu: "Terdaftar",
         badgeText: "Skill & Tools",
-        badgeColor: "bg-sky/15 text-ocean border-sky/40",
-      });
-    }
-
-    if (totalPengajuan > 0) {
-      list.push({
-        id: "act-badge",
-        kategori: "pencapaian",
-        judul: "Level & Pencapaian Kolaborasi",
-        deskripsi: `Aktif berpartisipasi dengan total ${totalPengajuan} pengajuan kolaborasi terverifikasi.`,
-        waktu: "Aktif",
-        badgeText: "Pencapaian",
         badgeColor: "bg-sky/15 text-ocean border-sky/40",
       });
     }
@@ -1326,7 +1318,7 @@ function PublicActivitySection({
     }
 
     return list;
-  }, [pengajuan, user?.skills, totalPengajuan]);
+  }, [pengajuan, dbBadges, user?.skills]);
 
   const filteredActivities = useMemo(() => {
     if (filter === "semua") return rawActivities;
@@ -1473,6 +1465,7 @@ export default function ProfilePage() {
 
   const [userMetrics, setUserMetrics] = useState({
     xp: 0,
+    pts: 0,
     streakCount: 0,
     reputationScore: 0,
     responseRate: 0,
@@ -1500,7 +1493,12 @@ export default function ProfilePage() {
     }
 
     const data = await res.json();
-    console.log("🚀 [DEBUG Client Profile] GET /api/me response:", data);
+    console.log("🔍 [DEBUG /api/me response profile/page.tsx]", {
+      rawXp: data.xp,
+      rawPts: data.pts,
+      badgesCount: data.badges?.length,
+      unlockedBadges: data.badges?.filter((b: any) => b.isUnlocked)?.length,
+    });
 
     const parsed: StoredUser = {
       nama: data.nama,
@@ -1518,9 +1516,14 @@ export default function ProfilePage() {
     setUser(parsed);
     setUserMetrics({
       xp: data.xp ?? 0,
+      pts: data.pts ?? data.xp ?? 0,
       streakCount: data.streakCount ?? 0,
       reputationScore: data.reputationScore ?? 0,
       responseRate: data.responseRate ?? 0,
+    });
+    console.log("⚡ [DEBUG setUserMetrics applied]", {
+      appliedXp: data.xp ?? 0,
+      appliedPts: data.pts ?? data.xp ?? 0,
     });
     if (Array.isArray(data.badges)) {
       console.log("🚀 [DEBUG Client Profile] Setting dbBadges from API:", data.badges.length, "items");
@@ -1687,7 +1690,7 @@ export default function ProfilePage() {
 
   const totalPengajuan = pengajuan.length;
   const diterima = pengajuan.filter((p) => p.status === "Diterima" || p.status === "Selesai").length;
-  const gMetrics = getGamificationMetrics(userMetrics.xp);
+  const gMetrics = getGamificationMetrics(userMetrics.xp, userMetrics.pts);
   const level = gMetrics.level;
   const earnedBadges = badgeList.filter((b) => b.check(totalPengajuan, diterima));
   const lockedBadges = badgeList.filter((b) => !b.check(totalPengajuan, diterima));
@@ -2052,7 +2055,7 @@ export default function ProfilePage() {
           {/* Right Column Feed */}
           <div className="lg:col-span-8 space-y-6">
             <RevealCard delay={0.05} className="z-30 relative overflow-visible">
-              <LevelGamificationCard totalXp={userMetrics.xp} />
+              <LevelGamificationCard totalXp={userMetrics.xp} pts={userMetrics.pts} />
             </RevealCard>
 
             <div className="relative overflow-hidden">
@@ -2142,6 +2145,7 @@ export default function ProfilePage() {
                       user={user}
                       userMetrics={userMetrics}
                       pengajuan={pengajuan}
+                      dbBadges={dbBadges}
                     />
                   )}
 
@@ -2161,7 +2165,7 @@ export default function ProfilePage() {
                       </div>
 
                       {(() => {
-                        const BADGES_PER_PAGE = 10;
+                        const BADGES_PER_PAGE = 12;
                         const totalBadgePages = Math.ceil(dbBadges.length / BADGES_PER_PAGE) || 1;
                         const currentPageBadges = dbBadges.slice((badgePage - 1) * BADGES_PER_PAGE, badgePage * BADGES_PER_PAGE);
 

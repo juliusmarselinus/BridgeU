@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     const { data: profile, error: profileError } = await db
       .from("mahasiswa_profiles")
       .select(
-        `nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, streak_count, last_active_at, reputation_score, response_rate,
+        `nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate,
          universitas:universitas_id ( nama_universitas ),
          prodi:prodi_id ( nama_prodi )`
       )
@@ -149,10 +149,21 @@ export async function GET(req: NextRequest) {
 
     console.log("🔍 [DEBUG /api/me] allBadges count:", allBadges?.length ?? 0, "Err:", badgeErr?.message);
 
-    const { data: userBadgesData, error: userBadgeErr } = await db
+    let { data: userBadgesData, error: userBadgeErr } = await db
       .from("mahasiswa_badges")
       .select("badge_id, earned_at")
       .eq("mahasiswa_id", authUser.id);
+
+    if (!userBadgesData || userBadgesData.length === 0) {
+      const { data: pubUserBadges } = await supabase
+        .from("mahasiswa_badges")
+        .select("badge_id, earned_at")
+        .eq("mahasiswa_id", authUser.id);
+
+      if (pubUserBadges && pubUserBadges.length > 0) {
+        userBadgesData = pubUserBadges;
+      }
+    }
 
     console.log("🔍 [DEBUG /api/me] userBadgesData count:", userBadgesData?.length ?? 0, "Err:", userBadgeErr?.message);
 
@@ -207,33 +218,48 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    let currentXp = studentXp;
+    // Total XP = Base XP + Sum of all unlocked badges bonus XP
+    const totalBadgeXp = formattedBadges
+      .filter((b) => b.isUnlocked)
+      .reduce((sum, b) => sum + (b.xpBonus || 0), 0);
 
-    // Jika ada badge baru yang unlocked, simpan ke database mahasiswa_badges dan update XP profil
-    if (newBadgesToInsert.length > 0) {
-      console.log("⚡ [DEBUG /api/me] Auto-inserting new badges to Supabase:", newBadgesToInsert.length, "badges, Extra XP:", extraXpGained);
+    const calculatedTotalXp = Math.max(studentXp, totalBadgeXp);
+    let currentXp = calculatedTotalXp;
+    let currentPts = (profile as any).points ?? currentXp;
+    if (currentXp > studentXp) {
+      currentPts = (profile as any).points ? (profile as any).points + (currentXp - studentXp) : currentXp;
+    }
+
+    // Simpan ke database mahasiswa_badges dan update XP profil
+    if (newBadgesToInsert.length > 0 || currentXp !== studentXp) {
+      console.log("⚡ [DEBUG /api/me] Auto-inserting new badges to Supabase:", newBadgesToInsert.length, "badges, Total Calculated XP:", currentXp, "Pts:", currentPts);
       
-      const { error: insertErr } = await db
-        .from("mahasiswa_badges")
-        .upsert(newBadgesToInsert, { onConflict: "mahasiswa_id,badge_id" });
+      if (newBadgesToInsert.length > 0) {
+        const { error: insertErr } = await db
+          .from("mahasiswa_badges")
+          .upsert(newBadgesToInsert, { onConflict: "mahasiswa_id,badge_id" });
 
-      if (insertErr) {
-        console.error("❌ [DEBUG /api/me] Failed to insert mahasiswa_badges:", insertErr.message);
-      } else {
-        console.log("✅ [DEBUG /api/me] Successfully inserted badges into mahasiswa_badges!");
+        if (insertErr) {
+          console.error("❌ [DEBUG /api/me] Failed to insert mahasiswa_badges:", insertErr.message);
+        } else {
+          console.log("✅ [DEBUG /api/me] Successfully inserted badges into mahasiswa_badges!");
+        }
       }
-
-      currentXp = studentXp + extraXpGained;
 
       const { error: xpUpdateErr } = await db
         .from("mahasiswa_profiles")
-        .update({ xp: currentXp })
+        .update({ xp: currentXp, points: currentPts })
         .eq("user_id", authUser.id);
 
       if (xpUpdateErr) {
-        console.error("❌ [DEBUG /api/me] Failed to update profile XP:", xpUpdateErr.message);
+        // Fallback update tanpa points jika kolom points belum dibuat di beberapa env
+        await db
+          .from("mahasiswa_profiles")
+          .update({ xp: currentXp })
+          .eq("user_id", authUser.id);
+        console.error("❌ [DEBUG /api/me] Failed to update profile XP & Points:", xpUpdateErr.message);
       } else {
-        console.log("✅ [DEBUG /api/me] Successfully updated profile XP to:", currentXp);
+        console.log("✅ [DEBUG /api/me] Successfully updated profile XP & Points!");
       }
     }
 
@@ -253,6 +279,7 @@ export async function GET(req: NextRequest) {
       ringkasanSelf: profile.ringkasan_self,
       fotoUrl: profile.foto_url,
       xp: currentXp,
+      pts: currentPts,
       streakCount: streakCount,
       lastActiveAt: lastActiveAt,
       reputationScore: (profile as any).reputation_score ?? 0,
