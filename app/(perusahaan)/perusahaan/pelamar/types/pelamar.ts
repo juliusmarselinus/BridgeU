@@ -1,6 +1,6 @@
 import { KolaborasiTipe, ModerasiStatus } from "../../dashboard/types/company";
 
-export type StatusLamaran = "Menunggu" | "Diproses" | "Diterima" | "Evaluasi" | "Revisi" | "Minta Revisi" | "Ditolak" | "Selesai";
+export type StatusLamaran = "Menunggu" | "Diproses" | "Diterima" | "Evaluasi" | "Revisi" | "Ditolak" | "Selesai";
 
 export interface PelamarDetail {
   id: string; // uuid pendaftaran_kolaborasi
