@@ -45,7 +45,7 @@ export default function KolaborasiPage() {
           <div className="mt-6">
             <Link
               href="/perusahaan/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-full bg-ink px-6 py-2.5 font-mono text-xs font-bold text-paper hover:bg-steel transition shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#97B8D8] px-6 py-2.5 font-mono text-xs font-bold text-[#12284B] hover:bg-[#ADC9E2] transition shadow-sm"
             >
               Kembali ke Dashboard
             </Link>

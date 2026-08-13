@@ -73,16 +73,16 @@ export function CompanyNavbar() {
 
   return (
     <div className="sticky top-4 z-40 px-4 sm:px-6">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-bridge-gold/30 bg-ink px-5 py-3 shadow-[0_8px_24px_-6px_rgba(27,39,64,0.45)]">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/15 bg-[#12284B]/75 backdrop-blur-2xl backdrop-saturate-150 px-5 py-3 shadow-[0_8px_32px_-6px_rgba(18,40,75,0.45),inset_0_1px_0_0_rgba(255,255,255,0.08)]">
         {/* Brand Logo -> Ke Dashboard Perusahaan */}
         <Link
           href="/perusahaan/dashboard"
           className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-paper hover:opacity-90 transition"
         >
           <span>
-            Bridge<span className="text-bridge-gold">U</span>
+            Bridge<span className="text-[#97B8D8]">U</span>
           </span>
-          <span className="rounded-full bg-bridge-gold/20 px-2.5 py-0.5 font-mono text-[10px] font-medium tracking-wide text-bridge-gold uppercase border border-bridge-gold/30">
+          <span className="rounded-full bg-[#97B8D8]/20 px-2.5 py-0.5 font-mono text-[10px] font-medium tracking-wide text-[#C3DAEC] uppercase border border-[#97B8D8]/30">
             Mitra Perusahaan
           </span>
         </Link>
@@ -116,7 +116,7 @@ export function CompanyNavbar() {
                 href={link.href}
                 className={`relative rounded-full px-4 py-2 transition ${
                   active
-                    ? "bg-bridge-gold/20 text-bridge-gold font-medium border border-bridge-gold/30"
+                    ? "bg-[#97B8D8]/20 text-[#C3DAEC] font-medium border border-[#97B8D8]/30"
                     : "text-paper/60 hover:bg-white/5 hover:text-paper"
                 }`}
               >
@@ -132,11 +132,11 @@ export function CompanyNavbar() {
             href="/perusahaan/profile"
             className={`flex items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-3.5 border transition ${
               isProfileActive
-                ? "bg-bridge-gold/20 border-bridge-gold/50 text-bridge-gold"
+                ? "bg-[#97B8D8]/20 border-[#97B8D8]/40 text-[#C3DAEC]"
                 : "bg-white/10 border-white/10 text-paper hover:bg-white/20"
             }`}
           >
-            <div className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-bridge-gold font-mono text-[11px] font-bold text-ink">
+            <div className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#97B8D8] font-mono text-[11px] font-bold text-[#12284B]">
               {company?.logo_url ? (
                 <Image
                   src={company.logo_url}

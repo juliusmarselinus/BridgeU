@@ -5,8 +5,8 @@ interface KolaborasiEmptyStateProps {
 
 export function KolaborasiEmptyState({ selectedTab, onOpenModal }: KolaborasiEmptyStateProps) {
   return (
-    <div className="mt-8 rounded-2xl border border-dashed border-steel/30 bg-white/40 p-12 text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-ink/5 text-ink">
+    <div className="mt-8 rounded-2xl border-2 border-dashed border-[#C3DAEC] bg-[#F2F7FB] p-12 text-center">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#D6E7F3] text-[#4A7DA6]">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
           <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
           <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
@@ -22,7 +22,7 @@ export function KolaborasiEmptyState({ selectedTab, onOpenModal }: KolaborasiEmp
       </p>
       <button
         onClick={onOpenModal}
-        className="mt-6 inline-flex items-center gap-2 rounded-full bg-ink px-6 py-2.5 font-mono text-xs font-medium text-paper transition hover:bg-steel"
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#97B8D8] px-6 py-2.5 font-mono text-xs font-medium text-[#12284B] transition hover:bg-[#ADC9E2]"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <line x1="12" y1="5" x2="12" y2="19" />

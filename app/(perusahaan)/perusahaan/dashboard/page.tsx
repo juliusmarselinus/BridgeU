@@ -12,6 +12,10 @@ interface RecentPelamar extends PelamarDetail {
   kolaborasi_judul: string;
 }
 
+const NEO_CARD = "shadow-[8px_8px_22px_rgba(151,184,216,0.35),-8px_-8px_22px_rgba(255,255,255,0.9)]";
+const NEO_CARD_HOVER = "hover:shadow-[10px_10px_28px_rgba(151,184,216,0.45),-10px_-10px_28px_rgba(255,255,255,0.95)]";
+const NEO_INSET = "shadow-[inset_3px_3px_8px_rgba(151,184,216,0.25),inset_-3px_-3px_8px_rgba(255,255,255,0.85)]";
+
 export default function CompanyDashboardPage() {
   const [company, setCompany] = useState<StoredCompany | null>(null);
   const [kolaborasiList, setKolaborasiList] = useState<KolaborasiWithMeta[]>([]);
@@ -88,24 +92,24 @@ export default function CompanyDashboardPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 pb-16">
       {/* Header Banner */}
-      <div className="rounded-3xl bg-ink p-8 sm:p-10 text-paper shadow-xl border border-white/10 relative overflow-hidden">
-        <div className="absolute -right-12 -top-12 h-64 w-64 rounded-full bg-bridge-gold/10 blur-3xl pointer-events-none" />
+      <div className={`relative overflow-hidden rounded-3xl bg-white p-8 sm:p-10 text-ink ${NEO_CARD}`}>
+        <div className="absolute -right-12 -top-12 h-64 w-64 rounded-full bg-[#97B8D8]/20 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-3">
-              <span className="rounded-full bg-bridge-gold/20 px-3 py-1 font-mono text-xs font-semibold text-bridge-gold border border-bridge-gold/30">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="rounded-full bg-[#D6E7F3] px-3 py-1 font-mono text-xs font-semibold text-[#12284B] border border-[#C3DAEC]">
                 Portal Perusahaan Mitra
               </span>
-              <span className="font-mono text-xs text-paper/60">
+              <span className="font-mono text-xs text-steel">
                 {company?.nama_sektor || "Teknologi & Produk Digital"}
               </span>
             </div>
 
-            <h1 className="mt-3 font-display text-3xl sm:text-4xl font-bold tracking-tight">
-              Selamat Datang, <span className="text-bridge-gold">{companyName}</span>
+            <h1 className="mt-3 font-display text-3xl sm:text-4xl font-bold tracking-tight text-ink">
+              Selamat Datang, <span className="text-[#4A7DA6]">{companyName}</span>
             </h1>
-            <p className="mt-2 text-paper/70 max-w-xl text-sm leading-relaxed">
+            <p className="mt-2 text-steel max-w-xl text-sm leading-relaxed">
               Buka peluang kolaborasi riset akademik dan magang untuk terhubung dengan mahasiswa
               berbakat dari berbagai universitas di Indonesia.
             </p>
@@ -116,7 +120,7 @@ export default function CompanyDashboardPage() {
               <button
                 disabled
                 title="Fitur terkunci. Harap tunggu verifikasi akun perusahaan oleh administrator."
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-steel/30 px-6 py-3.5 font-mono text-xs font-semibold text-paper/50 cursor-not-allowed border border-white/10"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#F2F7FB] px-6 py-3.5 font-mono text-xs font-semibold text-steel/50 cursor-not-allowed"
               >
                 <svg className="h-4 w-4 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -127,7 +131,7 @@ export default function CompanyDashboardPage() {
             ) : (
               <Link
                 href="/perusahaan/kolaborasi/baru"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-bridge-gold px-6 py-3.5 font-medium text-ink transition hover:bg-bridge-gold/90 shadow-lg shadow-bridge-gold/20 text-sm font-semibold animate-fade-in"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#97B8D8] px-6 py-3.5 font-medium text-[#12284B] transition hover:bg-[#ADC9E2] shadow-md text-sm font-semibold animate-fade-in"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <path d="M12 5v14M5 12h14" />
@@ -140,7 +144,7 @@ export default function CompanyDashboardPage() {
               <button
                 disabled
                 title="Fitur terkunci. Harap tunggu verifikasi akun perusahaan oleh administrator."
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3.5 font-mono text-xs font-medium text-paper/30 cursor-not-allowed"
+                className={`inline-flex items-center justify-center gap-2 rounded-full bg-[#F2F7FB] px-6 py-3.5 font-mono text-xs font-medium text-steel/40 cursor-not-allowed ${NEO_INSET}`}
               >
                 <svg className="h-3.5 w-3.5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -151,7 +155,7 @@ export default function CompanyDashboardPage() {
             ) : (
               <Link
                 href={kelolaPelamarHref}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3.5 font-mono text-xs font-medium text-paper transition hover:bg-white/10"
+                className={`inline-flex items-center justify-center gap-2 rounded-full bg-[#F2F7FB] px-6 py-3.5 font-mono text-xs font-medium text-[#12284B] transition hover:bg-[#E6F0F8] ${NEO_INSET}`}
               >
                 Kelola Pelamar ({menungguReview})
               </Link>
@@ -160,51 +164,51 @@ export default function CompanyDashboardPage() {
         </div>
 
         {/* Ringkasan Statistik */}
-        <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-white/10 pt-8">
-          <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
-            <p className="font-mono text-[10px] sm:text-xs text-paper/60 uppercase tracking-wider">
+        <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-[#E6F0F8] pt-8">
+          <div className={`rounded-2xl bg-[#F2F7FB] p-4 ${NEO_INSET}`}>
+            <p className="font-mono text-[10px] sm:text-xs text-steel uppercase tracking-wider">
               Total Pelamar
             </p>
             {isLoading ? (
-              <div className="h-8 w-12 bg-white/10 rounded animate-pulse mt-1" />
+              <div className="h-8 w-12 bg-white/60 rounded animate-pulse mt-1" />
             ) : (
-              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-paper animate-fade-in">
+              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-ink animate-fade-in">
                 {totalPelamar}
               </p>
             )}
           </div>
-          <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
-            <p className="font-mono text-[10px] sm:text-xs text-paper/60 uppercase tracking-wider">
+          <div className={`rounded-2xl bg-[#F2F7FB] p-4 ${NEO_INSET}`}>
+            <p className="font-mono text-[10px] sm:text-xs text-steel uppercase tracking-wider">
               Menunggu Review
             </p>
             {isLoading ? (
-              <div className="h-8 w-12 bg-white/10 rounded animate-pulse mt-1" />
+              <div className="h-8 w-12 bg-white/60 rounded animate-pulse mt-1" />
             ) : (
-              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-yellow-400 animate-fade-in">
+              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-amber-500 animate-fade-in">
                 {menungguReview}
               </p>
             )}
           </div>
-          <div className="rounded-2xl bg-white/5 p-4 border border-white/5">
-            <p className="font-mono text-[10px] sm:text-xs text-paper/60 uppercase tracking-wider">
+          <div className={`rounded-2xl bg-[#F2F7FB] p-4 ${NEO_INSET}`}>
+            <p className="font-mono text-[10px] sm:text-xs text-steel uppercase tracking-wider">
               Diterima
             </p>
             {isLoading ? (
-              <div className="h-8 w-12 bg-white/10 rounded animate-pulse mt-1" />
+              <div className="h-8 w-12 bg-white/60 rounded animate-pulse mt-1" />
             ) : (
-              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-emerald-400 animate-fade-in">
+              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-emerald-600 animate-fade-in">
                 {diterima}
               </p>
             )}
           </div>
-          <div className="rounded-2xl bg-white/5 p-4 border border-white/5 col-span-2 sm:col-span-1">
-            <p className="font-mono text-[10px] sm:text-xs text-paper/60 uppercase tracking-wider">
+          <div className={`rounded-2xl bg-[#F2F7FB] p-4 col-span-2 sm:col-span-1 ${NEO_INSET}`}>
+            <p className="font-mono text-[10px] sm:text-xs text-steel uppercase tracking-wider">
               Success Rate
             </p>
             {isLoading ? (
-              <div className="h-8 w-12 bg-white/10 rounded animate-pulse mt-1" />
+              <div className="h-8 w-12 bg-white/60 rounded animate-pulse mt-1" />
             ) : (
-              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-paper animate-fade-in">
+              <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-ink animate-fade-in">
                 {successRate}%
               </p>
             )}
@@ -226,7 +230,7 @@ export default function CompanyDashboardPage() {
 
           <Link
             href="/perusahaan/pelamar"
-            className="font-mono text-xs text-bridge-gold font-medium hover:underline"
+            className="font-mono text-xs text-[#4A7DA6] font-medium hover:underline"
           >
             Lihat Semua Pelamar →
           </Link>
@@ -235,12 +239,12 @@ export default function CompanyDashboardPage() {
         {isLoading ? (
           <div className="mt-6 space-y-3 animate-pulse">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 rounded-2xl border border-steel/10 bg-white/40" />
+              <div key={i} className="h-16 rounded-2xl bg-white/60" />
             ))}
           </div>
         ) : recentPelamar.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-dashed border-steel/30 bg-white/40 p-12 text-center animate-fade-in">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-bridge-gold/20 text-bridge-gold">
+          <div className={`mt-6 rounded-2xl bg-white p-12 text-center animate-fade-in ${NEO_CARD}`}>
+            <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#D6E7F3] text-[#4A7DA6] ${NEO_INSET}`}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -256,7 +260,7 @@ export default function CompanyDashboardPage() {
             </p>
             <Link
               href="/perusahaan/kolaborasi"
-              className="mt-6 inline-block rounded-full bg-ink px-6 py-2.5 font-mono text-xs font-medium text-paper transition hover:bg-steel"
+              className="mt-6 inline-block rounded-full bg-[#97B8D8] px-6 py-2.5 font-mono text-xs font-medium text-[#12284B] transition hover:bg-[#ADC9E2]"
             >
               Kelola Kolaborasi
             </Link>
@@ -266,10 +270,10 @@ export default function CompanyDashboardPage() {
             {recentPelamar.slice(0, 5).map((p) => (
               <div
                 key={p.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-steel/15 bg-white p-5 shadow-sm transition hover:shadow-md hover:border-bridge-gold/40"
+                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-white p-5 transition-all duration-300 ${NEO_CARD} ${NEO_CARD_HOVER} hover:-translate-y-0.5`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink font-display text-sm font-bold text-paper">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#97B8D8] font-display text-sm font-bold text-[#12284B]">
                     {p.nama_lengkap?.charAt(0)?.toUpperCase() || "M"}
                   </div>
                   <div className="min-w-0">
@@ -299,7 +303,7 @@ export default function CompanyDashboardPage() {
                           ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                           : p.status === "Ditolak"
                           ? "bg-red-50 text-red-600 border border-red-200"
-                          : "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                          : "bg-amber-50 text-amber-700 border border-amber-200"
                       }`}
                     >
                       {p.status}
@@ -307,7 +311,7 @@ export default function CompanyDashboardPage() {
                   </div>
                   <Link
                     href={`/perusahaan/kolaborasi/${p.kolaborasi_id}`}
-                    className="font-mono text-[11px] text-bridge-gold font-medium hover:underline"
+                    className="font-mono text-[11px] text-[#4A7DA6] font-medium hover:underline"
                   >
                     Lihat Detail ↗
                   </Link>

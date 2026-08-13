@@ -10,7 +10,7 @@ export function KolaborasiItemCard({ item, onDelete }: KolaborasiItemCardProps) 
   const statusModerasi = item.status_moderasi;
 
   return (
-    <div className="rounded-2xl border border-steel/15 bg-white p-6 shadow-sm transition hover:shadow-md hover:border-bridge-gold/40 flex flex-col justify-between">
+    <div className="rounded-2xl bg-white p-6 shadow-[8px_8px_20px_rgba(151,184,216,0.3),-8px_-8px_20px_rgba(255,255,255,0.9)] transition-all duration-300 hover:shadow-[10px_10px_26px_rgba(151,184,216,0.4),-10px_-10px_26px_rgba(255,255,255,0.95)] hover:-translate-y-1 flex flex-col justify-between">
       <div>
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 flex-wrap">
@@ -47,7 +47,7 @@ export function KolaborasiItemCard({ item, onDelete }: KolaborasiItemCardProps) 
           </div>
         </div>
 
-        <h3 className="mt-4 font-display text-lg font-bold text-ink leading-snug hover:text-bridge-gold transition">
+        <h3 className="mt-4 font-display text-lg font-bold text-ink leading-snug hover:text-[#4A7DA6] transition">
           <Link href={`/perusahaan/kolaborasi/${item.id}`}>
             {item.judul}
           </Link>
@@ -57,7 +57,7 @@ export function KolaborasiItemCard({ item, onDelete }: KolaborasiItemCardProps) 
         </p>
       </div>
 
-      <div className="mt-6 pt-4 border-t border-steel/10 flex items-center justify-between font-mono text-xs text-steel">
+      <div className="mt-6 pt-4 border-t border-[#E6F0F8] flex items-center justify-between font-mono text-xs text-steel">
         <div className="flex items-center gap-4 text-[11px]">
           <span className="inline-flex items-center gap-1">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -80,7 +80,7 @@ export function KolaborasiItemCard({ item, onDelete }: KolaborasiItemCardProps) 
         <div className="flex items-center gap-2">
           <Link
             href={`/perusahaan/kolaborasi/${item.id}`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 font-medium text-paper hover:bg-steel transition text-xs"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#97B8D8] px-3 py-1.5 font-medium text-[#12284B] hover:bg-[#ADC9E2] transition text-xs"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
