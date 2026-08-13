@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { getFrameDefinition } from "@/lib/avatar-frames";
+import { getFrameDefinition, getStoredAvatarFrame } from "@/lib/avatar-frames";
+import { FloatingAvatarOverlay } from "@/components/profile/FloatingAvatarOverlay";
 
 type SearchItem = {
   id: string;
@@ -176,61 +177,70 @@ export function SearchBar() {
                     </span>
                   </div>
 
-                  {group.items.map((item) => (
-                    <Link
-                      key={`${item.type}-${item.id}`}
-                      href={item.href}
-                      onClick={handleSelect}
-                      className="flex items-start gap-3.5 px-5 py-3 transition hover:bg-surface"
-                    >
-                      <div className="relative shrink-0">
-                        {item.type === "mahasiswa" && getFrameDefinition(item.equippedFrameCode).glowClass && (
-                          <div className={`absolute inset-0 rounded-full ${getFrameDefinition(item.equippedFrameCode).glowClass}`} />
-                        )}
-                        <div
-                          className={`relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-surface ${
-                            item.type === "mahasiswa"
-                              ? `${getFrameDefinition(item.equippedFrameCode).containerClass} ${
-                                  getFrameDefinition(item.equippedFrameCode).motifBorder || ""
-                                }`
-                              : ""
-                          }`}
-                        >
-                          <div className="h-full w-full overflow-hidden rounded-full bg-surface">
-                            {item.fotoUrl ? (
-                              <Image
-                                src={item.fotoUrl}
-                                alt={item.name}
-                                fill
-                                sizes="40px"
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center font-display text-xs font-semibold text-steel/60">
-                                {item.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
+                  {group.items.map((item) => {
+                    const frameCode =
+                      item.type === "mahasiswa" && item.equippedFrameCode && item.equippedFrameCode !== "none"
+                        ? item.equippedFrameCode
+                        : "none";
+                    const frameDef = getFrameDefinition(frameCode);
+
+                    return (
+                      <Link
+                        key={`${item.type}-${item.id}`}
+                        href={item.href}
+                        onClick={handleSelect}
+                        className="flex items-start gap-3.5 px-5 py-3.5 transition hover:bg-surface"
+                      >
+                        <div className="relative shrink-0 pt-1">
+                          {item.type === "mahasiswa" && (
+                            <FloatingAvatarOverlay type={frameDef.floatingOverlay} size="sm" />
+                          )}
+                          {item.type === "mahasiswa" && frameDef.glowClass && (
+                            <div className={`absolute inset-0 rounded-full ${frameDef.glowClass}`} />
+                          )}
+                          <div
+                            className={`relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-surface transition-all ${
+                              item.type === "mahasiswa"
+                                ? `${frameDef.containerClass} ${frameDef.motifBorder || ""}`
+                                : ""
+                            }`}
+                          >
+                            <div className="h-full w-full overflow-hidden rounded-full bg-surface">
+                              {item.fotoUrl ? (
+                                <Image
+                                  src={item.fotoUrl}
+                                  alt={item.name}
+                                  fill
+                                  sizes="40px"
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center font-display text-xs font-semibold text-steel/60">
+                                  {item.name.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="min-w-0 flex-1 pt-0.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="font-display text-sm font-semibold text-ink leading-snug break-words">
-                            {item.name}
+                        <div className="min-w-0 flex-1 pt-0.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-display text-sm font-semibold text-ink leading-snug break-words">
+                              {item.name}
+                            </p>
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold whitespace-nowrap ${GROUP_META[item.type].badge}`}
+                            >
+                              {GROUP_META[item.type].label}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 font-mono text-[11px] text-steel leading-snug break-words">
+                            {item.roleOrCategory}
                           </p>
-                          <span
-                            className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold whitespace-nowrap ${GROUP_META[item.type].badge}`}
-                          >
-                            {GROUP_META[item.type].label}
-                          </span>
                         </div>
-                        <p className="mt-0.5 font-mono text-[11px] text-steel leading-snug break-words">
-                          {item.roleOrCategory}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               ))}
             </div>

@@ -3,19 +3,41 @@
 import { motion } from "framer-motion";
 import { FloatingOverlayType } from "@/lib/avatar-frames";
 
-export function FloatingAvatarOverlay({ type }: { type: FloatingOverlayType }) {
+export function FloatingAvatarOverlay({
+  type,
+  size = "md",
+}: {
+  type: FloatingOverlayType;
+  size?: "sm" | "md" | "lg";
+}) {
   if (!type || type === "none") return null;
+
+  const isSmall = size === "sm";
 
   switch (type) {
     case "scholarly-hat":
       return (
         <motion.div
-          animate={{ y: [0, -4, 0], rotate: [-1, 1, -1] }}
+          animate={{ y: [0, -3, 0], rotate: [-1, 1, -1] }}
           transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-          className="pointer-events-none absolute -top-5 sm:-top-7 left-1/2 -translate-x-1/2 z-30"
+          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 z-30 ${
+            isSmall ? "-top-3" : "-top-5 sm:-top-7"
+          }`}
         >
-          <div className="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-slate-900 border border-sky-400/60 shadow-lg text-sky-400">
-            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div
+            className={`flex items-center justify-center rounded-full bg-slate-900 border border-sky-400/60 shadow-lg text-sky-400 ${
+              isSmall ? "h-5 w-5 border-xs" : "h-9 w-9 sm:h-11 sm:w-11"
+            }`}
+          >
+            <svg
+              className={isSmall ? "w-3 h-3" : "w-5 h-5 sm:w-6 sm:h-6"}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
               <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
             </svg>
@@ -26,12 +48,26 @@ export function FloatingAvatarOverlay({ type }: { type: FloatingOverlayType }) {
     case "golden-crown":
       return (
         <motion.div
-          animate={{ y: [0, -5, 0], scale: [1, 1.04, 1] }}
+          animate={{ y: [0, -3, 0], scale: [1, 1.04, 1] }}
           transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-          className="pointer-events-none absolute -top-6 sm:-top-8 left-1/2 -translate-x-1/2 z-30"
+          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 z-30 ${
+            isSmall ? "-top-3.5" : "-top-6 sm:-top-8"
+          }`}
         >
-          <div className="flex h-9 w-9 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 border border-amber-200 shadow-amber-400/50 shadow-lg text-amber-950">
-            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div
+            className={`flex items-center justify-center rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 border border-amber-200 shadow-amber-400/50 shadow-lg text-amber-950 ${
+              isSmall ? "h-5 w-5 border-xs" : "h-9 w-9 sm:h-12 sm:w-12"
+            }`}
+          >
+            <svg
+              className={isSmall ? "w-3 h-3" : "w-5 h-5 sm:w-6 sm:h-6"}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
             </svg>
           </div>
