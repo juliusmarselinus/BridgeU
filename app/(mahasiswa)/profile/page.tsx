@@ -1498,12 +1498,6 @@ export default function ProfilePage() {
     }
 
     const data = await res.json();
-    console.log("🔍 [DEBUG /api/me response profile/page.tsx]", {
-      rawXp: data.xp,
-      rawPts: data.pts,
-      badgesCount: data.badges?.length,
-      unlockedBadges: data.badges?.filter((b: any) => b.isUnlocked)?.length,
-    });
 
     const parsed: StoredUser = {
       nama: data.nama,
@@ -1526,15 +1520,12 @@ export default function ProfilePage() {
       reputationScore: data.reputationScore ?? 0,
       responseRate: data.responseRate ?? 0,
     });
-    console.log("⚡ [DEBUG setUserMetrics applied]", {
+    ("⚡ [DEBUG setUserMetrics applied]", {
       appliedXp: data.xp ?? 0,
       appliedPts: data.pts ?? data.xp ?? 0,
     });
     if (Array.isArray(data.badges)) {
-      console.log("🚀 [DEBUG Client Profile] Setting dbBadges from API:", data.badges.length, "items");
       setDbBadges(data.badges);
-    } else {
-      console.log("🚀 [DEBUG Client Profile] data.badges is NOT an array or missing:", data.badges);
     }
 
     // ─── Level-up Detection ───────────────────────────────────────────────────
@@ -1551,19 +1542,19 @@ export default function ProfilePage() {
     // ─────────────────────────────────────────────────────────────────────────
 
     let currentPengajuan: Pengajuan[] = Array.isArray(data.pengajuan) ? data.pengajuan : [];
-    console.log("🚀 [DEBUG Client Profile] API returned pengajuan count:", currentPengajuan.length);
+    ("🚀 [DEBUG Client Profile] API returned pengajuan count:", currentPengajuan.length);
 
     // Jika dari API me kosong, coba query langsung supabase client dengan auth.getUser()
     if (currentPengajuan.length === 0) {
       const { data: authUser } = await supabase.auth.getUser();
-      console.log("🚀 [DEBUG Client Profile] Querying direct Supabase for user:", authUser?.user?.id);
+      ("🚀 [DEBUG Client Profile] Querying direct Supabase for user:", authUser?.user?.id);
       if (authUser?.user?.id) {
         const { data: dbData, error: dbErr } = await supabase
           .from("pendaftaran_kolaborasi")
           .select("id, status, tanggal_daftar, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
           .eq("mahasiswa_id", authUser.user.id);
 
-        console.log("🚀 [DEBUG Client Profile] Direct Supabase count:", dbData?.length ?? 0, "Err:", dbErr?.message);
+        ("🚀 [DEBUG Client Profile] Direct Supabase count:", dbData?.length ?? 0, "Err:", dbErr?.message);
 
         if (dbData && dbData.length > 0) {
           currentPengajuan = dbData.map((item: any) => ({
@@ -1583,7 +1574,7 @@ export default function ProfilePage() {
     // Jika masih 0 (misalnya registrasi lokal tanpa DB pendaftaran), ambil dari localStorage bridgeu_pengajuan
     if (currentPengajuan.length === 0) {
       const stored = localStorage.getItem("bridgeu_pengajuan");
-      console.log("🚀 [DEBUG Client Profile] Checking localStorage bridgeu_pengajuan:", stored);
+      ("🚀 [DEBUG Client Profile] Checking localStorage bridgeu_pengajuan:", stored);
       if (stored) {
         try {
           const parsedLocal = JSON.parse(stored);
@@ -1603,7 +1594,7 @@ export default function ProfilePage() {
       }
     }
 
-    console.log("🚀 [DEBUG Client Profile] FINAL pengajuan state count:", currentPengajuan.length);
+    ("🚀 [DEBUG Client Profile] FINAL pengajuan state count:", currentPengajuan.length);
     setPengajuan(currentPengajuan);
     setIsLoadingUser(false);
     if (!data.universitas || !data.prodi) {

@@ -119,7 +119,6 @@ export function ApplyModal({
         if (insertErr) {
           console.error("❌ [ApplyModal] Gagal menyimpan pendaftaran ke Supabase:", insertErr.message);
         } else {
-          console.log("✅ [ApplyModal] Pendaftaran berhasil disimpan. Mengirim notifikasi...");
           await notifyPengajuanBerhasil(currentUserId, data.judul, data.perusahaan);
         }
       }

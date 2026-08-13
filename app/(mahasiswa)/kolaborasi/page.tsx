@@ -151,7 +151,6 @@ export default function KolaborasiPage() {
 
   useEffect(() => {
     // eslint-disable-next-line no-console
-    console.log("COMPONENT CHECK:", { ApplyModal, DetailModal, AnimatePresence, motion });
   }, []);
 
   useEffect(() => {

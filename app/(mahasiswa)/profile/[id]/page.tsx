@@ -696,12 +696,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     if (profileData) {
-      console.log("DEBUG [PublicProfilePage] profileData exists, mapping to publicUser.");
-    } else {
-      console.log("DEBUG [PublicProfilePage] profileData is null. Checking dummy data.");
     }
-    console.log("DEBUG [PublicProfilePage] skillsList:", skillsList);
-    console.log("DEBUG [PublicProfilePage] minatList:", minatList);
   }, [profileData, skillsList, minatList]);
 
   const animatedSkillsCount = useSpringNumber(skillsList.length);
