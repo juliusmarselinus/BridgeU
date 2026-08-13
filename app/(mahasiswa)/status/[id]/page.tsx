@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { chatService, ChatMessage } from "@/app/(perusahaan)/perusahaan/kolaborasi/baru/services/chatService";
 
 type StatusDetail = {
   id: string; // uuid pendaftaran_kolaborasi
@@ -107,10 +108,14 @@ export default function StatusDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<{ from: "me" | "mitra"; text: string; time: string }[]>([
-    { from: "mitra", text: "Halo! Ada yang bisa kami bantu terkait pengerjaan proyek ini?", time: "10:02" },
-  ]);
+
+  // ====== CHAT STATE (REALTIME, TERSAMBUNG KE chatService) ======
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
+  const [isSendingChat, setIsSendingChat] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  // ====== AKHIR CHAT STATE ======
+
   const [draftSaved, setDraftSaved] = useState(false);
   const [riwayatList, setRiwayatList] = useState<any[]>([]);
 
@@ -137,6 +142,13 @@ export default function StatusDetailPage() {
     setDraftSaved(true);
     setTimeout(() => setDraftSaved(false), 2000);
   };
+
+  // Ambil user auth mahasiswa yang sedang login
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
+  }, []);
 
   useEffect(() => {
     async function fetchDetail() {
@@ -255,14 +267,78 @@ export default function StatusDetailPage() {
     fetchDetail();
   }, [id]);
 
-  const handleSendChat = (e: React.FormEvent) => {
+  // ====== REALTIME CHAT: fetch histori + subscribe pesan baru ======
+  useEffect(() => {
+    if (!detail?.kolaborasi_id || !currentUserId) {
+      setChatMessages([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadChat() {
+      const msgs = await chatService.fetchPesan(detail!.kolaborasi_id, currentUserId);
+      if (isMounted) setChatMessages(msgs);
+    }
+
+    loadChat();
+
+    const channel = chatService.subscribe(
+      detail.kolaborasi_id,
+      currentUserId,
+      (pesanBaru) => {
+        if (pesanBaru.mahasiswa_id !== currentUserId) return;
+        setChatMessages((prev) => {
+          if (prev.some((m) => m.id === pesanBaru.id)) return prev;
+          return [...prev, pesanBaru];
+        });
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      chatService.unsubscribe(channel);
+    };
+  }, [detail?.kolaborasi_id, currentUserId]);
+
+  const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
-    const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-    setChatMessages((prev) => [...prev, { from: "me", text: chatInput.trim(), time }]);
+    if (!chatInput.trim() || !detail?.kolaborasi_id) return;
+
+    let senderId = currentUserId;
+    if (!senderId) {
+      const { data } = await supabase.auth.getUser();
+      senderId = data.user?.id || "";
+    }
+    if (!senderId) {
+      alert("Sesi login tidak ditemukan. Silakan refresh halaman.");
+      return;
+    }
+
+    const pesan = chatInput.trim();
     setChatInput("");
+    setIsSendingChat(true);
+
+    const newMsg = await chatService.kirim(
+      detail.kolaborasi_id,
+      senderId,
+      senderId,
+      "mahasiswa",
+      pesan
+    );
+
+    setIsSendingChat(false);
+
+    if (newMsg) {
+      setChatMessages((prev) => {
+        if (prev.some((m) => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
+    } else {
+      alert("Gagal mengirim pesan. Coba lagi.");
+    }
   };
+  // ====== AKHIR REALTIME CHAT ======
 
   const handleSubmitHasil = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -756,8 +832,8 @@ export default function StatusDetailPage() {
                               <span className="font-mono text-[10px] text-steel">Dikirim {itemDate}</span>
                             </div>
 
-                            <a
-                              href={item.url_hasil}
+                            
+                              <a href={item.url_hasil}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1.5 text-bridge-gold font-bold underline truncate text-xs"
@@ -823,20 +899,30 @@ export default function StatusDetailPage() {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-paper/40">
-              {chatMessages.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.from === "me" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
-                    msg.from === "me"
-                      ? "bg-ink text-paper rounded-br-sm"
-                      : "bg-white text-ink border border-steel/15 rounded-bl-sm"
-                  }`}>
-                    <p>{msg.text}</p>
-                    <p className={`font-mono text-[9px] mt-1 ${msg.from === "me" ? "text-paper/60" : "text-steel/60"}`}>
-                      {msg.time}
-                    </p>
-                  </div>
+              {chatMessages.length === 0 ? (
+                <div className="flex h-full items-center justify-center font-mono text-[11px] text-steel text-center px-6">
+                  Belum ada pesan. Kirim pesan pertama ke {detail.perusahaan}.
                 </div>
-              ))}
+              ) : (
+                chatMessages.map((msg) => {
+                  const isMe = msg.tipe_pengirim === "mahasiswa";
+                  const time = new Date(msg.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+                  return (
+                    <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
+                        isMe
+                          ? "bg-ink text-paper rounded-br-sm"
+                          : "bg-white text-ink border border-steel/15 rounded-bl-sm"
+                      }`}>
+                        <p>{msg.pesan}</p>
+                        <p className={`font-mono text-[9px] mt-1 ${isMe ? "text-paper/60" : "text-steel/60"}`}>
+                          {time}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             {/* Input */}
@@ -850,7 +936,7 @@ export default function StatusDetailPage() {
               />
               <button
                 type="submit"
-                disabled={!chatInput.trim()}
+                disabled={!chatInput.trim() || isSendingChat}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-paper hover:bg-steel transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <IconSend className="w-4 h-4" />
