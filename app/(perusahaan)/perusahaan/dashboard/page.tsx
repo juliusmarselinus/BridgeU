@@ -6,6 +6,7 @@ import { companyService } from "./services/companyServices";
 import { pelamarService } from "../pelamar/services/pelamarService";
 import { StoredCompany, KolaborasiWithMeta } from "./types/company";
 import { PelamarDetail } from "../pelamar/types/pelamar";
+import { PerusahaanSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 interface RecentPelamar extends PelamarDetail {
   kolaborasi_judul: string;
@@ -81,6 +82,8 @@ export default function CompanyDashboardPage() {
     iso
       ? new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
       : "-";
+
+  if (isLoading) return <PerusahaanSkeletonPage />;
 
   return (
     <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 pb-16">

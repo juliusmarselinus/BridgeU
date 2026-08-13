@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminPerusahaan } from "./hooks/useAdminPerusahaan";
 import { GradientBars } from "@/components/ui/gradient-bars-background";
+import { AdminSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 export default function AdminVerifikasiPerusahaanPage() {
   const {
@@ -18,6 +19,8 @@ export default function AdminVerifikasiPerusahaanPage() {
     totalPages,
     totalCount,
   } = useAdminPerusahaan();
+
+  if (isLoading) return <AdminSkeletonPage />;
 
   return (
     <main className="relative overflow-hidden bg-gradient-to-b from-secondary/15 via-clouds to-clouds pb-12 font-sans text-ink">

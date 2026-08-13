@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAdminDashboard } from "./hooks/useAdminDashboard";
 import { GradientBars } from "@/components/ui/gradient-bars-background";
+import { AdminSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 export default function AdminDashboardPage() {
   const { stats, isLoading } = useAdminDashboard();
@@ -11,6 +12,8 @@ export default function AdminDashboardPage() {
   const totalKolaborasi = stats.totalKolaborasi;
   const pendingCompanies = stats.pendingCompanies;
   const verifiedCompanies = stats.verifiedCompanies;
+
+  if (isLoading) return <AdminSkeletonPage />;
 
   return (
     <main className="relative overflow-hidden bg-gradient-to-b from-secondary/15 via-clouds to-clouds pb-12 font-sans text-ink">
