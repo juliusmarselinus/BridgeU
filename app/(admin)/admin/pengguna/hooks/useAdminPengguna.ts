@@ -9,6 +9,13 @@ export function useAdminPengguna() {
   const [search, setSearch] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    id: string;
+    currentStatus: UserStatus;
+    title: string;
+    message: string;
+  } | null>(null);
   const ITEMS_PER_PAGE = 8;
 
   const loadData = useCallback(async () => {
@@ -30,7 +37,7 @@ export function useAdminPengguna() {
         )
       );
     } else {
-      alert("Gagal mengubah status pengguna.");
+      setErrorModal({ title: "Gagal", message: "Gagal mengubah status pengguna." });
     }
   };
 
@@ -73,5 +80,9 @@ export function useAdminPengguna() {
     currentPage,
     setCurrentPage,
     totalPages,
+    errorModal,
+    setErrorModal,
+    confirmModal,
+    setConfirmModal,
   };
 }

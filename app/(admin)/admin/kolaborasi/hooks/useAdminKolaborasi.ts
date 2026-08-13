@@ -9,6 +9,13 @@ export function useAdminKolaborasi() {
   const [search, setSearch] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    id: string;
+    status: ModerasiStatus;
+    title: string;
+    message: string;
+  } | null>(null);
   const ITEMS_PER_PAGE = 8;
 
   const loadData = useCallback(async () => {
@@ -28,7 +35,7 @@ export function useAdminKolaborasi() {
         )
       );
     } else {
-      alert("Gagal memperbarui status moderasi.");
+      setErrorModal({ title: "Gagal", message: "Gagal memperbarui status moderasi." });
     }
   };
 
@@ -71,5 +78,9 @@ export function useAdminKolaborasi() {
     currentPage,
     setCurrentPage,
     totalPages,
+    errorModal,
+    setErrorModal,
+    confirmModal,
+    setConfirmModal,
   };
 }

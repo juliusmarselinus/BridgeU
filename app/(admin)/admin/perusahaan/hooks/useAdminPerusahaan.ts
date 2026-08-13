@@ -8,6 +8,7 @@ export function useAdminPerusahaan() {
   const [filterStatus, setFilterStatus] = useState<"Semua" | VerifikasiStatus>("Semua");
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
   const ITEMS_PER_PAGE = 8;
 
   const loadData = useCallback(async () => {
@@ -27,7 +28,7 @@ export function useAdminPerusahaan() {
         )
       );
     } else {
-      alert("Gagal memperbarui status verifikasi.");
+      setErrorModal({ title: "Gagal", message: "Gagal memperbarui status verifikasi." });
     }
   };
 
@@ -63,5 +64,7 @@ export function useAdminPerusahaan() {
     currentPage,
     setCurrentPage,
     totalPages,
+    errorModal,
+    setErrorModal,
   };
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminPerusahaan } from "./hooks/useAdminPerusahaan";
+import { ActionModal } from "@/components/ActionModal";
 import { GradientBars } from "@/components/ui/gradient-bars-background";
 import { AdminSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
@@ -18,12 +19,22 @@ export default function AdminVerifikasiPerusahaanPage() {
     setCurrentPage,
     totalPages,
     totalCount,
+    errorModal,
+    setErrorModal,
   } = useAdminPerusahaan();
 
   if (isLoading) return <AdminSkeletonPage />;
 
   return (
     <main className="relative overflow-hidden bg-gradient-to-b from-secondary/15 via-clouds to-clouds pb-12 font-sans text-ink">
+      {errorModal && (
+        <ActionModal
+          isOpen={!!errorModal}
+          onClose={() => setErrorModal(null)}
+          title={errorModal.title}
+          message={errorModal.message}
+        />
+      )}
       <GradientBars
         numBars={20}
         gradientFrom="rgb(176, 208, 218)"

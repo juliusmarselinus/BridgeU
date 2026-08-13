@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminKolaborasi } from "./hooks/useAdminKolaborasi";
+import { ActionModal } from "@/components/ActionModal";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { GradientBars } from "@/components/ui/gradient-bars-background";
+import { AdminSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 export default function AdminModerasiKolaborasiPage() {
   const {
@@ -19,10 +22,33 @@ export default function AdminModerasiKolaborasiPage() {
     setCurrentPage,
     totalPages,
     totalCount,
+    errorModal,
+    setErrorModal,
+    confirmModal,
+    setConfirmModal,
   } = useAdminKolaborasi();
+
+  if (isLoading) return <AdminSkeletonPage />;
 
   return (
     <main className="relative overflow-hidden bg-gradient-to-b from-secondary/15 via-clouds to-clouds pb-12 font-sans text-ink">
+      {errorModal && (
+        <ActionModal
+          isOpen={!!errorModal}
+          onClose={() => setErrorModal(null)}
+          title={errorModal.title}
+          message={errorModal.message}
+        />
+      )}
+      {confirmModal && (
+        <ConfirmModal
+          isOpen={!!confirmModal}
+          onClose={() => setConfirmModal(null)}
+          onConfirm={() => handleUpdateStatus(confirmModal.id, confirmModal.status)}
+          title={confirmModal.title}
+          message={confirmModal.message}
+        />
+      )}
       <GradientBars
         numBars={20}
         gradientFrom="rgb(176, 208, 218)"
@@ -203,7 +229,14 @@ export default function AdminModerasiKolaborasiPage() {
 
                       {status !== "Ditolak" && (
                         <button
-                          onClick={() => handleUpdateStatus(item.id, "Ditolak")}
+                          onClick={() =>
+                            setConfirmModal({
+                              id: item.id,
+                              status: "Ditolak",
+                              title: "Konfirmasi Penolakan",
+                              message: `Apakah Anda yakin ingin menolak kolaborasi "${item.judul}"?`,
+                            })
+                          }
                           className="flex-1 rounded-full border border-rose-200 bg-rose-50 py-1 font-mono text-[10px] font-medium text-rose-700 hover:bg-rose-100 transition active:scale-95 text-center cursor-pointer"
                         >
                           ✕ Down
@@ -248,4 +281,3 @@ export default function AdminModerasiKolaborasiPage() {
     </main>
   );
 }
-

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminPengguna } from "./hooks/useAdminPengguna";
+import { ActionModal } from "@/components/ActionModal";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { GradientBars } from "@/components/ui/gradient-bars-background";
 import { AdminSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
@@ -20,12 +22,33 @@ export default function AdminManajemenPenggunaPage() {
     setCurrentPage,
     totalPages,
     totalCount,
+    errorModal,
+    setErrorModal,
+    confirmModal,
+    setConfirmModal,
   } = useAdminPengguna();
 
   if (isLoading) return <AdminSkeletonPage />;
 
   return (
     <main className="relative overflow-hidden bg-gradient-to-b from-secondary/15 via-clouds to-clouds pb-12 font-sans text-ink">
+      {errorModal && (
+        <ActionModal
+          isOpen={!!errorModal}
+          onClose={() => setErrorModal(null)}
+          title={errorModal.title}
+          message={errorModal.message}
+        />
+      )}
+      {confirmModal && (
+        <ConfirmModal
+          isOpen={!!confirmModal}
+          onClose={() => setConfirmModal(null)}
+          onConfirm={() => handleToggleStatus(confirmModal.id, confirmModal.currentStatus)}
+          title={confirmModal.title}
+          message={confirmModal.message}
+        />
+      )}
       <GradientBars
         numBars={20}
         gradientFrom="rgb(176, 208, 218)"
@@ -179,7 +202,16 @@ export default function AdminManajemenPenggunaPage() {
                     </span>
 
                     <button
-                      onClick={() => handleToggleStatus(user.id, user.status)}
+                      onClick={() =>
+                        user.status === "Aktif"
+                          ? setConfirmModal({
+                              id: user.id,
+                              currentStatus: user.status,
+                              title: "Konfirmasi Suspend",
+                              message: `Apakah Anda yakin ingin menangguhkan (suspend) akun "${user.nama}"?`,
+                            })
+                          : handleToggleStatus(user.id, user.status)
+                      }
                       className={`w-full rounded-full py-1 font-mono text-[10px] font-semibold transition active:scale-95 text-center cursor-pointer ${
                         user.status === "Aktif"
                           ? "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
