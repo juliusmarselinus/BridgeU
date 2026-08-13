@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
         user_id,
         nama_lengkap,
         foto_url,
+        equipped_frame_code,
         program_studi:prodi_id ( nama_prodi )
       `
       )
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest) {
     type: "mahasiswa" as const,
     roleOrCategory: m.program_studi?.nama_prodi ?? "Mahasiswa",
     fotoUrl: m.foto_url ?? null,
+    equippedFrameCode: m.equipped_frame_code ?? "none",
     href: `/profile/${m.user_id}`,
   }));
 

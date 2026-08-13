@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     const { data: profile, error: profileError } = await db
       .from("mahasiswa_profiles")
       .select(
-        `nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate,
+        `nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate, equipped_frame_code,
          universitas:universitas_id ( nama_universitas ),
          prodi:prodi_id ( nama_prodi )`
       )
@@ -112,8 +112,6 @@ export async function GET(req: NextRequest) {
       .from("pendaftaran_kolaborasi")
       .select("id, status, tanggal_daftar, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
       .eq("mahasiswa_id", authUser.id);
-
-    console.log("🔍 [DEBUG /api/me] authedPendaftaran count:", authedPendaftaran?.length ?? 0, "Err:", authedErr?.message);
 
     dbPendaftaran = authedPendaftaran;
 
@@ -310,6 +308,7 @@ export async function GET(req: NextRequest) {
       preferensiLokasi: profile.preferensi_lokasi,
       ringkasanSelf: profile.ringkasan_self,
       fotoUrl: profile.foto_url,
+      equippedFrameCode: (profile as any).equipped_frame_code ?? "none",
       xp: currentXp,
       pts: currentPts,
       streakCount: streakCount,
@@ -406,6 +405,7 @@ export async function PUT(req: NextRequest) {
     preferensiLokasi,
     ringkasan,
     fotoUrl,
+    equippedFrameCode,
     minatKategori,
     skills,
   } = body;
@@ -418,6 +418,7 @@ export async function PUT(req: NextRequest) {
     if (preferensiLokasi !== undefined) updatePayload.preferensi_lokasi = preferensiLokasi;
     if (ringkasan !== undefined) updatePayload.ringkasan_self = ringkasan;
     if (fotoUrl !== undefined) updatePayload.foto_url = fotoUrl;
+    if (equippedFrameCode !== undefined) updatePayload.equipped_frame_code = equippedFrameCode;
 
     if (universitas) {
       updatePayload.universitas_id = await getOrCreateRefId(db, "universitas", "nama_universitas", universitas);

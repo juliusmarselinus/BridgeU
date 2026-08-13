@@ -6,6 +6,8 @@ import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from
 import { getUserProfileById, badgeList } from "@/lib/dummy-data";
 import { supabase } from "@/lib/supabase";
 import { MahasiswaSkeletonPage } from "@/components/ui/MahasiswaLoading";
+import { AvatarFrameId, getStoredAvatarFrame, getFrameDefinition } from "@/lib/avatar-frames";
+import { FloatingAvatarOverlay } from "@/components/profile/FloatingAvatarOverlay";
 
 /* ------------------------------------------------------------------ */
 /* SVG Icon Components                                                */
@@ -613,34 +615,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
   const [tabDirection, setTabDirection] = useState(1);
   const [isPhotoOpen, setIsPhotoOpen] = useState(false);
   const [badgePage, setBadgePage] = useState(1);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchProfile() {
-      setIsLoading(true);
-      try {
-        const { data: authData } = await supabase.auth.getSession();
-        const headers: Record<string, string> = {};
-        if (authData.session?.access_token) {
-          headers.Authorization = `Bearer ${authData.session.access_token}`;
-        }
-        const res = await fetch(`/api/profile/${rawProfileId}`, { headers });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          if (isMounted) setErrorMsg(body.error || "Profil tidak ditemukan");
-        } else {
-          const data = await res.json();
-          if (isMounted) setProfileData(data);
-        }
-      } catch (err: any) {
-        if (isMounted) setErrorMsg(err.message || "Gagal memuat profil");
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-    fetchProfile();
-    return () => { isMounted = false; };
-  }, [rawProfileId]);
+  const [frameId, setFrameId] = useState<AvatarFrameId>("none");
 
   const publicUser: any = useMemo(() => {
     if (profileData) {
@@ -655,6 +630,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         preferensiTipe: profileData.preferensiTipe || "Semua",
         ringkasan: profileData.ringkasan || "",
         foto: profileData.foto,
+        equippedFrameCode: profileData.equippedFrameCode || "none",
         skills: Array.isArray(profileData.skills) ? profileData.skills : [],
         minatKategori: Array.isArray(profileData.minatKategori) ? profileData.minatKategori : [],
         level: profileData.level || 1,
@@ -680,6 +656,47 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
       minatKategori: dummy.minatKategori || [],
     };
   }, [profileData, rawProfileId]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchProfile() {
+      setIsLoading(true);
+      console.log("🔍 [DEBUG Public Profile] Fetching profile for rawProfileId:", rawProfileId);
+      try {
+        const { data: authData } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {};
+        if (authData.session?.access_token) {
+          headers.Authorization = `Bearer ${authData.session.access_token}`;
+        }
+        const res = await fetch(`/api/profile/${rawProfileId}`, { headers });
+        console.log("🔍 [DEBUG Public Profile] API response status:", res.status);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          console.error("❌ [DEBUG Public Profile] API error body:", body);
+          if (isMounted) setErrorMsg(body.error || "Profil tidak ditemukan");
+        } else {
+          const data = await res.json();
+          console.log("✅ [DEBUG Public Profile] Fetched profileData successfully:", data);
+          if (isMounted) setProfileData(data);
+        }
+      } catch (err: any) {
+        console.error("🔥 [DEBUG Public Profile] Fetch exception:", err);
+        if (isMounted) setErrorMsg(err.message || "Gagal memuat profil");
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    fetchProfile();
+    return () => { isMounted = false; };
+  }, [rawProfileId]);
+
+  useEffect(() => {
+    if (publicUser?.equippedFrameCode) {
+      setFrameId(publicUser.equippedFrameCode as AvatarFrameId);
+    } else {
+      setFrameId(getStoredAvatarFrame());
+    }
+  }, [publicUser?.equippedFrameCode]);
 
   const handleTabChange = (key: TabKey) => {
     const oldIndex = TABS.findIndex((t) => t.key === activeTab);
@@ -737,25 +754,36 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-8 lg:px-12 relative overflow-visible">
           <div className="flex flex-col md:flex-row items-center md:items-end justify-between relative -mt-10 sm:-mt-12 gap-6 pb-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left z-20">
-              <div className="relative group shrink-0">
+              <div className="relative group shrink-0 pt-3">
+                {/* Floating Overlay Component */}
+                <FloatingAvatarOverlay type={getFrameDefinition(frameId).floatingOverlay} />
+
+                {/* Frame Glow backdrop */}
+                {getFrameDefinition(frameId).glowClass && (
+                  <div className={`absolute inset-0 rounded-full ${getFrameDefinition(frameId).glowClass}`} />
+                )}
+
+                {/* Avatar container with dynamic frame style */}
                 <div
                   onClick={() => publicUser.foto && setIsPhotoOpen(true)}
-                  className={`h-36 w-36 sm:h-44 sm:w-44 overflow-hidden rounded-full border-4 border-clouds bg-card shadow-lg transition-transform duration-200 group-hover:scale-105 ${
+                  className={`h-36 w-36 sm:h-44 sm:w-44 overflow-hidden rounded-full transition-all duration-300 ${getFrameDefinition(frameId).containerClass} ${getFrameDefinition(frameId).motifBorder || ""} bg-card shadow-xl group-hover:scale-105 ${
                     publicUser.foto ? "cursor-zoom-in" : ""
                   }`}
                 >
-                  {publicUser.foto ? (
-                    <motion.img
-                      layoutId="public-profile-avatar-photo"
-                      src={publicUser.foto}
-                      alt={publicUser.nama}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center font-display text-4xl sm:text-5xl font-bold text-steel/70">
-                      {initials}
-                    </div>
-                  )}
+                  <div className="h-full w-full overflow-hidden rounded-full bg-card">
+                    {publicUser.foto ? (
+                      <motion.img
+                        layoutId="public-profile-avatar-photo"
+                        src={publicUser.foto}
+                        alt={publicUser.nama}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center font-display text-4xl sm:text-5xl font-bold text-steel/70">
+                        {initials}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

@@ -10,6 +10,14 @@ import { supabase } from "@/lib/supabase";
 import { getGamificationMetrics } from "@/lib/gamification";
 import { notifyBadgeUnlocked, notifyLevelUp } from "@/lib/notifications";
 import { MahasiswaSkeletonPage } from "@/components/ui/MahasiswaLoading";
+import {
+  AvatarFrameId,
+  getStoredAvatarFrame,
+  saveStoredAvatarFrame,
+  getFrameDefinition,
+} from "@/lib/avatar-frames";
+import { AvatarFramePickerModal } from "@/components/profile/AvatarFramePickerModal";
+import { FloatingAvatarOverlay } from "@/components/profile/FloatingAvatarOverlay";
 
 type StoredUser = {
   nama: string;
@@ -1455,7 +1463,19 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
   const [tabDirection, setTabDirection] = useState(1);
   const [isPhotoOpen, setIsPhotoOpen] = useState(false);
+  const [frameId, setFrameId] = useState<AvatarFrameId>("none");
+  const [isFrameModalOpen, setIsFrameModalOpen] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setFrameId(getStoredAvatarFrame());
+  }, []);
+
+  const handleFrameChange = async (newFrameId: AvatarFrameId) => {
+    setFrameId(newFrameId);
+    saveStoredAvatarFrame(newFrameId);
+    await saveToDatabase({ equippedFrameCode: newFrameId });
+  };
 
   const [pengajuan, setPengajuan] = useState<Pengajuan[]>([]);
   const [dbBadges, setDbBadges] = useState<DbBadge[]>([]);
@@ -1480,24 +1500,58 @@ export default function ProfilePage() {
 
   const loadFromDatabase = async () => {
     setLoadError("");
-    const { data: { session } } = await supabase.auth.getSession();
+    console.log("🔍 [DEBUG Profile Page] Checking auth session via supabase.auth.getSession()...");
+    let { data: { session } } = await supabase.auth.getSession();
+    
+    // Fallback bila getSession & getUser dari Supabase null (misal mode demo/dummy auth local)
     if (!session) {
+      console.warn("⚠️ [DEBUG Profile Page] Supabase session is null, checking localStorage 'bridgeu_user'...");
+      const localUserStr = localStorage.getItem("bridgeu_user");
+      if (localUserStr) {
+        try {
+          const localUser = JSON.parse(localUserStr);
+          console.log("✅ [DEBUG Profile Page] Found user in localStorage:", localUser);
+          setUser({
+            nama: localUser.nama || "Mahasiswa",
+            email: localUser.email || "mahasiswa@student.ac.id",
+            universitas: localUser.universitas || "Universitas Multimedia Nusantara",
+            prodi: localUser.prodi || "Sistem Informasi",
+            semester: localUser.semester || "Semester 3",
+            ringkasan: localUser.ringkasan || "Mahasiswa Aktif BridgeU",
+            foto: localUser.foto,
+            skills: localUser.skills || ["React", "TypeScript"],
+            minatKategori: localUser.minatKategori || ["Software Development"],
+          });
+          setIsLoadingUser(false);
+          return;
+        } catch (e) {
+          console.error("❌ [DEBUG Profile Page] Error parsing bridgeu_user from localStorage:", e);
+        }
+      }
+
+      console.error("❌ [DEBUG Profile Page] No active auth session found in Supabase or localStorage!");
       setIsLoadingUser(false);
-      return; // ini beneran belum login
+      return;
     }
+
+    console.log("✅ [DEBUG Profile Page] Session found for user ID:", session.user.id, "Fetching /api/me...");
 
     const res = await fetch("/api/me", {
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
 
+    console.log("🔍 [DEBUG Profile Page] /api/me response status:", res.status);
+
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
+      console.error("❌ [DEBUG Profile Page] /api/me returned error:", body);
       setLoadError(body.error || `Gagal memuat profil (${res.status})`);
       setIsLoadingUser(false);
       return;
     }
 
     const data = await res.json();
+    console.log("✅ [DEBUG Profile Page] /api/me data loaded:", data);
 
     const parsed: StoredUser = {
       nama: data.nama,
@@ -1512,7 +1566,13 @@ export default function ProfilePage() {
       ringkasan: data.ringkasanSelf,
       foto: data.fotoUrl,
     };
+    console.log("✅ [DEBUG Profile Page] Setting user state with parsed API data:", parsed);
     setUser(parsed);
+
+    if (data.equippedFrameCode) {
+      setFrameId(data.equippedFrameCode as AvatarFrameId);
+      saveStoredAvatarFrame(data.equippedFrameCode as AvatarFrameId);
+    }
     setUserMetrics({
       xp: data.xp ?? 0,
       pts: data.pts ?? data.xp ?? 0,
@@ -1520,7 +1580,7 @@ export default function ProfilePage() {
       reputationScore: data.reputationScore ?? 0,
       responseRate: data.responseRate ?? 0,
     });
-    ("⚡ [DEBUG setUserMetrics applied]", {
+    console.log("⚡ [DEBUG setUserMetrics applied]", {
       appliedXp: data.xp ?? 0,
       appliedPts: data.pts ?? data.xp ?? 0,
     });
@@ -1542,19 +1602,17 @@ export default function ProfilePage() {
     // ─────────────────────────────────────────────────────────────────────────
 
     let currentPengajuan: Pengajuan[] = Array.isArray(data.pengajuan) ? data.pengajuan : [];
-    ("🚀 [DEBUG Client Profile] API returned pengajuan count:", currentPengajuan.length);
 
     // Jika dari API me kosong, coba query langsung supabase client dengan auth.getUser()
     if (currentPengajuan.length === 0) {
       const { data: authUser } = await supabase.auth.getUser();
-      ("🚀 [DEBUG Client Profile] Querying direct Supabase for user:", authUser?.user?.id);
       if (authUser?.user?.id) {
         const { data: dbData, error: dbErr } = await supabase
           .from("pendaftaran_kolaborasi")
           .select("id, status, tanggal_daftar, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
           .eq("mahasiswa_id", authUser.user.id);
 
-        ("🚀 [DEBUG Client Profile] Direct Supabase count:", dbData?.length ?? 0, "Err:", dbErr?.message);
+        console.log("🚀 [DEBUG Client Profile] Direct Supabase count:", dbData?.length ?? 0, "Err:", dbErr?.message);
 
         if (dbData && dbData.length > 0) {
           currentPengajuan = dbData.map((item: any) => ({
@@ -1574,7 +1632,7 @@ export default function ProfilePage() {
     // Jika masih 0 (misalnya registrasi lokal tanpa DB pendaftaran), ambil dari localStorage bridgeu_pengajuan
     if (currentPengajuan.length === 0) {
       const stored = localStorage.getItem("bridgeu_pengajuan");
-      ("🚀 [DEBUG Client Profile] Checking localStorage bridgeu_pengajuan:", stored);
+      console.log("🚀 [DEBUG Client Profile] Checking localStorage bridgeu_pengajuan:", stored);
       if (stored) {
         try {
           const parsedLocal = JSON.parse(stored);
@@ -1594,7 +1652,7 @@ export default function ProfilePage() {
       }
     }
 
-    ("🚀 [DEBUG Client Profile] FINAL pengajuan state count:", currentPengajuan.length);
+    console.log("🚀 [DEBUG Client Profile] FINAL pengajuan state count:", currentPengajuan.length);
     setPengajuan(currentPengajuan);
     setIsLoadingUser(false);
     if (!data.universitas || !data.prodi) {
@@ -1815,35 +1873,59 @@ export default function ProfilePage() {
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-8 lg:px-12 relative overflow-visible">
           <div className="flex flex-col md:flex-row items-center md:items-end justify-between relative -mt-10 sm:-mt-12 gap-6 pb-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left z-20">
-              <div className="relative group shrink-0">
+              <div className="relative group shrink-0 pt-3">
+                {/* Floating Overlay Component */}
+                <FloatingAvatarOverlay type={getFrameDefinition(frameId).floatingOverlay} />
+
+                {/* Frame Glow backdrop */}
+                {getFrameDefinition(frameId).glowClass && (
+                  <div className={`absolute inset-0 rounded-full ${getFrameDefinition(frameId).glowClass}`} />
+                )}
+
+                {/* Avatar container with dynamic frame style */}
                 <div
                   onClick={() => user.foto && setIsPhotoOpen(true)}
-                  className={`h-36 w-36 sm:h-44 sm:w-44 overflow-hidden rounded-full border-4 border-clouds bg-card shadow-lg transition-transform duration-200 group-hover:scale-105 ${
+                  className={`h-36 w-36 sm:h-44 sm:w-44 overflow-hidden rounded-full transition-all duration-300 ${getFrameDefinition(frameId).containerClass} ${getFrameDefinition(frameId).motifBorder || ""} bg-card shadow-xl group-hover:scale-105 ${
                     user.foto ? "cursor-zoom-in" : ""
                   }`}
                 >
-                  {user.foto ? (
-                    <motion.img
-                      layoutId="profile-avatar-photo"
-                      src={user.foto}
-                      alt="Foto profil"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center font-display text-4xl sm:text-5xl font-bold text-steel/70">
-                      {inisial}
-                    </div>
-                  )}
+                  <div className="h-full w-full overflow-hidden rounded-full bg-card">
+                    {user.foto ? (
+                      <motion.img
+                        layoutId="profile-avatar-photo"
+                        src={user.foto}
+                        alt="Foto profil"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center font-display text-4xl sm:text-5xl font-bold text-steel/70">
+                        {inisial}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
+                {/* Button Edit Foto Profil */}
                 <button
                   type="button"
                   onClick={() => fotoInputRef.current?.click()}
                   aria-label="Edit foto profil"
-                  className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-clouds bg-ink text-paper shadow-md transition hover:scale-110 active:scale-90"
+                  className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-clouds bg-ink text-paper shadow-md transition hover:scale-110 active:scale-90 z-20"
                 >
                   <IconCamera className="w-4 h-4 text-sky" />
                 </button>
+
+                {/* Button Ganti Avatar Frame */}
+                <button
+                  type="button"
+                  onClick={() => setIsFrameModalOpen(true)}
+                  aria-label="Ganti bingkai avatar"
+                  title="Ganti Bingkai Avatar"
+                  className="absolute top-1 right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-clouds bg-amber-400 text-ink shadow-md transition hover:scale-110 active:scale-90 z-20"
+                >
+                  <IconSparkles className="w-4 h-4 text-white" />
+                </button>
+
                 <input ref={fotoInputRef} type="file" accept="image/*" onChange={readFile} className="hidden" />
               </div>
 
@@ -2276,6 +2358,16 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      {/* Modal Kustomisasi Avatar Frame */}
+      <AvatarFramePickerModal
+        isOpen={isFrameModalOpen}
+        onClose={() => setIsFrameModalOpen(false)}
+        currentFrameId={frameId}
+        userLevel={level}
+        userPhoto={user?.foto}
+        userInisial={inisial}
+        onSelectFrame={handleFrameChange}
+      />
     </main>
   );
 }
