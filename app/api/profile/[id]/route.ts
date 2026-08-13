@@ -20,7 +20,7 @@ export async function GET(
     let { data: profile, error } = await db
       .from("mahasiswa_profiles")
       .select(
-        `user_id, nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate,
+        `user_id, nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate, equipped_frame_code,
          universitas:universitas_id ( nama_universitas ),
          prodi:prodi_id ( nama_prodi )`
       )
@@ -32,7 +32,7 @@ export async function GET(
       const { data: fallbackProfiles } = await db
         .from("mahasiswa_profiles")
         .select(
-          `user_id, nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate,
+          `user_id, nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate, equipped_frame_code,
            universitas:universitas_id ( nama_universitas ),
            prodi:prodi_id ( nama_prodi )`
         )
@@ -49,7 +49,7 @@ export async function GET(
       const { data: pubProfile } = await supabase
         .from("mahasiswa_profiles")
         .select(
-          `user_id, nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate,
+          `user_id, nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate, equipped_frame_code,
            universitas:universitas_id ( nama_universitas ),
            prodi:prodi_id ( nama_prodi )`
         )
@@ -163,6 +163,7 @@ export async function GET(
       preferensiLokasi: profile.preferensi_lokasi,
       ringkasan: profile.ringkasan_self || "",
       foto: profile.foto_url,
+      equippedFrameCode: (profile as any).equipped_frame_code ?? "none",
       xp: studentXp,
       pts: studentPts,
       level: gMetrics.level,

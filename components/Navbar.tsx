@@ -16,11 +16,14 @@ const navLinks = [
   { href: "/status", label: "Status Pengajuan" },
 ];
 
+import { getFrameDefinition } from "@/lib/avatar-frames";
+
 type StoredUser = {
   nama: string;
   universitas: string;
   prodi: string;
   foto?: string;
+  equippedFrameCode?: string;
 };
 
 type NotificationType = "success" | "info" | "warning";
@@ -316,6 +319,7 @@ export function Navbar() {
       universitas: data.universitas || "",
       prodi: data.prodi || "",
       foto: data.fotoUrl,
+      equippedFrameCode: data.equippedFrameCode || "none",
     });
   };
 
@@ -375,25 +379,40 @@ export function Navbar() {
 
           <NotificationBell />
 
-          <Link
-            href="/profile"
-            className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary transition hover:bg-primary/20"
-            aria-label="Profil"
-          >
-            {user?.foto ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.foto} alt="Foto profil" className="h-full w-full object-cover" />
-            ) : user ? (
-              <span className="font-mono text-[11px] font-medium text-primary">
-                {initials(user.nama)}
-              </span>
-            ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
-              </svg>
+          <div className="relative shrink-0">
+            {user && getFrameDefinition(user.equippedFrameCode).glowClass && (
+              <div className={`absolute inset-0 rounded-full ${getFrameDefinition(user.equippedFrameCode).glowClass}`} />
             )}
-          </Link>
+            <Link
+              href="/profile"
+              className={`relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full transition hover:scale-105 ${
+                user
+                  ? `${getFrameDefinition(user.equippedFrameCode).containerClass} ${
+                      getFrameDefinition(user.equippedFrameCode).motifBorder || ""
+                    }`
+                  : "bg-primary/10 text-primary hover:bg-primary/20"
+              }`}
+              aria-label="Profil"
+            >
+              <div className="h-full w-full overflow-hidden rounded-full bg-surface">
+                {user?.foto ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.foto} alt="Foto profil" className="h-full w-full object-cover" />
+                ) : user ? (
+                  <span className="flex h-full w-full items-center justify-center font-mono text-[11px] font-medium text-primary">
+                    {initials(user.nama)}
+                  </span>
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-primary">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </Link>
+          </div>
         </div>
       </nav>
     </div>

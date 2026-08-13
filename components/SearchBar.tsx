@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { getFrameDefinition } from "@/lib/avatar-frames";
 
 type SearchItem = {
   id: string;
@@ -10,6 +11,7 @@ type SearchItem = {
   type: "mahasiswa" | "company";
   roleOrCategory: string;
   fotoUrl: string | null;
+  equippedFrameCode?: string;
   href: string;
 };
 
@@ -181,20 +183,35 @@ export function SearchBar() {
                       onClick={handleSelect}
                       className="flex items-start gap-3.5 px-5 py-3 transition hover:bg-surface"
                     >
-                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-surface">
-                        {item.fotoUrl ? (
-                          <Image
-                            src={item.fotoUrl}
-                            alt={item.name}
-                            fill
-                            sizes="40px"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center font-display text-xs font-semibold text-steel/60">
-                            {item.name.charAt(0).toUpperCase()}
-                          </div>
+                      <div className="relative shrink-0">
+                        {item.type === "mahasiswa" && getFrameDefinition(item.equippedFrameCode).glowClass && (
+                          <div className={`absolute inset-0 rounded-full ${getFrameDefinition(item.equippedFrameCode).glowClass}`} />
                         )}
+                        <div
+                          className={`relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-surface ${
+                            item.type === "mahasiswa"
+                              ? `${getFrameDefinition(item.equippedFrameCode).containerClass} ${
+                                  getFrameDefinition(item.equippedFrameCode).motifBorder || ""
+                                }`
+                              : ""
+                          }`}
+                        >
+                          <div className="h-full w-full overflow-hidden rounded-full bg-surface">
+                            {item.fotoUrl ? (
+                              <Image
+                                src={item.fotoUrl}
+                                alt={item.name}
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center font-display text-xs font-semibold text-steel/60">
+                                {item.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="min-w-0 flex-1 pt-0.5">
