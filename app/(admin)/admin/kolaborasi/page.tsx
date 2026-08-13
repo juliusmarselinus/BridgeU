@@ -57,6 +57,19 @@ export default function AdminModerasiKolaborasiPage() {
         className="opacity-70"
       />
 
+      {/* Steel-Cone-style conic sweep — direkonstruksi pakai palet BridgeU */}
+      <div
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[900px] w-[900px] opacity-[0.16] blur-3xl"
+        style={{
+          background:
+            "conic-gradient(from 20deg at 50% 50%, #EDF4FA 0%, #8CC1E9 25%, #12284B 50%, #8CC1E9 75%, #EDF4FA 100%)",
+        }}
+      />
+
+      {/* Ambient background blobs — khas halaman Moderasi Kolaborasi */}
+      <div className="pointer-events-none absolute top-[380px] right-0 h-96 w-96 rounded-full bg-sky/20 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-32 left-0 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+
       {/* Hero Header */}
       <div className="relative z-10 w-full bg-clouds">
         <div
@@ -73,7 +86,7 @@ export default function AdminModerasiKolaborasiPage() {
           />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(140,193,233,0.15),transparent_60%)]" />
 
-          <div className="relative z-10 mx-auto max-w-6xl px-6">
+          <div className="relative z-10 mx-auto max-w-[1400px] px-6">
             <Link
               href="/admin/dashboard"
               className="font-mono text-xs font-semibold text-sky hover:text-white transition inline-flex items-center gap-1.5 mb-3 group"
@@ -91,9 +104,9 @@ export default function AdminModerasiKolaborasiPage() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-20 mx-auto max-w-6xl px-6 -mt-8 space-y-6">
+      <div className="relative z-20 mx-auto max-w-[1400px] px-6 -mt-8 space-y-6">
         {/* Filter Tabs & Search Bar Card */}
-        <div className="rounded-3xl border border-white/60 bg-white/80 p-4 sm:p-5 shadow-lg backdrop-blur-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="rounded-3xl bg-white shadow-[8px_8px_20px_rgba(33,109,192,0.1),-8px_-8px_20px_rgba(255,255,255,0.6)] p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex flex-wrap gap-2 font-mono text-xs">
             {(["Semua", "Disetujui", "Menunggu", "Ditolak"] as const).map((st) => {
               const count =
@@ -105,10 +118,10 @@ export default function AdminModerasiKolaborasiPage() {
                 <button
                   key={st}
                   onClick={() => setFilterStatus(st)}
-                  className={`rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition-all duration-200 active:scale-95 cursor-pointer ${
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer ${
                     filterStatus === st
                       ? "bg-ink text-paper shadow-md scale-105"
-                      : "bg-steel/[0.08] text-steel hover:bg-steel/15 hover:text-ink"
+                      : "bg-white text-steel shadow-[3px_3px_8px_rgba(33,109,192,0.08),-3px_-3px_8px_rgba(255,255,255,0.5)] hover:text-ink hover:shadow-[4px_4px_10px_rgba(33,109,192,0.08),-4px_-4px_10px_rgba(255,255,255,0.55)]"
                   }`}
                 >
                   {st} ({count})
@@ -122,7 +135,7 @@ export default function AdminModerasiKolaborasiPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari judul proyek atau perusahaan..."
-            className="rounded-full border border-border bg-white px-4 py-2 text-xs text-ink placeholder:text-steel/50 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 w-full sm:w-72 shadow-inner"
+            className="rounded-full bg-white shadow-[inset_4px_4px_10px_rgba(33,109,192,0.08),inset_-4px_-4px_10px_rgba(255,255,255,0.5)] px-4 py-2 text-xs text-ink placeholder:text-steel/50 outline-none transition-all focus:ring-2 focus:ring-primary/30 w-full sm:w-72"
           />
         </div>
 
@@ -132,12 +145,12 @@ export default function AdminModerasiKolaborasiPage() {
             {Array.from({ length: 8 }).map((_, idx) => (
               <div
                 key={idx}
-                className="h-56 rounded-3xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur-xl animate-pulse"
+                className="h-56 rounded-3xl bg-white shadow-[8px_8px_20px_rgba(33,109,192,0.1),-8px_-8px_20px_rgba(255,255,255,0.6)] p-4 animate-pulse"
               />
             ))}
           </div>
         ) : filteredList.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-steel/30 bg-white/60 p-12 text-center shadow-sm">
+          <div className="rounded-3xl border-2 border-dashed border-primary/20 bg-white p-12 text-center">
             <p className="text-xs font-mono text-steel">Tidak ada proyek kolaborasi ditemukan.</p>
           </div>
         ) : (
@@ -156,16 +169,16 @@ export default function AdminModerasiKolaborasiPage() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.25 }}
                     key={item.id}
-                    className="rounded-3xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col justify-between"
+                    className="rounded-3xl bg-white shadow-[8px_8px_20px_rgba(33,109,192,0.1),-8px_-8px_20px_rgba(255,255,255,0.6)] p-5 transition-all duration-300 hover:shadow-[10px_10px_28px_rgba(33,109,192,0.16),-10px_-10px_28px_rgba(255,255,255,0.65)] hover:-translate-y-1 flex flex-col justify-between"
                   >
                     <div className="space-y-2">
                       <div className="flex flex-col gap-1.5 border-b border-border/40 pb-2.5">
                         <div className="flex items-center justify-between gap-1">
-                          <span className="font-mono text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 truncate max-w-[100px]">
+                          <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 truncate max-w-[100px]">
                             {item.perusahaan_nama}
                           </span>
                           <span
-                            className={`font-mono text-[8px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
+                            className={`font-mono text-xs px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
                               status === "Disetujui"
                                 ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                                 : status === "Menunggu"
@@ -177,12 +190,12 @@ export default function AdminModerasiKolaborasiPage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1 font-mono text-[9px]">
-                          <span className="rounded-full bg-steel/10 px-1.5 py-0.5 font-medium text-steel text-[8px] truncate">
+                        <div className="flex items-center gap-1 font-mono text-xs">
+                          <span className="rounded-full bg-steel/10 px-1.5 py-0.5 font-medium text-steel text-xs truncate">
                             {item.nama_kategori}
                           </span>
                           <span
-                            className={`rounded-full px-1.5 py-0.5 font-semibold text-[8px] ${
+                            className={`rounded-full px-1.5 py-0.5 font-semibold text-xs ${
                               item.tipe === "Akademik"
                                 ? "bg-blue-100 text-blue-800"
                                 : "bg-emerald-100 text-emerald-800"
@@ -193,14 +206,14 @@ export default function AdminModerasiKolaborasiPage() {
                         </div>
                       </div>
 
-                      <h3 className="font-display text-xs font-bold text-ink leading-snug line-clamp-2">
+                      <h3 className="font-display text-sm font-bold text-ink leading-snug line-clamp-2">
                         {item.judul}
                       </h3>
-                      <p className="text-[10px] text-steel line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-steel line-clamp-2 leading-relaxed">
                         {item.deskripsi}
                       </p>
 
-                      <div className="flex flex-col gap-0.5 font-mono text-[9px] text-steel pt-1">
+                      <div className="flex flex-col gap-0.5 font-mono text-xs text-steel pt-1">
                         <span className="flex items-center gap-1 truncate">
                           <svg className="w-2.5 h-2.5 text-steel shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -221,7 +234,7 @@ export default function AdminModerasiKolaborasiPage() {
                       {status !== "Disetujui" && (
                         <button
                           onClick={() => handleUpdateStatus(item.id, "Disetujui")}
-                          className="flex-1 rounded-full bg-emerald-600 py-1 font-mono text-[10px] font-semibold text-white hover:bg-emerald-700 transition active:scale-95 shadow-sm text-center cursor-pointer"
+                          className="flex-1 rounded-full bg-emerald-600 py-1 font-mono text-xs font-semibold text-white hover:bg-emerald-700 transition active:scale-95 shadow-sm text-center cursor-pointer"
                         >
                           ✓ Setujui
                         </button>
@@ -229,15 +242,8 @@ export default function AdminModerasiKolaborasiPage() {
 
                       {status !== "Ditolak" && (
                         <button
-                          onClick={() =>
-                            setConfirmModal({
-                              id: item.id,
-                              status: "Ditolak",
-                              title: "Konfirmasi Penolakan",
-                              message: `Apakah Anda yakin ingin menolak kolaborasi "${item.judul}"?`,
-                            })
-                          }
-                          className="flex-1 rounded-full border border-rose-200 bg-rose-50 py-1 font-mono text-[10px] font-medium text-rose-700 hover:bg-rose-100 transition active:scale-95 text-center cursor-pointer"
+                          onClick={() => handleUpdateStatus(item.id, "Ditolak")}
+                          className="flex-1 rounded-full border border-rose-200 bg-rose-50 py-1 font-mono text-xs font-medium text-rose-700 hover:bg-rose-100 transition active:scale-95 text-center cursor-pointer"
                         >
                           ✕ Down
                         </button>
@@ -260,7 +266,7 @@ export default function AdminModerasiKolaborasiPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="rounded-full border border-border bg-white/80 px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:bg-white disabled:opacity-40"
+                className="rounded-full bg-white shadow-[4px_4px_12px_rgba(33,109,192,0.09),-4px_-4px_12px_rgba(255,255,255,0.5)] px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
               >
                 ← Prev
               </button>
@@ -270,7 +276,7 @@ export default function AdminModerasiKolaborasiPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="rounded-full border border-border bg-white/80 px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:bg-white disabled:opacity-40"
+                className="rounded-full bg-white shadow-[4px_4px_12px_rgba(33,109,192,0.09),-4px_-4px_12px_rgba(255,255,255,0.5)] px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
               >
                 Next →
               </button>

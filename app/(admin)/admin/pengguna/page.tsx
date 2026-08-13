@@ -57,6 +57,20 @@ export default function AdminManajemenPenggunaPage() {
         className="opacity-70"
       />
 
+      {/* Ambient background blobs — beda posisi & nuansa per halaman, biar ga identik sama Kolaborasi/Perusahaan */}
+      {/* Steel-Cone-style conic sweep — direkonstruksi pakai palet BridgeU (ocean/primary/sky/clouds), bukan abu-abu asli */}
+      <div
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[900px] w-[900px] opacity-[0.16] blur-3xl"
+        style={{
+          background:
+            "conic-gradient(from 45deg at 50% 50%, #EDF4FA 0%, #8CC1E9 25%, #12284B 50%, #8CC1E9 75%, #EDF4FA 100%)",
+        }}
+      />
+
+      {/* Ambient background blobs — khas halaman Manajemen Pengguna */}
+      <div className="pointer-events-none absolute top-[420px] left-1/2 -translate-x-1/2 h-96 w-[600px] rounded-full bg-secondary/25 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-24 right-0 h-72 w-72 rounded-full bg-sky/15 blur-3xl" />
+
       {/* Hero Header */}
       <div className="relative z-10 w-full bg-clouds">
         <div
@@ -73,7 +87,7 @@ export default function AdminManajemenPenggunaPage() {
           />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(140,193,233,0.15),transparent_60%)]" />
 
-          <div className="relative z-10 mx-auto max-w-6xl px-6">
+          <div className="relative z-10 mx-auto max-w-[1400px] px-6">
             <Link
               href="/admin/dashboard"
               className="font-mono text-xs font-semibold text-sky hover:text-white transition inline-flex items-center gap-1.5 mb-3 group"
@@ -91,9 +105,9 @@ export default function AdminManajemenPenggunaPage() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-20 mx-auto max-w-6xl px-6 -mt-8 space-y-6">
+      <div className="relative z-20 mx-auto max-w-[1400px] px-6 -mt-8 space-y-6">
         {/* Search & Filter Card */}
-        <div className="rounded-3xl border border-white/60 bg-white/80 p-4 sm:p-5 shadow-lg backdrop-blur-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="rounded-3xl bg-white shadow-[8px_8px_20px_rgba(33,109,192,0.1),-8px_-8px_20px_rgba(255,255,255,0.6)] p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex flex-wrap gap-2 font-mono text-xs">
             {(["Semua", "Mahasiswa", "Perusahaan"] as const).map((r) => {
               const count =
@@ -103,10 +117,10 @@ export default function AdminManajemenPenggunaPage() {
                 <button
                   key={r}
                   onClick={() => setFilterRole(r)}
-                  className={`rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition-all duration-200 active:scale-95 cursor-pointer ${
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer ${
                     filterRole === r
                       ? "bg-ink text-paper shadow-md scale-105"
-                      : "bg-steel/[0.08] text-steel hover:bg-steel/15 hover:text-ink"
+                      : "bg-white text-steel shadow-[3px_3px_8px_rgba(33,109,192,0.08),-3px_-3px_8px_rgba(255,255,255,0.5)] hover:text-ink hover:shadow-[4px_4px_10px_rgba(33,109,192,0.08),-4px_-4px_10px_rgba(255,255,255,0.55)]"
                   }`}
                 >
                   {r} ({count})
@@ -120,28 +134,28 @@ export default function AdminManajemenPenggunaPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama, email, atau perguruan tinggi..."
-            className="rounded-full border border-border bg-white px-4 py-2 text-xs text-ink placeholder:text-steel/50 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 w-full sm:w-72 shadow-inner"
+            className="rounded-full bg-white shadow-[inset_4px_4px_10px_rgba(33,109,192,0.08),inset_-4px_-4px_10px_rgba(255,255,255,0.5)] px-4 py-2 text-xs text-ink placeholder:text-steel/50 outline-none transition-all focus:ring-2 focus:ring-primary/30 w-full sm:w-72"
           />
         </div>
 
         {/* Grid List Pengguna (2x4 mobile, 4x2 desktop) */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {Array.from({ length: 8 }).map((_, idx) => (
               <div
                 key={idx}
-                className="h-48 rounded-3xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur-xl animate-pulse"
+                className="h-48 rounded-3xl bg-white shadow-[8px_8px_20px_rgba(33,109,192,0.1),-8px_-8px_20px_rgba(255,255,255,0.6)] p-4 animate-pulse"
               />
             ))}
           </div>
         ) : filteredUsers.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-steel/30 bg-white/60 p-12 text-center shadow-sm">
+          <div className="rounded-3xl border-2 border-dashed border-primary/20 bg-white p-12 text-center">
             <p className="text-xs font-mono text-steel">Tidak ada pengguna ditemukan.</p>
           </div>
         ) : (
           <motion.div
             layout
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
           >
             <AnimatePresence mode="popLayout">
               {filteredUsers.map((user) => (
@@ -152,12 +166,12 @@ export default function AdminManajemenPenggunaPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.25 }}
                   key={user.id}
-                  className="rounded-3xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col justify-between"
+                  className="rounded-3xl bg-white shadow-[8px_8px_20px_rgba(33,109,192,0.1),-8px_-8px_20px_rgba(255,255,255,0.6)] p-5 transition-all duration-300 hover:shadow-[10px_10px_28px_rgba(33,109,192,0.16),-10px_-10px_28px_rgba(255,255,255,0.65)] hover:-translate-y-1 flex flex-col justify-between"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-1 border-b border-border/40 pb-2">
                       <span
-                        className={`font-mono text-[9px] px-2 py-0.5 rounded-full font-semibold ${
+                        className={`font-mono text-xs px-2 py-0.5 rounded-full font-semibold ${
                           user.role === "Mahasiswa"
                             ? "bg-blue-100 text-blue-800"
                             : "bg-purple-100 text-purple-800"
@@ -167,7 +181,7 @@ export default function AdminManajemenPenggunaPage() {
                       </span>
 
                       <span
-                        className={`font-mono text-[8px] px-1.5 py-0.5 rounded-full font-semibold ${
+                        className={`font-mono text-xs px-1.5 py-0.5 rounded-full font-semibold ${
                           user.status === "Aktif"
                             ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                             : "bg-rose-100 text-rose-700 border border-rose-300"
@@ -178,41 +192,32 @@ export default function AdminManajemenPenggunaPage() {
                     </div>
 
                     <div>
-                      <h3 className="font-display text-xs font-bold text-ink leading-tight truncate">
+                      <h3 className="font-display text-sm font-bold text-ink leading-tight truncate">
                         {user.nama}
                       </h3>
-                      <p className="font-mono text-[9px] text-steel truncate mt-0.5">
+                      <p className="font-mono text-xs text-steel truncate mt-0.5">
                         {user.email}
                       </p>
                     </div>
 
-                    <div className="bg-steel/[0.06] p-2 rounded-2xl border border-steel/10 space-y-0.5">
-                      <span className="block font-mono font-semibold text-steel uppercase text-[8px]">
+                    <div className="bg-white shadow-[inset_4px_4px_10px_rgba(33,109,192,0.08),inset_-4px_-4px_10px_rgba(255,255,255,0.5)] p-2 rounded-2xl space-y-0.5">
+                      <span className="block font-mono font-semibold text-steel uppercase text-xs">
                         Detail:
                       </span>
-                      <p className="font-mono font-medium text-ink text-[10px] line-clamp-2 leading-tight">
+                      <p className="font-mono font-medium text-ink text-xs line-clamp-2 leading-tight">
                         {user.detail}
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-2.5 pt-2 border-t border-border/40 space-y-1.5">
-                    <span className="font-mono text-[8px] text-steel block">
+                    <span className="font-mono text-xs text-steel block">
                       Tgl: {user.tanggalGabung}
                     </span>
 
                     <button
-                      onClick={() =>
-                        user.status === "Aktif"
-                          ? setConfirmModal({
-                              id: user.id,
-                              currentStatus: user.status,
-                              title: "Konfirmasi Suspend",
-                              message: `Apakah Anda yakin ingin menangguhkan (suspend) akun "${user.nama}"?`,
-                            })
-                          : handleToggleStatus(user.id, user.status)
-                      }
-                      className={`w-full rounded-full py-1 font-mono text-[10px] font-semibold transition active:scale-95 text-center cursor-pointer ${
+                      onClick={() => handleToggleStatus(user.id, user.status)}
+                      className={`w-full rounded-full py-1 font-mono text-xs font-semibold transition active:scale-95 text-center cursor-pointer ${
                         user.status === "Aktif"
                           ? "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
                           : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
@@ -237,7 +242,7 @@ export default function AdminManajemenPenggunaPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="rounded-full border border-border bg-white/80 px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:bg-white disabled:opacity-40"
+                className="rounded-full bg-white shadow-[4px_4px_12px_rgba(33,109,192,0.09),-4px_-4px_12px_rgba(255,255,255,0.5)] px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
               >
                 ← Prev
               </button>
@@ -247,7 +252,7 @@ export default function AdminManajemenPenggunaPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="rounded-full border border-border bg-white/80 px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:bg-white disabled:opacity-40"
+                className="rounded-full bg-white shadow-[4px_4px_12px_rgba(33,109,192,0.09),-4px_-4px_12px_rgba(255,255,255,0.5)] px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
               >
                 Next →
               </button>

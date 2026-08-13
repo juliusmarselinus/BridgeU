@@ -43,6 +43,19 @@ export default function AdminVerifikasiPerusahaanPage() {
         className="opacity-70"
       />
 
+      {/* Steel-Cone-style conic sweep — direkonstruksi pakai palet BridgeU */}
+      <div
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[900px] w-[900px] opacity-[0.16] blur-3xl"
+        style={{
+          background:
+            "conic-gradient(from 70deg at 50% 50%, #EDF4FA 0%, #8CC1E9 25%, #12284B 50%, #8CC1E9 75%, #EDF4FA 100%)",
+        }}
+      />
+
+      {/* Ambient background blobs — sentuhan emerald tipis khas halaman Verifikasi (tema "terverifikasi") */}
+      <div className="pointer-events-none absolute top-[400px] left-0 h-80 w-80 rounded-full bg-emerald-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-20 right-0 h-96 w-96 rounded-full bg-primary/15 blur-3xl" />
+
       {/* Hero Header */}
       <div className="relative z-10 w-full bg-clouds">
         <div
@@ -59,7 +72,7 @@ export default function AdminVerifikasiPerusahaanPage() {
           />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(140,193,233,0.15),transparent_60%)]" />
 
-          <div className="relative z-10 mx-auto max-w-6xl px-6">
+          <div className="relative z-10 mx-auto max-w-[1400px] px-6">
             <Link
               href="/admin/dashboard"
               className="font-mono text-xs font-semibold text-sky hover:text-white transition inline-flex items-center gap-1.5 mb-3 group"
@@ -77,9 +90,9 @@ export default function AdminVerifikasiPerusahaanPage() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-20 mx-auto max-w-6xl px-6 -mt-8 space-y-6">
+      <div className="relative z-20 mx-auto max-w-[1400px] px-6 -mt-8 space-y-6">
         {/* Filter Tabs */}
-        <div className="rounded-3xl border border-white/60 bg-white/80 p-4 sm:p-5 shadow-lg backdrop-blur-xl flex flex-wrap gap-2 font-mono text-xs">
+        <div className="rounded-3xl bg-white shadow-[8px_8px_20px_rgba(33,109,192,0.1),-8px_-8px_20px_rgba(255,255,255,0.6)] p-4 sm:p-5 flex flex-wrap gap-2 font-mono text-xs">
           {(["Semua", "Menunggu Verifikasi", "Terverifikasi", "Ditolak"] as const).map(
             (st) => {
               const count =
@@ -91,10 +104,10 @@ export default function AdminVerifikasiPerusahaanPage() {
                 <button
                   key={st}
                   onClick={() => setFilterStatus(st)}
-                  className={`rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition-all duration-200 active:scale-95 cursor-pointer ${
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer ${
                     filterStatus === st
                       ? "bg-ink text-paper shadow-md scale-105"
-                      : "bg-steel/[0.08] text-steel hover:bg-steel/15 hover:text-ink"
+                      : "bg-white text-steel shadow-[3px_3px_8px_rgba(33,109,192,0.08),-3px_-3px_8px_rgba(255,255,255,0.5)] hover:text-ink hover:shadow-[4px_4px_10px_rgba(33,109,192,0.08),-4px_-4px_10px_rgba(255,255,255,0.55)]"
                   }`}
                 >
                   {st} ({count})
@@ -106,16 +119,16 @@ export default function AdminVerifikasiPerusahaanPage() {
 
         {/* Grid Perusahaan (2x4 mobile, 4x2 desktop) */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {Array.from({ length: 8 }).map((_, idx) => (
               <div
                 key={idx}
-                className="h-52 rounded-3xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur-xl animate-pulse"
+                className="h-52 rounded-3xl bg-white shadow-[8px_8px_20px_rgba(33,109,192,0.1),-8px_-8px_20px_rgba(255,255,255,0.6)] p-4 animate-pulse"
               />
             ))}
           </div>
         ) : filteredList.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-steel/30 bg-white/60 p-12 text-center shadow-sm">
+          <div className="rounded-3xl border-2 border-dashed border-primary/20 bg-white p-12 text-center">
             <p className="text-xs font-mono text-steel">
               Tidak ada perusahaan dengan status &quot;{filterStatus}&quot;.
             </p>
@@ -123,7 +136,7 @@ export default function AdminVerifikasiPerusahaanPage() {
         ) : (
           <motion.div
             layout
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
           >
             <AnimatePresence mode="popLayout">
               {filteredList.map((comp) => (
@@ -134,7 +147,7 @@ export default function AdminVerifikasiPerusahaanPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.25 }}
                   key={comp.id}
-                  className="rounded-3xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col justify-between"
+                  className="rounded-3xl bg-white shadow-[8px_8px_20px_rgba(33,109,192,0.1),-8px_-8px_20px_rgba(255,255,255,0.6)] p-5 transition-all duration-300 hover:shadow-[10px_10px_28px_rgba(33,109,192,0.16),-10px_-10px_28px_rgba(255,255,255,0.65)] hover:-translate-y-1 flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex flex-col gap-1.5 border-b border-border/40 pb-2.5">
@@ -145,7 +158,7 @@ export default function AdminVerifikasiPerusahaanPage() {
                           </svg>
                         </div>
                         <span
-                          className={`rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold shrink-0 ${
+                          className={`rounded-full px-2 py-0.5 font-mono text-xs font-semibold shrink-0 ${
                             comp.statusVerifikasi === "Terverifikasi"
                               ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                               : comp.statusVerifikasi === "Menunggu Verifikasi"
@@ -158,29 +171,29 @@ export default function AdminVerifikasiPerusahaanPage() {
                       </div>
 
                       <div className="min-w-0">
-                        <h3 className="font-display text-xs font-bold text-ink leading-snug truncate flex items-center gap-1">
+                        <h3 className="font-display text-sm font-bold text-ink leading-snug truncate flex items-center gap-1">
                           <span className="truncate">{comp.nama}</span>
                           {comp.statusVerifikasi === "Terverifikasi" && (
-                            <span className="text-emerald-600 font-bold shrink-0 text-[11px]" title="Terverifikasi">
+                            <span className="text-emerald-600 font-bold shrink-0 text-sm" title="Terverifikasi">
                               ✓
                             </span>
                           )}
                         </h3>
-                        <p className="font-mono text-[10px] text-steel truncate mt-0.5">
+                        <p className="font-mono text-xs text-steel truncate mt-0.5">
                           {comp.industri}
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-2.5 space-y-1.5">
-                      <div className="bg-steel/[0.06] p-2 rounded-2xl border border-steel/10">
-                        <span className="block font-mono font-semibold text-steel uppercase text-[8px]">
+                      <div className="bg-white shadow-[inset_4px_4px_10px_rgba(33,109,192,0.08),inset_-4px_-4px_10px_rgba(255,255,255,0.5)] p-2 rounded-2xl">
+                        <span className="block font-mono font-semibold text-steel uppercase text-xs">
                           NIB Legalitas:
                         </span>
-                        <span className="block font-mono font-bold text-ink text-[10px] truncate">{comp.nib}</span>
+                        <span className="block font-mono font-bold text-ink text-xs truncate">{comp.nib}</span>
                       </div>
 
-                      <div className="flex flex-col text-steel font-mono text-[9px] px-1 gap-0.5">
+                      <div className="flex flex-col text-steel font-mono text-xs px-1 gap-0.5">
                         <span className="truncate">Kota: <strong className="text-ink font-medium">{comp.lokasi}</strong></span>
                         <span className="truncate">Email: <strong className="text-ink font-medium">{comp.email}</strong></span>
                       </div>
@@ -188,7 +201,7 @@ export default function AdminVerifikasiPerusahaanPage() {
                   </div>
 
                   <div className="mt-3 pt-2.5 border-t border-border/40 flex flex-col gap-1.5">
-                    <span className="font-mono text-[9px] text-steel flex items-center gap-1">
+                    <span className="font-mono text-xs text-steel flex items-center gap-1">
                       <svg className="w-2.5 h-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -200,13 +213,13 @@ export default function AdminVerifikasiPerusahaanPage() {
                         <>
                           <button
                             onClick={() => handleUpdateVerifikasi(comp.id, "Ditolak")}
-                            className="flex-1 rounded-full border border-rose-200 bg-rose-50 py-1 font-mono text-[10px] font-semibold text-rose-700 hover:bg-rose-100 transition active:scale-95 text-center cursor-pointer"
+                            className="flex-1 rounded-full border border-rose-200 bg-rose-50 py-1 font-mono text-xs font-semibold text-rose-700 hover:bg-rose-100 transition active:scale-95 text-center cursor-pointer"
                           >
                             Tolak
                           </button>
                           <button
                             onClick={() => handleUpdateVerifikasi(comp.id, "Terverifikasi")}
-                            className="flex-1 rounded-full bg-emerald-600 py-1 font-mono text-[10px] font-semibold text-white hover:bg-emerald-700 transition active:scale-95 shadow-sm text-center cursor-pointer"
+                            className="flex-1 rounded-full bg-emerald-600 py-1 font-mono text-xs font-semibold text-white hover:bg-emerald-700 transition active:scale-95 shadow-sm text-center cursor-pointer"
                           >
                             ✓ Verifikasi
                           </button>
@@ -214,13 +227,13 @@ export default function AdminVerifikasiPerusahaanPage() {
                       )}
 
                       {comp.statusVerifikasi === "Terverifikasi" && (
-                        <span className="w-full text-center font-mono text-[10px] text-emerald-700 font-semibold py-0.5">
+                        <span className="w-full text-center font-mono text-xs text-emerald-700 font-semibold py-0.5">
                           ✓ Terverifikasi Resmi
                         </span>
                       )}
 
                       {comp.statusVerifikasi === "Ditolak" && (
-                        <span className="w-full text-center font-mono text-[10px] text-rose-600 font-medium py-0.5">
+                        <span className="w-full text-center font-mono text-xs text-rose-600 font-medium py-0.5">
                           ✕ Verifikasi Ditolak
                         </span>
                       )}
@@ -242,7 +255,7 @@ export default function AdminVerifikasiPerusahaanPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="rounded-full border border-border bg-white/80 px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:bg-white disabled:opacity-40"
+                className="rounded-full bg-white shadow-[4px_4px_12px_rgba(33,109,192,0.09),-4px_-4px_12px_rgba(255,255,255,0.5)] px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
               >
                 ← Prev
               </button>
@@ -252,7 +265,7 @@ export default function AdminVerifikasiPerusahaanPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="rounded-full border border-border bg-white/80 px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:bg-white disabled:opacity-40"
+                className="rounded-full bg-white shadow-[4px_4px_12px_rgba(33,109,192,0.09),-4px_-4px_12px_rgba(255,255,255,0.5)] px-4 py-1.5 font-mono text-xs font-semibold text-ink transition hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
               >
                 Next →
               </button>
