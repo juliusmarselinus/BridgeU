@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { GradientBars } from "@/components/ui/gradient-bars-background";
 import { ApplyModal } from "@/components/ApplyModal";
 import { DetailModal } from "@/components/DetailModal";
+import { MahasiswaSkeletonPage } from "@/components/ui/MahasiswaLoading";
 import { Kolaborasi } from "@/lib/types";
 import {
   fetchMahasiswaMatchProfile,
@@ -261,8 +262,9 @@ export default function KolaborasiPage() {
   const GAP = 16;
 
   // Carousel absolute-positioned: active selalu center, prev di kiri, next di kanan
-  // Lebar: active = 50% container, side = 25% container
-  // Tidak bergantung pada containerW untuk layout agar selalu akurat
+  if (loading) {
+    return <MahasiswaSkeletonPage />;
+  }
 
   return (
     <main className="relative overflow-hidden bg-gradient-to-b from-secondary/15 via-clouds to-clouds pb-24 font-sans text-ink">

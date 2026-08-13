@@ -9,6 +9,7 @@ import { ModalPicker } from "@/app/daftar/components/ModalPicker";
 import { supabase } from "@/lib/supabase";
 import { getGamificationMetrics } from "@/lib/gamification";
 import { notifyBadgeUnlocked, notifyLevelUp } from "@/lib/notifications";
+import { MahasiswaSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 type StoredUser = {
   nama: string;
@@ -1753,13 +1754,7 @@ export default function ProfilePage() {
   const animatedMinatCount = useSpringNumber(minatList.length);
 
   if (isLoadingUser) {
-    return (
-      <main className="min-h-screen bg-clouds pt-24">
-        <div className="mx-auto max-w-3xl px-6 py-20 text-center">
-          <p className="text-sm font-medium text-steel/60">Memuat profil...</p>
-        </div>
-      </main>
-    );
+    return <MahasiswaSkeletonPage />;
   }
 
   if (!user) {

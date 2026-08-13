@@ -10,6 +10,8 @@ import { DashboardRecommendations } from "./components/DashboardRecommendations"
 import { DashboardBadges } from "./components/DashboardBadges";
 import { DashboardPortfolioTracker } from "./components/DashboardPortfolioTracker";
 
+import { MahasiswaSkeletonPage } from "@/components/ui/MahasiswaLoading";
+
 export default function DashboardPage() {
   const {
     authChecked,
@@ -21,7 +23,9 @@ export default function DashboardPage() {
     stats,
   } = useDashboard();
 
-  if (!authChecked && !loading) return null;
+  if (loading || (!authChecked && loading)) {
+    return <MahasiswaSkeletonPage />;
+  }
 
   return (
     <main className="relative overflow-hidden bg-gradient-to-b from-secondary/15 via-clouds to-clouds pb-24 font-sans text-ink">

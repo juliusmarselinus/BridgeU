@@ -4,6 +4,8 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { getUserProfileById, badgeList } from "@/lib/dummy-data";
+import { supabase } from "@/lib/supabase";
+import { MahasiswaSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 /* ------------------------------------------------------------------ */
 /* SVG Icon Components                                                */
@@ -381,13 +383,16 @@ function PublicActivitySection({
 
   const pengajuan = publicUser.pengajuan || [];
   const dbBadges = publicUser.badges || [];
-  const totalPengajuan = pengajuan.length;
+  const unlockedBadges = dbBadges.filter((b: any) => b.isUnlocked);
+
+  // Total Kontribusi mencakup Pengajuan Kolaborasi + Badge Unlocked + Aktivitas Skill
+  const totalKontribusi = pengajuan.length + unlockedBadges.length + (publicUser.skills && publicUser.skills.length > 0 ? 1 : 0);
   const streak = publicUser.streakCount ?? 0;
   const ptsValue = publicUser.pts ?? publicUser.xp ?? 0;
   const responseRate = publicUser.responseRate ?? 0;
 
   const statCards = [
-    { label: "Total Kontribusi", value: totalPengajuan, suffix: " Aksi", extra: "", desc: "Total pengajuan & aktivitas", icon: IconActivity },
+    { label: "Total Kontribusi", value: totalKontribusi, suffix: " Aksi", extra: "", desc: "Total pengajuan, badge & keaktifan", icon: IconActivity },
     { label: "Streak Keaktifan", value: streak, suffix: " Hari", extra: "", desc: "Aktif berturut-turut", icon: IconFlame },
     { label: "Reputasi Publik", value: ptsValue, suffix: " Pts", extra: "", desc: "Skor Pts keaktifan platform", icon: IconTrophy },
     { label: "Respon Rate", value: Math.round(responseRate), suffix: "%", extra: "", desc: "Kecepatan balasan & partisipasi", icon: IconCheckSquare },
@@ -612,22 +617,22 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     let isMounted = true;
     async function fetchProfile() {
-      console.log("Fetching profile for:", rawProfileId);
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/profile/${rawProfileId}`);
-        console.log("Response status:", res.status);
+        const { data: authData } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {};
+        if (authData.session?.access_token) {
+          headers.Authorization = `Bearer ${authData.session.access_token}`;
+        }
+        const res = await fetch(`/api/profile/${rawProfileId}`, { headers });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          console.error("Fetch error:", body);
           if (isMounted) setErrorMsg(body.error || "Profil tidak ditemukan");
         } else {
           const data = await res.json();
-          console.log("Fetched profile data:", data);
           if (isMounted) setProfileData(data);
         }
       } catch (err: any) {
-        console.error("Exception during fetch:", err);
         if (isMounted) setErrorMsg(err.message || "Gagal memuat profil");
       } finally {
         if (isMounted) setIsLoading(false);
@@ -639,11 +644,10 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
 
   const publicUser: any = useMemo(() => {
     if (profileData) {
-      console.log("DEBUG [PublicProfilePage] Mapping profileData:", profileData);
       return {
         id: profileData.id,
         nama: profileData.nama,
-        email: profileData.email,
+        email: profileData.email || "",
         universitas: profileData.universitas || "Universitas Terdaftar",
         prodi: profileData.prodi || "Program Studi",
         semester: profileData.semester ? profileData.semester.toString().replace(/^Semester\s+/i, "") : "-",
@@ -651,8 +655,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         preferensiTipe: profileData.preferensiTipe || "Semua",
         ringkasan: profileData.ringkasan || "",
         foto: profileData.foto,
-        skills: profileData.skills || [],
-        minatKategori: profileData.minatKategori || [],
+        skills: Array.isArray(profileData.skills) ? profileData.skills : [],
+        minatKategori: Array.isArray(profileData.minatKategori) ? profileData.minatKategori : [],
         level: profileData.level || 1,
         xp: profileData.xp || 0,
         pts: profileData.pts || 0,
@@ -661,8 +665,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         streakCount: profileData.streakCount || 0,
         reputationScore: profileData.reputationScore || 0,
         responseRate: profileData.responseRate || 0,
-        badges: profileData.badges || [],
-        pengajuan: profileData.pengajuan || [],
+        badges: Array.isArray(profileData.badges) ? profileData.badges : [],
+        pengajuan: Array.isArray(profileData.pengajuan) ? profileData.pengajuan : [],
       };
     }
     const dummy = getUserProfileById(rawProfileId);
@@ -672,6 +676,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
       pts: (dummy as any).pts || 0,
       badges: [],
       pengajuan: [],
+      skills: dummy.skills || [],
+      minatKategori: dummy.minatKategori || [],
     };
   }, [profileData, rawProfileId]);
 
@@ -711,22 +717,30 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
     .toUpperCase()
     .slice(0, 2);
 
+  if (isLoading) {
+    return <MahasiswaSkeletonPage />;
+  }
+
   return (
-    <main className="min-h-screen bg-clouds text-ink pt-24 pb-20 overflow-x-visible">
+    <main className="min-h-screen bg-clouds text-ink pb-20 overflow-x-visible">
       <AnimatePresence>
         {isPhotoOpen && publicUser.foto && (
           <PhotoLightbox src={publicUser.foto} alt={publicUser.nama} onClose={() => setIsPhotoOpen(false)} />
         )}
       </AnimatePresence>
 
-      {/* Hero Banner Area */}
-      <div className="-mt-20 w-full bg-clouds">
-        <div className="w-full bg-gradient-to-b from-ink via-ink/90 to-clouds relative pt-24 pb-24 sm:pb-28">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.12),transparent)]" />
+      {/* Hero Banner Area — ocean → sky gradient, konsisten sama dashboard & kolaborasi */}
+      <div className="w-full bg-clouds">
+        <div
+          className="w-full relative pt-28 pb-24 sm:pb-28 rounded-b-[2.5rem] shadow-[0_20px_50px_-20px_rgba(18,40,75,0.45)] overflow-hidden"
+          style={{ background: "linear-gradient(160deg, #12284B 0%, #1B3A63 45%, #8CC1E9 100%)" }}
+        >
+          <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-sky/20 blur-3xl" />
+          <div className="pointer-events-none absolute -left-16 top-1/2 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
         </div>
 
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-8 lg:px-12 relative overflow-visible">
-          <div className="flex flex-col md:flex-row items-center md:items-end justify-between relative -mt-16 sm:-mt-20 gap-6 pb-4">
+          <div className="flex flex-col md:flex-row items-center md:items-end justify-between relative -mt-10 sm:-mt-12 gap-6 pb-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left z-20">
               <div className="relative group shrink-0">
                 <div

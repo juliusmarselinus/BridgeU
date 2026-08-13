@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { notifyPengajuanDiterima, notifyPengajuanDitolak } from "@/lib/notifications";
+import { MahasiswaSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 type StatusKey = "Menunggu" | "Diproses" | "Diterima" | "Evaluasi" | "Revisi" | "Ditolak" | "Selesai";
 
@@ -336,6 +337,10 @@ export default function StatusPage() {
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
+
+  if (loading) {
+    return <MahasiswaSkeletonPage />;
+  }
 
   return (
     <main className="min-h-screen text-ink font-sans bg-paper">

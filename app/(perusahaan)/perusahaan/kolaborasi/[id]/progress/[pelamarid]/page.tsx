@@ -39,10 +39,12 @@ export default function DetailProgresPage() {
         `)
         .eq("id", pelamarId as string)
         .single();
+      if (error || !pendaftaran || !isMounted) return;
 
-      if (error || !isMounted) return;
-
-      setNama(pendaftaran.mahasiswa_profiles?.nama_lengkap || "Mahasiswa");
+      const mProfile = Array.isArray(pendaftaran.mahasiswa_profiles)
+        ? pendaftaran.mahasiswa_profiles[0]
+        : pendaftaran.mahasiswa_profiles;
+      setNama(mProfile?.nama_lengkap || "Mahasiswa");
       const sorted = (pendaftaran.riwayat_pengumpulan_kolaborasi || []).sort(
         (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
@@ -106,6 +108,7 @@ export default function DetailProgresPage() {
             Hasil Terbaru (Versi {latest.versi})
           </h3>
           
+          <a
             href={latest.url_hasil}
             target="_blank"
             rel="noreferrer"
