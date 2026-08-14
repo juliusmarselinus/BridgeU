@@ -8,7 +8,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase URL atau Anon Key tidak ditemukan di file .env!')
 }
 
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
+export const COOKIE_MAX_AGE_7_DAYS = 7 * 24 * 60 * 60 // 7 hari (604.800 detik)
+
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  cookieOptions: {
+    maxAge: COOKIE_MAX_AGE_7_DAYS,
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  },
+})
 
 // Dipakai di route.ts: client yang "bawa" token milik user, biar query
 // (update/insert/delete) dianggap RLS sebagai user itu sendiri — bukan anon.

@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const COOKIE_MAX_AGE_7_DAYS = 7 * 24 * 60 * 60; // 7 hari dalam detik (604.800 detik)
+
 export async function proxy(req: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -18,6 +20,12 @@ export async function proxy(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: {
+        maxAge: COOKIE_MAX_AGE_7_DAYS,
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      },
       cookies: {
         getAll() {
           return req.cookies.getAll();
@@ -25,7 +33,13 @@ export async function proxy(req: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
             req.cookies.set(name, value);
-            response.cookies.set(name, value, options);
+            response.cookies.set(name, value, {
+              ...options,
+              maxAge: options?.maxAge ?? COOKIE_MAX_AGE_7_DAYS,
+              path: options?.path ?? "/",
+              sameSite: options?.sameSite ?? "lax",
+              secure: options?.secure ?? process.env.NODE_ENV === "production",
+            });
           });
         },
       },
