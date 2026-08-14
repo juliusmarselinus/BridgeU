@@ -17,6 +17,24 @@ export function useCompanyDashboard() {
   const [selectedTab, setSelectedTab] = useState<"Semua" | ModerasiStatus>("Semua");
   const [isLoading, setIsLoading] = useState(true);
 
+  // Custom Modal States replacing browser alert & confirm
+  const [actionModal, setActionModal] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
+  const [confirmModalState, setConfirmModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<KolaborasiFormData>({
@@ -84,22 +102,35 @@ export function useCompanyDashboard() {
   });
 
   // Handler Hapus Proyek
-  const handleDeleteKolaborasi = async (id: string, judul: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus proyek "${judul}"?`)) {
-      const isSuccess = await companyService.deleteKolaborasi(id);
-      if (isSuccess) {
-        setKolaborasiList((prev) => prev.filter((k) => k.id !== id));
-      } else {
-        alert("Gagal menghapus proyek. Periksa hak akses Anda.");
-      }
-    }
+  const handleDeleteKolaborasi = (id: string, judul: string) => {
+    setConfirmModalState({
+      isOpen: true,
+      title: "Hapus Proyek",
+      message: `Apakah Anda yakin ingin menghapus proyek "${judul}"?`,
+      onConfirm: async () => {
+        const isSuccess = await companyService.deleteKolaborasi(id);
+        if (isSuccess) {
+          setKolaborasiList((prev) => prev.filter((k) => k.id !== id));
+        } else {
+          setActionModal({
+            isOpen: true,
+            title: "Gagal Menghapus",
+            message: "Gagal menghapus proyek. Periksa hak akses Anda.",
+          });
+        }
+      },
+    });
   };
 
   // Handler Submit Form
   const handleSubmitForm = async (e: FormEvent) => {
     e.preventDefault();
     if (!company) {
-      alert("Sesi perusahaan tidak valid.");
+      setActionModal({
+        isOpen: true,
+        title: "Sesi Tidak Valid",
+        message: "Sesi perusahaan tidak valid.",
+      });
       return;
     }
 
@@ -119,7 +150,11 @@ export function useCompanyDashboard() {
         slot: 5,
       });
     } else {
-      alert("Gagal membuat kolaborasi. Pastikan seluruh input valid.");
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Membuat Kolaborasi",
+        message: "Gagal membuat kolaborasi. Pastikan seluruh input valid.",
+      });
     }
   };
 
@@ -163,5 +198,9 @@ export function useCompanyDashboard() {
     handleDeleteKolaborasi,
     handleSubmitForm,
     handleExportCSV,
+    actionModal,
+    setActionModal,
+    confirmModalState,
+    setConfirmModalState,
   };
 }

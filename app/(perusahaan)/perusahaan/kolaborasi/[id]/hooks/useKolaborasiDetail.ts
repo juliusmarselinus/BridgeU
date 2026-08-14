@@ -59,6 +59,11 @@ export function useKolaborasiDetail() {
   
 
   const [statusVerifikasi, setStatusVerifikasi] = useState<string>("Menunggu Verifikasi");
+  const [actionModal, setActionModal] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
   const [successModal, setSuccessModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -525,7 +530,11 @@ export function useKolaborasiDetail() {
         message: "Status pelamar telah diubah menjadi 'Minta Revisi', dan notifikasi beserta instruksi revisi telah terkirim ke mahasiswa.",
       });
     } else {
-      alert("Gagal mengirim permintaan revisi.");
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Mengirim Revisi",
+        message: "Gagal mengirim permintaan revisi.",
+      });
     }
 
     setIsSubmittingRevisi(false);
@@ -554,7 +563,11 @@ export function useKolaborasiDetail() {
         message: "Evaluasi dan masukan berhasil disimpan untuk mahasiswa ini.",
       });
     } else {
-      alert("Gagal menyimpan evaluasi.");
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Menyimpan Evaluasi",
+        message: "Gagal menyimpan evaluasi.",
+      });
     }
   };
 
@@ -574,7 +587,11 @@ export function useKolaborasiDetail() {
     }
 
     if (!senderId) {
-      alert("Sesi login pengguna tidak ditemukan. Silakan refresh halaman.");
+      setActionModal({
+        isOpen: true,
+        title: "Sesi Login Tidak Ditemukan",
+        message: "Sesi login pengguna tidak ditemukan. Silakan refresh halaman.",
+      });
       setIsSendingChat(false);
       return;
     }
@@ -601,7 +618,11 @@ export function useKolaborasiDetail() {
     if (!id) return;
 
     if (formData.selectedKategoriIds.length === 0) {
-      alert("Pilih minimal satu Kategori Minat.");
+      setActionModal({
+        isOpen: true,
+        title: "Kategori Belum Dipilih",
+        message: "Pilih minimal satu Kategori Minat.",
+      });
       return;
     }
 
@@ -664,7 +685,11 @@ export function useKolaborasiDetail() {
         kota: matchedKota ? { nama_kota: matchedKota.nama_kota } : prev.kota,
       }));
     } else {
-      alert("Gagal memperbarui kolaborasi. Periksa kembali input Anda.");
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Memperbarui",
+        message: "Gagal memperbarui kolaborasi. Periksa kembali input Anda.",
+      });
     }
   };
 
@@ -684,7 +709,11 @@ export function useKolaborasiDetail() {
         redirectOnClose: true,
       });
     } else {
-      alert("Gagal menghapus proyek. Periksa kembali hak akses Anda.");
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Menghapus Proyek",
+        message: "Gagal menghapus proyek. Periksa kembali hak akses Anda.",
+      });
     }
   };
 
@@ -995,6 +1024,7 @@ export function useKolaborasiDetail() {
     deleteKompensasi, setDeleteKompensasi,
     deleteErrorMsg,
     statusVerifikasi, isVerified,
+    actionModal, setActionModal,
     successModal, setSuccessModal,
     kategoriList, kotaList, prodiList, skillList,
     recKategoriIds, recProdiIds, recSkillIds,

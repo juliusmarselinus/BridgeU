@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useKolaborasiDetail } from "./hooks/useKolaborasiDetail";
+import { ActionModal } from "@/components/ActionModal";
 
 export default function DetailKolaborasiPage() {
   const params = useParams();
@@ -36,6 +37,8 @@ export default function DetailKolaborasiPage() {
     deleteErrorMsg,
     statusVerifikasi,
     isVerified,
+    actionModal,
+    setActionModal,
     successModal,
     setSuccessModal,
     recKategoriIds,
@@ -1049,6 +1052,13 @@ export default function DetailKolaborasiPage() {
           </div>
         </div>
       )}
+
+      <ActionModal
+        isOpen={actionModal.isOpen}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </main>
   );
 }

@@ -4,6 +4,9 @@ import Image from "next/image";
 import { useCompanyProfile } from "./hooks/useCompanyProfile";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ActionModal } from "@/components/ActionModal";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 /* ------------------------------------------------------------------ */
 /* Icons Component                                                    */
@@ -102,27 +105,32 @@ function InfoField({ label, value }: { label: string; value?: string | number | 
 /* ------------------------------------------------------------------ */
 /* Main Page                                                          */
 /* ------------------------------------------------------------------ */
-export default function ProfilePerusahaanPage() {
+export default function PerusahaanProfilePage() {
   const router = useRouter();
   const {
     profile,
     formData,
     setFormData,
+    isLoading,
     isEditing,
     setIsEditing,
-    isLoading,
     isSubmitting,
     showSuccessToast,
     setShowSuccessToast,
     sektorOptions,
     kotaOptions,
     handleSubmit,
+    actionModal,
+    setActionModal,
   } = useCompanyProfile();
 
-  const handleLogout = async () => {
-    const confirmLogout = confirm("Apakah Anda yakin ingin keluar dari akun?");
-    if (!confirmLogout) return;
+  const [confirmLogoutModal, setConfirmLogoutModal] = useState(false);
 
+  const handleLogout = () => {
+    setConfirmLogoutModal(true);
+  };
+
+  const executeLogout = async () => {
     localStorage.removeItem("bridgeu_company_profile");
     localStorage.removeItem("bridgeu_company_kolaborasi");
 
@@ -130,7 +138,11 @@ export default function ProfilePerusahaanPage() {
     if (!error) {
       router.push("/");
     } else {
-      alert("Gagal keluar: " + error.message);
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Keluar",
+        message: "Gagal keluar: " + error.message,
+      });
     }
   };
 
@@ -431,6 +443,20 @@ export default function ProfilePerusahaanPage() {
         )}
       </div>
 
+      <ActionModal
+        isOpen={actionModal.isOpen}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      <ConfirmModal
+        isOpen={confirmLogoutModal}
+        title="Konfirmasi Keluar"
+        message="Apakah Anda yakin ingin keluar dari akun?"
+        onConfirm={executeLogout}
+        onClose={() => setConfirmLogoutModal(false)}
+      />
     </div>
   );
 }

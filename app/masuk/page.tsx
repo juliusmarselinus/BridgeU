@@ -75,7 +75,7 @@ export default function MasukPage() {
 
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("role")
+        .select("role, status")
         .eq("id", authData.user.id)
         .single();
 
@@ -83,6 +83,13 @@ export default function MasukPage() {
         router.push("/dashboard");
         return;
       }
+
+      const statusDb = (userData.status || "aktif").toLowerCase();
+      if (statusDb === "ditangguhkan" || statusDb === "suspended") {
+        await supabase.auth.signOut();
+        throw new Error("Akun Anda telah ditangguhkan/diblokir oleh administrator. Silakan hubungi dukungan BridgeU.");
+      }
+
       redirectByRole(userData.role);
     } catch (err: any) {
       setErrorMessage(err.message || "Gagal masuk. Silakan coba lagi.");

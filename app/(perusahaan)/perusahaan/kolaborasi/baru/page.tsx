@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useKolaborasiBaru } from "./hooks/useKolaborasiBaru";
 import { SuccessModal } from "./components/SuccessModal";
+import { ActionModal } from "@/components/ActionModal";
 
 export default function TambahKolaborasiPage() {
   const {
@@ -10,6 +11,8 @@ export default function TambahKolaborasiPage() {
     isLoadingOptions,
     isSubmitting,
     statusVerifikasi,
+    actionModal,
+    setActionModal,
     successModal,
     setSuccessModal,
     kategoriList,
@@ -718,7 +721,11 @@ export default function TambahKolaborasiPage() {
                       key={p.id}
                       onClick={() => {
                         if (p.id === -999) {
-                          alert("Pilih program studi spesifik atau buat baru dengan mengetik di kolom pencarian.");
+                          setActionModal({
+                            isOpen: true,
+                            title: "Pilih Program Studi",
+                            message: "Pilih program studi spesifik atau buat baru dengan mengetik di kolom pencarian.",
+                          });
                           return;
                         }
                         toggleProdi(p.id);
@@ -844,6 +851,13 @@ export default function TambahKolaborasiPage() {
           setSuccessModal(prev => ({ ...prev, isOpen: false }));
           router.push("/perusahaan/kolaborasi");
         }}
+      />
+
+      <ActionModal
+        isOpen={actionModal.isOpen}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal(prev => ({ ...prev, isOpen: false }))}
       />
     </main>
   );

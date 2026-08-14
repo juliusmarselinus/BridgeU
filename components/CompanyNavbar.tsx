@@ -31,6 +31,7 @@ export function CompanyNavbar() {
   const pathname = usePathname();
   const [company, setCompany] = useState<CompanyProfileNav | null>(null);
   const [statusVerifikasi, setStatusVerifikasi] = useState<string>("Menunggu Verifikasi");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -82,12 +83,12 @@ export function CompanyNavbar() {
           <span>
             Bridge<span className="text-[#97B8D8]">U</span>
           </span>
-          <span className="rounded-full bg-[#97B8D8]/20 px-2.5 py-0.5 font-mono text-[10px] font-medium tracking-wide text-[#C3DAEC] uppercase border border-[#97B8D8]/30">
+          <span className="hidden sm:inline-block rounded-full bg-[#97B8D8]/20 px-2.5 py-0.5 font-mono text-[10px] font-medium tracking-wide text-[#C3DAEC] uppercase border border-[#97B8D8]/30">
             Mitra Perusahaan
           </span>
         </Link>
 
-        {/* Navigation Links (Termasuk Kelola Kolaborasi) */}
+        {/* Desktop Navigation Links */}
         <div className="hidden gap-1 font-mono text-xs md:flex items-center">
           {companyNavLinks.map((link) => {
             const isColab = link.href === "/perusahaan/kolaborasi";
@@ -126,8 +127,9 @@ export function CompanyNavbar() {
           })}
         </div>
 
-        {/* Profile Chip -> Ke Halaman Profile */}
+        {/* Right Section: Profile Chip + Mobile Hamburger Button */}
         <div className="flex items-center gap-2">
+          {/* Profile Chip -> Ke Halaman Profile */}
           <Link
             href="/perusahaan/profile"
             className={`flex items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-3.5 border transition ${
@@ -152,8 +154,81 @@ export function CompanyNavbar() {
               {companyName}
             </span>
           </Link>
+
+          {/* Hamburger Button (hanya muncul di Mobile / md:hidden) */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="flex md:hidden items-center justify-center p-2 rounded-full text-paper/80 hover:text-paper hover:bg-white/10 transition"
+            aria-label="Toggle Mobile Navigation"
+          >
+            {mobileMenuOpen ? (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
       </nav>
+
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden mt-2 mx-auto max-w-6xl rounded-2xl border border-white/15 bg-[#12284B]/95 backdrop-blur-2xl p-4 shadow-xl space-y-2 text-paper animate-in fade-in duration-200">
+          {companyNavLinks.map((link) => {
+            const isColab = link.href === "/perusahaan/kolaborasi";
+            const isLocked = isColab && statusVerifikasi !== "Terverifikasi";
+            const active = pathname === link.href;
+
+            if (isLocked) {
+              return (
+                <div
+                  key={link.href}
+                  className="rounded-xl px-4 py-3 font-mono text-xs text-paper/30 bg-white/5 border border-dashed border-white/10 flex items-center justify-between"
+                >
+                  <span>{link.label}</span>
+                  <span className="flex items-center gap-1 text-[10px] text-red-400">
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    Terkunci
+                  </span>
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block rounded-xl px-4 py-3 font-mono text-xs transition ${
+                  active
+                    ? "bg-[#97B8D8]/20 text-[#C3DAEC] font-bold border border-[#97B8D8]/30"
+                    : "hover:bg-white/10 text-paper/80"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+
+          <Link
+            href="/perusahaan/profile"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`block rounded-xl px-4 py-3 font-mono text-xs transition ${
+              isProfileActive
+                ? "bg-[#97B8D8]/20 text-[#C3DAEC] font-bold border border-[#97B8D8]/30"
+                : "hover:bg-white/10 text-paper/80"
+            }`}
+          >
+            Profil Perusahaan ({companyName})
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

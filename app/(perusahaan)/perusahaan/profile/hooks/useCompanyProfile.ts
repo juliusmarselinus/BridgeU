@@ -61,6 +61,12 @@ export function useCompanyProfile() {
     loadProfile();
   }, []);
 
+  const [actionModal, setActionModal] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!profile) return;
@@ -75,7 +81,11 @@ export function useCompanyProfile() {
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
     } else {
-      alert("Gagal menyimpan perubahan profil.");
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Menyimpan",
+        message: "Gagal menyimpan perubahan profil.",
+      });
     }
   };
 
@@ -83,14 +93,16 @@ export function useCompanyProfile() {
     profile,
     formData,
     setFormData,
+    isLoading,
     isEditing,
     setIsEditing,
-    isLoading,
     isSubmitting,
     showSuccessToast,
     setShowSuccessToast,
     sektorOptions,
     kotaOptions,
     handleSubmit,
+    actionModal,
+    setActionModal,
   };
 }

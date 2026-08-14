@@ -7,6 +7,9 @@ import { supabase } from "@/lib/supabase";
 import { pelamarService } from "../../../pelamar/services/pelamarService";
 import { PelamarDetail, StatusLamaran } from "../../../pelamar/types/pelamar";
 
+import { ActionModal } from "@/components/ActionModal";
+import { ConfirmModal } from "@/components/ConfirmModal";
+
 export default function ReviewPelamarPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -16,6 +19,22 @@ export default function ReviewPelamarPage() {
   const [pelamarList, setPelamarList] = useState<PelamarDetail[]>([]);
   const [filterStatus, setFilterStatus] = useState<"Menunggu" | "Semua" | "Ditolak" | "Diterima">("Menunggu");
   const [successMsg, setSuccessMsg] = useState<string>("");
+  const [actionModal, setActionModal] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
+  const [confirmModalState, setConfirmModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -82,31 +101,41 @@ export default function ReviewPelamarPage() {
     loadPelamarData();
   }, [id]);
 
-  const handleKonfirmasi = async (pendaftaranId: string, newStatus: StatusLamaran) => {
+  const handleKonfirmasi = (pendaftaranId: string, newStatus: StatusLamaran) => {
+    const confirmTitle = newStatus === "Diterima" ? "Terima Mahasiswa" : "Tolak Mahasiswa";
     const confirmMsg =
       newStatus === "Diterima"
         ? "Apakah Anda yakin ingin MENERIMA pendaftaran mahasiswa ini?"
         : "Apakah Anda yakin ingin MENOLAK pendaftaran mahasiswa ini?";
 
-    if (!confirm(confirmMsg)) return;
+    setConfirmModalState({
+      isOpen: true,
+      title: confirmTitle,
+      message: confirmMsg,
+      onConfirm: async () => {
+        const isSuccess = await pelamarService.updateStatusPelamar(pendaftaranId, newStatus);
 
-    const isSuccess = await pelamarService.updateStatusPelamar(pendaftaranId, newStatus);
+        if (isSuccess) {
+          setPelamarList((prev) =>
+            prev.map((p) => (p.id === pendaftaranId ? { ...p, status: newStatus } : p))
+          );
 
-    if (isSuccess) {
-      setPelamarList((prev) =>
-        prev.map((p) => (p.id === pendaftaranId ? { ...p, status: newStatus } : p))
-      );
+          setSuccessMsg(
+            newStatus === "Diterima"
+              ? "Mahasiswa berhasil diterima! Mahasiswa kini aktif di workspace proyek."
+              : "Pendaftaran mahasiswa telah ditolak."
+          );
 
-      setSuccessMsg(
-        newStatus === "Diterima"
-          ? "Mahasiswa berhasil diterima! Mahasiswa kini aktif di workspace proyek."
-          : "Pendaftaran mahasiswa telah ditolak."
-      );
-
-      setTimeout(() => setSuccessMsg(""), 4000);
-    } else {
-      alert("Gagal memperbarui status pendaftaran pelamar.");
-    }
+          setTimeout(() => setSuccessMsg(""), 4000);
+        } else {
+          setActionModal({
+            isOpen: true,
+            title: "Gagal Memperbarui Status",
+            message: "Gagal memperbarui status pendaftaran pelamar.",
+          });
+        }
+      },
+    });
   };
 
   const filteredPelamar = pelamarList.filter((p) => {
@@ -337,6 +366,21 @@ export default function ReviewPelamarPage() {
           </div>
         )}
       </div>
+
+      <ActionModal
+        isOpen={actionModal.isOpen}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModalState.isOpen}
+        title={confirmModalState.title}
+        message={confirmModalState.message}
+        onConfirm={confirmModalState.onConfirm}
+        onClose={() => setConfirmModalState((prev) => ({ ...prev, isOpen: false }))}
+      />
     </main>
   );
 }

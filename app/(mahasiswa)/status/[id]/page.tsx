@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { chatService, ChatMessage } from "@/app/(perusahaan)/perusahaan/kolaborasi/baru/services/chatService";
 import { deleteRequestService } from "@/app/(perusahaan)/perusahaan/kolaborasi/baru/services/deleteRequestService";
 
+import { ActionModal } from "@/components/ActionModal";
+
 type StatusDetail = {
   id: string; // uuid pendaftaran_kolaborasi
   kolaborasi_id: string;
@@ -124,6 +126,11 @@ export default function StatusDetailPage() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [riwayatList, setRiwayatList] = useState<any[]>([]);
   const [infoPembatalan, setInfoPembatalan] = useState<string | null>(null);
+  const [actionModal, setActionModal] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -329,7 +336,11 @@ export default function StatusDetailPage() {
       senderId = data.user?.id || "";
     }
     if (!senderId) {
-      alert("Sesi login tidak ditemukan. Silakan refresh halaman.");
+      setActionModal({
+        isOpen: true,
+        title: "Sesi Login Tidak Ditemukan",
+        message: "Sesi login tidak ditemukan. Silakan refresh halaman.",
+      });
       return;
     }
 
@@ -354,7 +365,11 @@ export default function StatusDetailPage() {
         return [...prev, newMsg];
       });
     } else {
-      alert("Gagal mengirim pesan. Coba lagi.");
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Mengirim Pesan",
+        message: "Gagal mengirim pesan. Coba lagi.",
+      });
     }
   };
 
@@ -1057,6 +1072,13 @@ export default function StatusDetailPage() {
           </div>
         </div>
       )}
+
+      <ActionModal
+        isOpen={actionModal.isOpen}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </main>
   );
 }

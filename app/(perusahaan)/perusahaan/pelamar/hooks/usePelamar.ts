@@ -43,6 +43,13 @@ export function usePelamar(initialKolaborasiId?: string | null) {
   }, [initialKolaborasiId]);
 
   // Handler Update Status
+  // State untuk modal alert/action
+  const [actionModal, setActionModal] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
+
   const handleUpdateStatus = async (
     pendaftaranId: string,
     newStatus: StatusLamaran,
@@ -79,7 +86,11 @@ export function usePelamar(initialKolaborasiId?: string | null) {
         setSelectedPelamar((prev) => (prev ? { ...prev, status: newStatus } : null));
       }
     } else {
-      alert("Gagal memperbarui status pendaftaran.");
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Memperbarui Status",
+        message: "Gagal memperbarui status pendaftaran.",
+      });
     }
   };
 
@@ -102,5 +113,7 @@ export function usePelamar(initialKolaborasiId?: string | null) {
     totalPelamar,
     perluReview,
     handleUpdateStatus,
+    actionModal,
+    setActionModal,
   };
 }

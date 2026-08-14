@@ -65,15 +65,30 @@ export async function proxy(req: NextRequest) {
     return redirectRes;
   }
 
-  // 2. Jika sudah login, ambil role dari user_metadata atau tabel users database
+  // 2. Jika sudah login, ambil role & status dari user_metadata atau tabel users database
   let role = user.user_metadata?.role;
-  if (!role) {
+  let status = user.user_metadata?.status;
+
+  if (!role || !status) {
     const { data: userData } = await supabase
       .from("users")
-      .select("role")
+      .select("role, status")
       .eq("id", user.id)
       .maybeSingle();
-    role = userData?.role || "mahasiswa";
+    role = role || userData?.role || "mahasiswa";
+    status = status || userData?.status || "aktif";
+  }
+
+  const statusDb = (status || "aktif").toLowerCase();
+  if (statusDb === "ditangguhkan" || statusDb === "suspended") {
+    await supabase.auth.signOut();
+    const redirectUrl = new URL("/", req.url);
+    redirectUrl.searchParams.set("auth", "login");
+    const redirectRes = NextResponse.redirect(redirectUrl);
+    response.cookies.getAll().forEach((c) => {
+      redirectRes.cookies.delete(c.name);
+    });
+    return redirectRes;
   }
 
   const lowerRole = role.toLowerCase();

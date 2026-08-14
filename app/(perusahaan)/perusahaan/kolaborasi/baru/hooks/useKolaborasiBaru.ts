@@ -29,6 +29,11 @@ export function useKolaborasiBaru() {
   const [skillLimit, setSkillLimit] = useState(10);
 
   const [statusVerifikasi, setStatusVerifikasi] = useState<string>("Menunggu Verifikasi");
+  const [actionModal, setActionModal] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
   const [successModal, setSuccessModal] = useState<{ isOpen: boolean; title: string; message: string }>({
     isOpen: false,
     title: "",
@@ -279,12 +284,20 @@ export function useKolaborasiBaru() {
     e.preventDefault();
 
     if (!perusahaanId) {
-      alert("Sesi profil perusahaan tidak ditemukan. Silakan login kembali.");
+      setActionModal({
+        isOpen: true,
+        title: "Sesi Tidak Ditemukan",
+        message: "Sesi profil perusahaan tidak ditemukan. Silakan login kembali.",
+      });
       return;
     }
 
     if (formData.selectedKategoriIds.length === 0) {
-      alert("Pilih minimal satu Kategori Minat.");
+      setActionModal({
+        isOpen: true,
+        title: "Kategori Belum Dipilih",
+        message: "Pilih minimal satu Kategori Minat.",
+      });
       return;
     }
 
@@ -318,7 +331,11 @@ export function useKolaborasiBaru() {
         message: "Proyek kolaborasi berhasil diajukan dan sedang dalam proses moderasi.",
       });
     } else {
-      alert("Gagal mempublikasikan proyek. Periksa kembali kelengkapan data.");
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Mempublikasikan",
+        message: "Gagal mempublikasikan proyek. Periksa kembali kelengkapan data.",
+      });
     }
   };
 
@@ -415,6 +432,8 @@ export function useKolaborasiBaru() {
     isLoadingOptions,
     isSubmitting,
     statusVerifikasi,
+    actionModal,
+    setActionModal,
     successModal,
     setSuccessModal,
     kategoriList,

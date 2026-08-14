@@ -9,6 +9,9 @@ import { KolaborasiItemCard } from "./components/KolaborasiItemCard";
 import { KolaborasiEmptyState } from "./components/KolaborasiEmptyState";
 import { chatService } from "./baru/services/chatService";
 
+import { ActionModal } from "@/components/ActionModal";
+import { ConfirmModal } from "@/components/ConfirmModal";
+
 export default function KolaborasiPage() {
   const router = useRouter();
   const {
@@ -20,6 +23,10 @@ export default function KolaborasiPage() {
     isLoading,
     handleDeleteKolaborasi,
     handleExportCSV,
+    actionModal,
+    setActionModal,
+    confirmModalState,
+    setConfirmModalState,
   } = useCompanyDashboard();
 
   const [unreadByKolaborasi, setUnreadByKolaborasi] = useState<Record<string, number>>({});
@@ -124,7 +131,6 @@ export default function KolaborasiPage() {
         onOpenModal={handleOpenCreatePage}
         onExportCSV={handleExportCSV}
         totalCount={kolaborasiList.length}
-        counts={counts}
       />
 
       {filteredKolaborasi.length === 0 ? (
@@ -149,6 +155,21 @@ export default function KolaborasiPage() {
           ))}
         </div>
       )}
+
+      <ActionModal
+        isOpen={actionModal.isOpen}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModalState.isOpen}
+        title={confirmModalState.title}
+        message={confirmModalState.message}
+        onConfirm={confirmModalState.onConfirm}
+        onClose={() => setConfirmModalState((prev) => ({ ...prev, isOpen: false }))}
+      />
     </main>
   );
 }
