@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { SearchBar } from "./SearchBar";
 import { supabase } from "@/lib/supabase";
 import { useRealtimeNotifications } from "@/lib/hooks/useRealtimeNotifications";
@@ -103,7 +104,7 @@ function NotificationPanel({
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <div className="absolute right-0 top-13 w-96 overflow-hidden rounded-3xl border border-border bg-card shadow-[0_20px_50px_-12px_rgba(23,59,108,0.25)]">
+    <div className="absolute right-0 top-13 w-[calc(100vw-2.5rem)] max-w-sm sm:w-96 overflow-hidden rounded-3xl border border-border bg-card shadow-[0_20px_50px_-12px_rgba(23,59,108,0.25)]">
       {/* header */}
       <div className="flex items-center justify-between border-b border-border bg-surface px-5 py-4">
         <div className="flex items-center gap-2">
@@ -290,6 +291,8 @@ function NotificationBell() {
 export function Navbar() {
   const pathname = usePathname();
   const [user, setUser] = useState<StoredUser | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navContainerRef = useRef<HTMLDivElement>(null);
 
   const loadUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -326,7 +329,6 @@ export function Navbar() {
   useEffect(() => {
     loadUser();
 
-    // dipanggil manual dari halaman lain (mis. setelah edit profil) via window.dispatchEvent
     const handleLocalUpdate = () => {
       loadUser();
     };
@@ -343,16 +345,32 @@ export function Navbar() {
     };
   }, []);
 
+  // Tutup mobile menu saat rute berpindah
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Tutup mobile menu saat klik di luar container navbar
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (navContainerRef.current && !navContainerRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <div className="fixed inset-x-0 top-4 z-40 px-4 sm:px-6">
-      <nav className="mx-auto flex max-w-[1400px] items-center justify-between rounded-full border border-white/40 bg-white/80 px-6 py-3.5 shadow-[0_4px_24px_-6px_rgba(23,59,108,0.18)] backdrop-blur-xl">
+    <div className="fixed inset-x-0 top-4 z-40 px-3 sm:px-6" ref={navContainerRef}>
+      <nav className="relative mx-auto flex max-w-[1400px] items-center justify-between rounded-full border border-white/40 bg-white/80 px-4 sm:px-6 py-3.5 shadow-[0_4px_24px_-6px_rgba(23,59,108,0.18)] backdrop-blur-xl">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-ink">
+        <Link href="/" className="flex items-center gap-2 font-display text-base sm:text-lg font-semibold tracking-tight text-ink shrink-0">
           <Image src="/logo.png" alt="BridgeU" width={24} height={24} className="h-6 w-6 object-contain" />
           Bridge<span className="text-primary">U</span>
         </Link>
 
-        {/* Center nav links — active page gets a filled pill, not just color change */}
+        {/* Center nav links — active page gets a filled pill (Desktop view) */}
         <div className="hidden items-center gap-1 font-mono text-[13px] md:flex">
           {navLinks.map((link) => {
             const active = pathname === link.href;
@@ -374,7 +392,7 @@ export function Navbar() {
         </div>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <SearchBar />
 
           <NotificationBell />
@@ -413,7 +431,107 @@ export function Navbar() {
               </div>
             </Link>
           </div>
+
+          {/* Hamburger Menu Toggle Button (Mobile view) */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-label="Menu navigasi"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-steel hover:bg-surface hover:text-ink transition md:hidden"
+          >
+            {mobileMenuOpen ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" x2="20" y1="12" y2="12" />
+                <line x1="4" x2="20" y1="6" y2="6" />
+                <line x1="4" x2="20" y1="18" y2="18" />
+              </svg>
+            )}
+          </button>
         </div>
+
+        {/* Mobile Drawer Menu Dropdown */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute inset-x-0 top-full mt-3 overflow-hidden rounded-3xl border border-white/50 bg-white/95 p-4 shadow-[0_20px_50px_-12px_rgba(23,59,108,0.25)] backdrop-blur-2xl md:hidden"
+            >
+              {/* Nav Links */}
+              <div className="flex flex-col gap-1 font-mono text-sm">
+                {navLinks.map((link) => {
+                  const active = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center justify-between rounded-2xl px-4 py-3 font-medium transition ${
+                        active
+                          ? "bg-ink text-paper"
+                          : "text-steel hover:bg-surface hover:text-ink"
+                      }`}
+                    >
+                      <span>{link.label}</span>
+                      {active && <span className="h-2 w-2 rounded-full bg-bridge-gold" />}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* User Profile Card Footer inside Mobile Drawer */}
+              {user && (
+                <div className="mt-3 border-t border-border/60 pt-3">
+                  <Link
+                    href="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-2xl bg-surface/70 p-3 transition hover:bg-surface"
+                  >
+                    <div className="relative shrink-0">
+                      {getFrameDefinition(user.equippedFrameCode).glowClass && (
+                        <div className={`absolute inset-0 rounded-full ${getFrameDefinition(user.equippedFrameCode).glowClass}`} />
+                      )}
+                      <div
+                        className={`relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full ${
+                          getFrameDefinition(user.equippedFrameCode).containerClass
+                        } ${getFrameDefinition(user.equippedFrameCode).motifBorder || ""}`}
+                      >
+                        <div className="h-full w-full overflow-hidden rounded-full bg-surface">
+                          {user.foto ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={user.foto} alt="Foto profil" className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="flex h-full w-full items-center justify-center font-mono text-xs font-semibold text-primary">
+                              {initials(user.nama)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-display text-sm font-semibold text-ink">
+                        {user.nama}
+                      </p>
+                      <p className="truncate font-mono text-[11px] text-steel">
+                        {[user.prodi, user.universitas].filter(Boolean).join(" • ") || "Mahasiswa"}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-primary/10 px-3 py-1 font-mono text-[11px] font-semibold text-primary">
+                      Profil
+                    </span>
+                  </Link>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
     </div>
   );

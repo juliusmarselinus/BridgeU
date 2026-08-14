@@ -121,10 +121,10 @@ export function SearchBar() {
   }, [results]);
 
   return (
-    <div className="relative w-48 sm:w-64" ref={searchRef}>
+    <div className="relative w-28 sm:w-48 md:w-64" ref={searchRef}>
       <div className="relative flex items-center">
         <svg
-          className="absolute left-3 h-4 w-4 text-steel/60 pointer-events-none"
+          className="absolute left-2.5 sm:left-3 h-3.5 sm:h-4 w-3.5 sm:w-4 text-steel/60 pointer-events-none"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
@@ -142,15 +142,15 @@ export function SearchBar() {
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
-          placeholder="Cari orang, perusahaan, profesi..."
-          className="w-full rounded-full border border-border bg-surface/65 py-1.5 pl-9 pr-8 font-mono text-xs text-ink placeholder-steel/50 outline-none transition focus:border-primary/30 focus:bg-white"
+          placeholder="Cari..."
+          className="w-full rounded-full border border-border bg-surface/65 py-1.5 pl-7 sm:pl-9 pr-6 sm:pr-8 font-mono text-xs text-ink placeholder-steel/50 outline-none transition focus:border-primary/30 focus:bg-white truncate"
         />
 
         {query && (
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-3 text-steel/60 hover:text-ink text-xs"
+            className="absolute right-2.5 sm:right-3 text-steel/60 hover:text-ink text-xs"
           >
             ✕
           </button>
@@ -159,8 +159,8 @@ export function SearchBar() {
 
       {isOpen && query.trim().length >= MIN_QUERY_LENGTH && (
         <div
-          className="absolute right-0 top-11 z-50 overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"
-          style={{ width: "min(440px, calc(100vw - 2rem))" }}
+          className="fixed inset-x-3 top-20 z-50 max-w-md mx-auto sm:absolute sm:inset-auto sm:right-0 sm:top-11 sm:w-96 overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"
+          style={{ width: "min(440px, calc(100vw - 1.5rem))" }}
         >
           {isLoading ? (
             <div className="px-4 py-8 text-center font-mono text-xs text-steel/60">

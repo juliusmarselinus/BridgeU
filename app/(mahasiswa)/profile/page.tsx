@@ -1342,7 +1342,7 @@ function PublicActivitySection({
       transition={{ duration: 0.25 }}
       className="space-y-6"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {statCards.map((stat, idx) => {
           const StatIcon = stat.icon;
           const animatedValue = useSpringNumber(stat.value);
@@ -2171,12 +2171,12 @@ export default function ProfilePage() {
                       </h3>
 
                       <div className="space-y-6">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                           <InfoField label="Nama Lengkap" value={user.nama} icon={IconUser} />
                           <InfoField label="Email" value={user.email} icon={IconFileText} />
                         </div>
 
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 border-t border-steel/10 pt-5">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 border-t border-steel/10 pt-5">
                           <InfoField label="Universitas" value={user.universitas || ""} icon={IconPin} />
                           <InfoField label="Program Studi" value={user.prodi || ""} icon={IconClipboard} />
                           <InfoField
@@ -2264,7 +2264,7 @@ export default function ProfilePage() {
 
                         return (
                           <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4">
                               {currentPageBadges.length > 0
                                 ? currentPageBadges.map((b) => (
                                     <div

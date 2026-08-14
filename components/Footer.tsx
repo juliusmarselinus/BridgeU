@@ -45,9 +45,9 @@ export function Footer() {
     <footer className="w-full border-t border-bridge-gold/20 bg-ink text-paper transition-colors duration-300">
       {/* Upper Main Footer Grid */}
       <div className="mx-auto max-w-6xl px-6 pt-12 pb-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
           {/* Brand, Short Description & Social Media */}
-          <div className="space-y-4">
+          <div className="space-y-4 max-w-md">
             <Link href="/" className="inline-flex items-center gap-2 font-display text-2xl font-black tracking-tight text-paper">
               <Image src="/logo.png" alt="BridgeU" width={32} height={32} className="h-8 w-8 object-contain" />
               Bridge<span className="text-bridge-gold">U</span>
@@ -95,7 +95,7 @@ export function Footer() {
           </div>
 
           {/* Column: Navigasi Utama (List dari Navbar) */}
-          <div className="space-y-3 md:pl-8">
+          <div className="space-y-3 sm:pl-8">
             <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-bridge-gold">
               Navigasi Utama
             </h4>
@@ -119,40 +119,6 @@ export function Footer() {
                 <Link href="/status" className="transition hover:text-paper hover:underline underline-offset-4">
                   Status Pengajuan
                 </Link>
-              </li>
-              <li>
-                <Link href="/portfolio" className="transition hover:text-paper hover:underline underline-offset-4">
-                  Portfolio & Pencapaian
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column: Informasi & Legal */}
-          <div className="space-y-3 md:pl-4">
-            <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-bridge-gold">
-              Informasi & Legal
-            </h4>
-            <ul className="space-y-2.5 text-xs font-medium text-paper/70">
-              <li>
-                <span className="cursor-pointer transition hover:text-paper">
-                  Kebijakan Privasi
-                </span>
-              </li>
-              <li>
-                <span className="cursor-pointer transition hover:text-paper">
-                  Syarat & Ketentuan
-                </span>
-              </li>
-              <li>
-                <span className="cursor-pointer transition hover:text-paper">
-                  Panduan Kolaborasi
-                </span>
-              </li>
-              <li>
-                <span className="cursor-pointer transition hover:text-paper">
-                  Bantuan & Layanan
-                </span>
               </li>
             </ul>
           </div>
