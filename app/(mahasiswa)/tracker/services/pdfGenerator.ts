@@ -1,3 +1,4 @@
+import { jsPDF } from "jspdf";
 import { AutoAchievement, TrackerSummary, MahasiswaProfileInfo } from "../types/tracker";
 
 export function generatePortfolioPDF(
@@ -5,6 +6,12 @@ export function generatePortfolioPDF(
   achievements: AutoAchievement[],
   summary: TrackerSummary | null
 ) {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
   const nama = profile?.nama || "Mahasiswa";
   const univ = profile?.universitas || "Universitas";
   const prodi = profile?.prodi || "Program Studi";
@@ -12,127 +19,186 @@ export function generatePortfolioPDF(
   const totalCompleted = summary?.totalCompleted || achievements.length;
   const avgRating = summary?.averageRating || 5.0;
 
-  const achievementsHtml = achievements.length === 0
-    ? `<div style="text-align: center; padding: 40px; color: #64748b; font-style: italic;">Belum ada riwayat proyek kolaborasi yang tercatat.</div>`
-    : achievements.map((ach) => `
-      <div style="margin-bottom: 20px; padding: 18px; border: 1px solid #cbd5e1; border-radius: 12px; background-color: #ffffff; page-break-inside: avoid;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-          <div>
-            <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; background-color: ${ach.tipe === 'Magang' ? '#f3e8ff' : '#e0f2fe'}; color: ${ach.tipe === 'Magang' ? '#6b21a8' : '#0369a1'}; margin-right: 8px;">
-              ${ach.tipe}
-            </span>
-            <span style="font-size: 11px; color: #64748b; font-family: monospace;">${ach.kategori}</span>
-            <h3 style="margin: 8px 0 4px 0; font-size: 15px; font-weight: bold; color: #0f172a;">${ach.judulKolaborasi}</h3>
-            <p style="margin: 0; font-size: 12px; font-weight: 600; color: #475569;">Mitra Perusahaan: ${ach.perusahaan}</p>
-          </div>
-          <div style="font-size: 13px; font-weight: bold; color: #b45309; background-color: #fef3c7; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 8px;">
-            ★ ${ach.ratingScore} / 5.0
-          </div>
-        </div>
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 15;
 
-        <div style="margin-top: 10px; padding: 12px; background-color: #f8fafc; border-radius: 8px; font-size: 12px; color: #334155; line-height: 1.6;">
-          <strong style="display: block; font-size: 10px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Hasil & Dampak Luaran (Outcome):</strong>
-          ${ach.outcomeSummary}
-        </div>
+  // Header Banner with BridgeU Gradient theme
+  doc.setFillColor(11, 24, 48); // #0b1830 (BridgeU primary ink)
+  doc.roundedRect(15, y, pageWidth - 30, 26, 4, 4, "F");
 
-        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; border-top: 1px solid #f1f5f9; padding-top: 8px;">
-          <div>
-            <strong style="color: #64748b; margin-right: 6px;">Keahlian Terverifikasi:</strong>
-            ${ach.skillsAcquired.map(s => `<span style="background: #f1f5f9; color: #0f172a; padding: 2px 8px; border-radius: 6px; font-weight: 600; margin-right: 4px; font-size: 10px;">${s}</span>`).join('')}
-          </div>
-          <div style="color: #64748b; font-family: monospace;">
-            Selesai: ${ach.tanggalSelesai}
-          </div>
-        </div>
-      </div>
-    `).join("");
+  // White Background Container for Logo Visibility
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(19, y + 3, 24, 20, 3, 3, "F");
 
-  const topSkillsHtml = (summary?.topSkills || []).map(sk => `
-    <span style="display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; font-size: 11px; padding: 4px 10px; border-radius: 20px; margin-right: 6px; margin-bottom: 6px;">
-      ${sk.name} (${sk.count} Proyek)
-    </span>
-  `).join("");
+  // Load & Add logo.png with correct aspect ratio (1333:1000 => 20mm width x 15mm height inside 24x20 box)
+  try {
+    const img = new Image();
+    img.src = "/logo.png";
+    doc.addImage(img, "PNG", 21, y + 5.5, 20, 15);
+  } catch (e) {
+    // fallback if image fail
+  }
 
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text("PORTOFOLIO HASIL KOLABORASI", 48, y + 11);
 
-  document.body.appendChild(iframe);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(186, 230, 253);
+  doc.text("Official Student Achievement Record • BridgeU Platform", 48, y + 18);
 
-  const doc = iframe.contentWindow?.document;
-  if (!doc) return;
+  const tglStr = new Date().toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  doc.setTextColor(203, 213, 225);
+  doc.text(tglStr, pageWidth - 22, y + 15, { align: "right" });
 
-  doc.open();
-  doc.write(`
-    <!DOCTYPE html>
-    <html lang="id">
-    <head>
-      <meta charset="UTF-8">
-      <title>Portofolio_Kolaborasi_${nama.replace(/[^a-zA-Z0-9]/g, "_")}</title>
-      <style>
-        @page { size: A4; margin: 15mm; }
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 20px; background: #ffffff; }
-        .header { border-bottom: 2px solid #0f172a; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .title { font-size: 22px; font-weight: 900; color: #0f172a; margin: 0; }
-        .subtitle { font-size: 11px; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-        .profile-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .section-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #0f172a; margin-bottom: 12px; border-left: 4px solid #0284c7; padding-left: 8px; }
-        .watermark { text-align: center; margin-top: 24px; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <div>
-          <h1 class="title">PORTOFOLIO HASIL KOLABORASI</h1>
-          <div class="subtitle">Official Student Achievement Record • BridgeU Platform</div>
-        </div>
-        <div style="text-align: right; font-size: 11px; color: #64748b;">
-          Dicetak: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-        </div>
-      </div>
+  y += 32;
 
-      <div class="profile-box">
-        <div>
-          <h2 style="margin: 0 0 4px 0; font-size: 16px; font-weight: bold; color: #0f172a;">${nama}</h2>
-          <p style="margin: 0; font-size: 12px; color: #475569;">${prodi} • ${univ}</p>
-          <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">${sem}</p>
-        </div>
-        <div style="text-align: right;">
-          <div style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold;">Proyek Selesai</div>
-          <div style="font-size: 20px; font-weight: 900; color: #0284c7;">${totalCompleted} Proyek</div>
-          <div style="font-size: 11px; color: #166534; font-weight: bold; margin-top: 2px;">★ Rating Rata-Rata: ${avgRating} / 5.0</div>
-        </div>
-      </div>
+  // Profile & Summary Box
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(15, y, pageWidth - 30, 26, 3, 3, "FD");
 
-      ${topSkillsHtml ? `
-        <div style="margin-bottom: 20px;">
-          <div class="section-title">Ringkasan Keahlian Terverifikasi</div>
-          <div>${topSkillsHtml}</div>
-        </div>
-      ` : ''}
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text(nama, 22, y + 9);
 
-      <div>
-        <div class="section-title">Daftar Rekam Jejak Luaran Proyek</div>
-        ${achievementsHtml}
-      </div>
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`${prodi} • ${univ} (${sem})`, 22, y + 17);
 
-      <div class="watermark">
-        Dokumen portofolio ini digenerate secara otomatis oleh platform BridgeU berbasis verifikasi resmi mitra perusahaan.
-      </div>
-    </body>
-    </html>
-  `);
-  doc.close();
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(2, 132, 199);
+  doc.text(`Proyek Selesai: ${totalCompleted}`, pageWidth - 22, y + 10, { align: "right" });
 
-  setTimeout(() => {
-    iframe.contentWindow?.focus();
-    iframe.contentWindow?.print();
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-    }, 1000);
-  }, 300);
+  doc.setTextColor(22, 101, 52);
+  doc.text(`Rating Rata-Rata: ${avgRating} / 5.0`, pageWidth - 22, y + 17, { align: "right" });
+
+  y += 34;
+
+  // Top Verified Skills Section
+  if (summary && summary.topSkills.length > 0) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text("RINGKASAN KEAHLEAN TERVERIFIKASI", 15, y);
+
+    y += 5;
+    let xSkill = 15;
+    summary.topSkills.forEach((sk) => {
+      const label = `${sk.name} (${sk.count})`;
+      const w = doc.getTextWidth(label) + 6;
+
+      if (xSkill + w > pageWidth - 15) {
+        xSkill = 15;
+        y += 7;
+      }
+
+      doc.setFillColor(224, 242, 254);
+      doc.setDrawColor(186, 230, 253);
+      doc.roundedRect(xSkill, y - 4, w, 6, 1.5, 1.5, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(3, 105, 161);
+      doc.text(label, xSkill + 3, y);
+
+      xSkill += w + 3;
+    });
+
+    y += 12;
+  }
+
+  // Projects Section Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(15, 23, 42);
+  doc.text("DAFTAR REKAM JEJAK LUARAN PROYEK", 15, y);
+  y += 6;
+
+  if (achievements.length === 0) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Belum ada riwayat proyek kolaborasi yang berstatus selesai.", 15, y + 5);
+  } else {
+    achievements.forEach((ach) => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      const outcomeLines = doc.splitTextToSize(`Outcome: ${ach.outcomeSummary}`, pageWidth - 48);
+      const outcomeBoxHeight = Math.max(10, outcomeLines.length * 4 + 4);
+      const cardHeight = 17 + outcomeBoxHeight + 10;
+
+      // Check for new page space
+      if (y + cardHeight > 275) {
+        doc.addPage();
+        y = 20;
+      }
+
+      const cardStartY = y;
+
+      // Card Header Line
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(15, 23, 42);
+      const title = ach.judulKolaborasi.length > 50 ? ach.judulKolaborasi.slice(0, 47) + "..." : ach.judulKolaborasi;
+      doc.text(title, 20, y + 7);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(180, 83, 9);
+      doc.text(`Rating: ${ach.ratingScore} / 5.0`, pageWidth - 20, y + 7, { align: "right" });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Tipe: ${ach.tipe} • Mitra: ${ach.perusahaan} • Selesai: ${ach.tanggalSelesai}`, 20, y + 13);
+
+      // Outcome box
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(241, 245, 249);
+      doc.roundedRect(20, y + 17, pageWidth - 40, outcomeBoxHeight, 2, 2, "FD");
+
+      doc.setTextColor(51, 65, 85);
+      doc.text(outcomeLines, 23, y + 21);
+
+      // Skills line
+      const skillsStr = `Skills: ${ach.skillsAcquired.join(", ")}`;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      const truncatedSkills = doc.splitTextToSize(skillsStr, pageWidth - 40);
+      doc.text(truncatedSkills[0], 20, y + 17 + outcomeBoxHeight + 6);
+
+      // Card outer border
+      doc.setDrawColor(203, 213, 225);
+      doc.roundedRect(15, cardStartY, pageWidth - 30, cardHeight, 3, 3, "D");
+
+      y += cardHeight + 6;
+    });
+  }
+
+  // Footer Watermark on bottom
+  const footerY = doc.internal.pageSize.getHeight() - 12;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(148, 163, 184);
+  doc.text(
+    "Dokumen portofolio ini digenerate secara otomatis oleh platform BridgeU berbasis verifikasi resmi mitra perusahaan.",
+    pageWidth / 2,
+    footerY,
+    { align: "center" }
+  );
+
+  // Directly trigger browser PDF file download
+  const sanitizedNama = nama.replace(/[^a-zA-Z0-9]/g, "_");
+  doc.save(`Portofolio_Kolaborasi_${sanitizedNama}.pdf`);
 }
