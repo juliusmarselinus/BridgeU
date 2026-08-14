@@ -106,9 +106,7 @@ export async function GET(req: NextRequest) {
 
     let dbPendaftaran: any[] | null = null;
 
-    console.log("🔍 [DEBUG /api/me] Fetching pendaftaran for authUser.id:", authUser.id);
-
-    const { data: authedPendaftaran, error: authedErr } = await db
+    const { data: authedPendaftaran } = await db
       .from("pendaftaran_kolaborasi")
       .select("id, status, tanggal_daftar, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
       .eq("mahasiswa_id", authUser.id);
@@ -117,12 +115,11 @@ export async function GET(req: NextRequest) {
 
     // Fallback pakai client supabase publik jika authedClient RLS 0 result
     if (!dbPendaftaran || dbPendaftaran.length === 0) {
-      const { data: publicPendaftaran, error: pubErr } = await supabase
+      const { data: publicPendaftaran } = await supabase
         .from("pendaftaran_kolaborasi")
         .select("id, status, tanggal_daftar, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
         .eq("mahasiswa_id", authUser.id);
 
-      console.log("🔍 [DEBUG /api/me] publicPendaftaran count:", publicPendaftaran?.length ?? 0, "Err:", pubErr?.message);
       dbPendaftaran = publicPendaftaran;
     }
 
@@ -137,17 +134,11 @@ export async function GET(req: NextRequest) {
         : "-",
     }));
 
-    console.log("🔍 [DEBUG /api/me] Final pengajuanList count:", pengajuanList.length);
-
-    console.log("🔍 [DEBUG /api/me] Final pengajuanList count:", pengajuanList.length);
-
-    const { data: allBadges, error: badgeErr } = await supabase
+    const { data: allBadges } = await supabase
       .from("badges")
       .select("id, kode_badge, nama_badge, deskripsi, icon_url, kategori, xp_bonus");
 
-    console.log("🔍 [DEBUG /api/me] allBadges count:", allBadges?.length ?? 0, "Err:", badgeErr?.message);
-
-    let { data: userBadgesData, error: userBadgeErr } = await db
+    let { data: userBadgesData } = await db
       .from("mahasiswa_badges")
       .select("badge_id, earned_at")
       .eq("mahasiswa_id", authUser.id);
@@ -162,8 +153,6 @@ export async function GET(req: NextRequest) {
         userBadgesData = pubUserBadges;
       }
     }
-
-    console.log("🔍 [DEBUG /api/me] userBadgesData count:", userBadgesData?.length ?? 0, "Err:", userBadgeErr?.message);
 
     const unlockedBadgeIds = new Set((userBadgesData || []).map((b: any) => b.badge_id));
 
@@ -230,47 +219,30 @@ export async function GET(req: NextRequest) {
 
     // Simpan ke database mahasiswa_badges dan update XP profil
     if (newBadgesToInsert.length > 0 || currentXp !== studentXp) {
-      console.log("⚡ [DEBUG /api/me] Auto-inserting new badges to Supabase:", newBadgesToInsert.length, "badges, Total Calculated XP:", currentXp, "Pts:", currentPts);
-      
       if (newBadgesToInsert.length > 0) {
-        const { error: insertErr } = await db
+        await db
           .from("mahasiswa_badges")
           .upsert(newBadgesToInsert, { onConflict: "mahasiswa_id,badge_id" });
 
-        if (insertErr) {
-          console.error("❌ [DEBUG /api/me] Failed to insert mahasiswa_badges:", insertErr.message);
-        } else {
-          console.log("✅ [DEBUG /api/me] Successfully inserted badges into mahasiswa_badges!");
-          // Kirim notifikasi ke tabel Supabase `notifikasi`
-          for (const newB of newBadgesToInsert) {
-            const badgeObj = (allBadges || []).find((b: any) => b.id === newB.badge_id);
-            if (badgeObj) {
-              console.log("⚡ [DEBUG /api/me] Inserting badge notification to `notifikasi` table:", badgeObj.nama_badge);
-              const { data: nData, error: nErr } = await db.from("notifikasi").insert({
+        for (const newB of newBadgesToInsert) {
+          const badgeObj = (allBadges || []).find((b: any) => b.id === newB.badge_id);
+          if (badgeObj) {
+            const { error: nErr } = await db.from("notifikasi").insert({
+              recipient_user_id: authUser.id,
+              judul: `Badge Terbuka: ${badgeObj.nama_badge}`,
+              pesan: `Selamat! Kamu berhasil membuka badge '${badgeObj.nama_badge}' dan mendapatkan +${badgeObj.xp_bonus || 0} XP & Pts.`,
+              is_read: false,
+              created_at: new Date().toISOString(),
+            });
+
+            if (nErr) {
+              await supabase.from("notifikasi").insert({
                 recipient_user_id: authUser.id,
                 judul: `Badge Terbuka: ${badgeObj.nama_badge}`,
                 pesan: `Selamat! Kamu berhasil membuka badge '${badgeObj.nama_badge}' dan mendapatkan +${badgeObj.xp_bonus || 0} XP & Pts.`,
                 is_read: false,
                 created_at: new Date().toISOString(),
-              }).select();
-
-              if (nErr) {
-                // Fallback dengan anon client supabase
-                const { error: pubNotifErr } = await supabase.from("notifikasi").insert({
-                  recipient_user_id: authUser.id,
-                  judul: `Badge Terbuka: ${badgeObj.nama_badge}`,
-                  pesan: `Selamat! Kamu berhasil membuka badge '${badgeObj.nama_badge}' dan mendapatkan +${badgeObj.xp_bonus || 0} XP & Pts.`,
-                  is_read: false,
-                  created_at: new Date().toISOString(),
-                });
-                if (pubNotifErr) {
-                  console.error("❌ [DEBUG /api/me] Failed to insert badge notification:", pubNotifErr.message);
-                } else {
-                  console.log("✅ [DEBUG /api/me] Successfully inserted badge notification via public client!");
-                }
-              } else {
-                console.log("✅ [DEBUG /api/me] Successfully inserted badge notification via authed db client!", nData);
-              }
+              });
             }
           }
         }
@@ -287,13 +259,8 @@ export async function GET(req: NextRequest) {
           .from("mahasiswa_profiles")
           .update({ xp: currentXp })
           .eq("user_id", authUser.id);
-        console.error("❌ [DEBUG /api/me] Failed to update profile XP & Points:", xpUpdateErr.message);
-      } else {
-        console.log("✅ [DEBUG /api/me] Successfully updated profile XP & Points!");
       }
     }
-
-    console.log("🔍 [DEBUG /api/me] Final formattedBadges count:", formattedBadges.length, "Total XP:", currentXp);
 
     return NextResponse.json({
       id: userRow.id,

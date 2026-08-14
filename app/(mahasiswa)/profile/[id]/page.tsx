@@ -475,10 +475,20 @@ function PublicActivitySection({
     return list;
   }, [pengajuan, dbBadges, publicUser.skills]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const filteredActivities = useMemo(() => {
+    setCurrentPage(1);
     if (filter === "semua") return rawActivities;
     return rawActivities.filter((a) => a.kategori === filter);
   }, [filter, rawActivities]);
+
+  const totalPages = Math.ceil(filteredActivities.length / itemsPerPage);
+  const paginatedActivities = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredActivities.slice(start, start + itemsPerPage);
+  }, [filteredActivities, currentPage, itemsPerPage]);
 
   const heatmapDays = useMemo(() => {
     const days: Array<{ date: string; count: number }> = [];
@@ -563,7 +573,7 @@ function PublicActivitySection({
         </div>
 
         <div className="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-steel/20">
-          {filteredActivities.map((act, idx) => (
+          {paginatedActivities.map((act, idx) => (
             <motion.div
               key={act.id}
               initial={{ opacity: 0, x: -12 }}
@@ -587,6 +597,36 @@ function PublicActivitySection({
             </motion.div>
           ))}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-6 mt-6 border-t border-border/60 font-mono text-xs text-steel">
+            <span>
+              Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, filteredActivities.length)}-
+              {Math.min(currentPage * itemsPerPage, filteredActivities.length)} dari {filteredActivities.length} aktivitas
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="rounded-xl border border-border bg-card px-3 py-1.5 font-bold text-ink transition hover:bg-paper disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                ← Prev
+              </button>
+              <span className="font-bold text-ink">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="rounded-xl border border-border bg-card px-3 py-1.5 font-bold text-ink transition hover:bg-paper disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -677,7 +717,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
     async function fetchProfile() {
       setIsLoading(true);
       setErrorMsg("");
-      console.log("🔍 [DEBUG Public Profile] Fetching profile for rawProfileId:", rawProfileId);
       try {
         const { data: authData } = await supabase.auth.getSession();
         const headers: Record<string, string> = {};
@@ -690,25 +729,23 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         });
         clearTimeout(timeoutId);
 
-        console.log("🔍 [DEBUG Public Profile] API response status:", res.status);
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          console.error("❌ [DEBUG Public Profile] API error body:", body);
           if (isMounted) setErrorMsg(body.error || "Profil tidak ditemukan");
         } else {
           const data = await res.json();
-          console.log("✅ [DEBUG Public Profile] Fetched profileData successfully:", data);
           if (isMounted) setProfileData(data);
         }
       } catch (err: any) {
         clearTimeout(timeoutId);
-        console.error("🔥 [DEBUG Public Profile] Fetch exception:", err);
-        if (isMounted) {
-          if (err.name === "AbortError") {
+        if (err.name === "AbortError") {
+          if (isMounted) {
             setErrorMsg("Koneksi Waktu Habis (Connection Timed Out). Gagal menghubungkan ke server.");
-          } else {
-            setErrorMsg(err.message || "Gagal memuat profil");
           }
+          return;
+        }
+        if (isMounted) {
+          setErrorMsg(err.message || "Gagal memuat profil");
         }
       } finally {
         if (isMounted) setIsLoading(false);

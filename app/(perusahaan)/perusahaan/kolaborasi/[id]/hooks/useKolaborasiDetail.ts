@@ -271,6 +271,7 @@ export function useKolaborasiDetail() {
               mahasiswa_id,
               tanggal_daftar,
               status,
+              ratings,
               catatan_perusahaan,
               url_portofolio_dokumen,
               mahasiswa_profiles (
@@ -345,6 +346,7 @@ export function useKolaborasiDetail() {
               reputation_score: mProfile?.reputation_score || 0,
               tanggal_daftar: p.tanggal_daftar,
               status: p.status,
+              ratings: p.ratings != null ? Number(p.ratings) : null,
               catatan_perusahaan: latestSubmission?.evaluasi_perusahaan || p.catatan_perusahaan,
               url_portofolio_dokumen: p.url_portofolio_dokumen,
               url_hasil_kolaborasi: latestSubmission?.url_hasil,
@@ -567,6 +569,34 @@ export function useKolaborasiDetail() {
         isOpen: true,
         title: "Gagal Menyimpan Evaluasi",
         message: "Gagal menyimpan evaluasi.",
+      });
+    }
+  };
+
+  const handleGiveRating = async (ratingVal: number) => {
+    if (!selectedPelamar) return;
+    if (selectedPelamar.ratings != null) return; // tidak bisa ubah jika sudah ada rating
+
+    const { error } = await supabase
+      .from("pendaftaran_kolaborasi")
+      .update({ ratings: ratingVal })
+      .eq("id", selectedPelamar.id);
+
+    if (error) {
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Memberikan Rating",
+        message: "Terjadi kesalahan saat menyimpan rating: " + error.message,
+      });
+    } else {
+      setSelectedPelamar((prev) => (prev ? { ...prev, ratings: ratingVal } : null));
+      setPelamarList((prev) =>
+        prev.map((p) => (p.id === selectedPelamar.id ? { ...p, ratings: ratingVal } : p))
+      );
+      setSuccessModal({
+        isOpen: true,
+        title: "Rating Berhasil Disimpan",
+        message: `Terima kasih! Anda memberikan rating ${ratingVal} bintang untuk hasil pengerjaan mahasiswa ini.`,
       });
     }
   };
@@ -1018,7 +1048,7 @@ export function useKolaborasiDetail() {
     pelamarList, setPelamarList,
     selectedPelamar, setSelectedPelamar,
     chatMessages, chatInput, setChatInput, isSendingChat, handleKirimChat, unreadCounts,
-    evaluasiInput, setEvaluasiInput, isSubmittingEvaluasi, handleKirimEvaluasi,
+    evaluasiInput, setEvaluasiInput, isSubmittingEvaluasi, handleKirimEvaluasi, handleGiveRating,
     isSubmittingRevisi, handleMintaRevisi,
     deleteAlasan, setDeleteAlasan,
     deleteKompensasi, setDeleteKompensasi,

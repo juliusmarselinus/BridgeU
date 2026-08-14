@@ -57,6 +57,10 @@ CREATE TABLE public.mahasiswa_profiles (
   last_active_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   reputation_score integer NOT NULL DEFAULT 0,
   response_rate numeric NOT NULL DEFAULT '0'::numeric,
+  points bigint,
+  nim text,
+  gender text,
+  equipped_frame_code text DEFAULT 'FRAME_NONE'::text,
   CONSTRAINT mahasiswa_profiles_pkey PRIMARY KEY (user_id),
   CONSTRAINT mahasiswa_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT mahasiswa_profiles_universitas_id_fkey FOREIGN KEY (universitas_id) REFERENCES public.universitas(id),
@@ -146,6 +150,7 @@ CREATE TABLE public.pendaftaran_kolaborasi (
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   url_portofolio_dokumen text,
   status_pengerjaan text DEFAULT 'Belum Dikirim'::text,
+  ratings bigint,
   CONSTRAINT pendaftaran_kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT pendaftaran_kolaborasi_kolaborasi_id_fkey FOREIGN KEY (kolaborasi_id) REFERENCES public.kolaborasi(id),
   CONSTRAINT pendaftaran_kolaborasi_mahasiswa_id_fkey FOREIGN KEY (mahasiswa_id) REFERENCES public.mahasiswa_profiles(user_id)
@@ -219,6 +224,7 @@ CREATE TABLE public.badges (
 CREATE TABLE public.mahasiswa_badges (
   mahasiswa_id uuid NOT NULL,
   badge_id integer NOT NULL,
+  unlocked_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   earned_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT mahasiswa_badges_pkey PRIMARY KEY (mahasiswa_id, badge_id),
   CONSTRAINT mahasiswa_badges_mahasiswa_id_fkey FOREIGN KEY (mahasiswa_id) REFERENCES public.mahasiswa_profiles(user_id),
@@ -247,4 +253,39 @@ CREATE TABLE public.chat_messages (
   CONSTRAINT chat_messages_pkey PRIMARY KEY (id),
   CONSTRAINT chat_messages_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.chat_rooms(id),
   CONSTRAINT chat_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.chat_kolaborasi (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  kolaborasi_id uuid NOT NULL,
+  mahasiswa_id uuid NOT NULL,
+  pengirim_id uuid NOT NULL,
+  tipe_pengirim text NOT NULL CHECK (tipe_pengirim = ANY (ARRAY['perusahaan'::text, 'mahasiswa'::text])),
+  pesan text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  is_read boolean NOT NULL DEFAULT false,
+  CONSTRAINT chat_kolaborasi_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_kolaborasi_kolaborasi_id_fkey FOREIGN KEY (kolaborasi_id) REFERENCES public.kolaborasi(id),
+  CONSTRAINT chat_kolaborasi_mahasiswa_id_fkey FOREIGN KEY (mahasiswa_id) REFERENCES public.mahasiswa_profiles(user_id),
+  CONSTRAINT chat_kolaborasi_pengirim_id_fkey FOREIGN KEY (pengirim_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.permintaan_hapus_kolaborasi (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  kolaborasi_id uuid NOT NULL,
+  catatan_perusahaan text,
+  status text NOT NULL DEFAULT 'Menunggu'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  resolved_at timestamp with time zone,
+  CONSTRAINT permintaan_hapus_kolaborasi_pkey PRIMARY KEY (id),
+  CONSTRAINT permintaan_hapus_kolaborasi_kolaborasi_id_fkey FOREIGN KEY (kolaborasi_id) REFERENCES public.kolaborasi(id)
+);
+CREATE TABLE public.persetujuan_hapus (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  permintaan_id uuid NOT NULL,
+  pendaftaran_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'Menunggu'::text,
+  kesepakatan_kompensasi text,
+  responded_at timestamp with time zone,
+  CONSTRAINT persetujuan_hapus_pkey PRIMARY KEY (id),
+  CONSTRAINT persetujuan_hapus_permintaan_id_fkey FOREIGN KEY (permintaan_id) REFERENCES public.permintaan_hapus_kolaborasi(id),
+  CONSTRAINT persetujuan_hapus_pendaftaran_id_fkey FOREIGN KEY (pendaftaran_id) REFERENCES public.pendaftaran_kolaborasi(id)
 );

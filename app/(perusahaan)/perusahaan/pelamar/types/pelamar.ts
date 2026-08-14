@@ -20,6 +20,7 @@ export interface PelamarDetail {
   url_hasil_kolaborasi?: string;
   catatan_hasil_kolaborasi?: string;
   riwayat_pengumpulan?: any[];
+  ratings?: number | null;
 }
 
 export interface ProyekPelamarSummary {

@@ -8,12 +8,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(req: NextRequest) {
   const { recipientUserId, namaMahasiswa, emailMahasiswa, namaKolaborasi, namaPerusahaan } = await req.json();
 
-  console.log("🔍 [DEBUG /api/send-notification] Received payload:", { recipientUserId, namaMahasiswa, emailMahasiswa, namaKolaborasi, namaPerusahaan });
-
   // 1. Simpan Web Notification ke tabel Supabase `notifikasi`
   if (recipientUserId) {
-    console.log("⚡ [DEBUG /api/send-notification] Inserting web notification to Supabase `notifikasi` for userId:", recipientUserId);
-    const { data: notifData, error: notifErr } = await supabase
+    await supabase
       .from("notifikasi")
       .insert({
         recipient_user_id: recipientUserId,
@@ -21,22 +18,12 @@ export async function POST(req: NextRequest) {
         pesan: `Pengajuan kolaborasi kamu untuk '${namaKolaborasi || "Proyek"}' telah diterima oleh ${namaPerusahaan || "mitra perusahaan"}.`,
         is_read: false,
         created_at: new Date().toISOString(),
-      })
-      .select();
-
-    if (notifErr) {
-      console.error("❌ [DEBUG /api/send-notification] Error inserting into `notifikasi` table:", notifErr.message);
-    } else {
-      console.log("✅ [DEBUG /api/send-notification] Web notification created successfully in DB:", notifData);
-    }
-  } else {
-    console.warn("⚠️ [DEBUG /api/send-notification] `recipientUserId` missing in payload; web notification skipped.");
+      });
   }
 
   // 2. Send email via Resend (jika API Key tersedia)
   if (emailMahasiswa) {
     try {
-      console.log("📧 [DEBUG /api/send-notification] Attempting Resend email to:", emailMahasiswa);
       await resend.emails.send({
         from: "BridgeU <onboarding@resend.dev>",
         to: emailMahasiswa,
@@ -58,9 +45,8 @@ export async function POST(req: NextRequest) {
           </div>
         `,
       });
-      console.log("✅ [DEBUG /api/send-notification] Email sent successfully via Resend.");
     } catch (error) {
-      console.error("❌ [DEBUG /api/send-notification] Error sending email via Resend:", String(error));
+      // Ignore
     }
   }
 

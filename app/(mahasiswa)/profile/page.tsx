@@ -1331,10 +1331,20 @@ function PublicActivitySection({
     return list;
   }, [pengajuan, dbBadges, user?.skills]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const filteredActivities = useMemo(() => {
+    setCurrentPage(1);
     if (filter === "semua") return rawActivities;
     return rawActivities.filter((a) => a.kategori === filter);
-  }, [filter]);
+  }, [filter, rawActivities]);
+
+  const totalPages = Math.ceil(filteredActivities.length / itemsPerPage);
+  const paginatedActivities = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredActivities.slice(start, start + itemsPerPage);
+  }, [filteredActivities, currentPage, itemsPerPage]);
 
   return (
     <motion.div
@@ -1403,7 +1413,7 @@ function PublicActivitySection({
         </div>
 
         <div className="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-steel/20">
-          {filteredActivities.map((act, idx) => (
+          {paginatedActivities.map((act, idx) => (
             <motion.div
               key={act.id}
               initial={{ opacity: 0, x: -12 }}
@@ -1427,6 +1437,36 @@ function PublicActivitySection({
             </motion.div>
           ))}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-6 mt-6 border-t border-border/60 font-mono text-xs text-steel">
+            <span>
+              Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, filteredActivities.length)}-
+              {Math.min(currentPage * itemsPerPage, filteredActivities.length)} dari {filteredActivities.length} aktivitas
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="rounded-xl border border-border bg-card px-3 py-1.5 font-bold text-ink transition hover:bg-paper disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                ← Prev
+              </button>
+              <span className="font-bold text-ink">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="rounded-xl border border-border bg-card px-3 py-1.5 font-bold text-ink transition hover:bg-paper disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -1502,17 +1542,14 @@ export default function ProfilePage() {
 
   const loadFromDatabase = async () => {
     setLoadError("");
-    console.log("🔍 [DEBUG Profile Page] Checking auth session via supabase.auth.getSession()...");
     let { data: { session } } = await supabase.auth.getSession();
     
     // Fallback bila getSession & getUser dari Supabase null (misal mode demo/dummy auth local)
     if (!session) {
-      console.warn("⚠️ [DEBUG Profile Page] Supabase session is null, checking localStorage 'bridgeu_user'...");
       const localUserStr = localStorage.getItem("bridgeu_user");
       if (localUserStr) {
         try {
           const localUser = JSON.parse(localUserStr);
-          console.log("✅ [DEBUG Profile Page] Found user in localStorage:", localUser);
           setUser({
             nama: localUser.nama || "Mahasiswa",
             email: localUser.email || "mahasiswa@student.ac.id",
@@ -1527,33 +1564,26 @@ export default function ProfilePage() {
           setIsLoadingUser(false);
           return;
         } catch (e) {
-          console.error("❌ [DEBUG Profile Page] Error parsing bridgeu_user from localStorage:", e);
+          // Ignore
         }
       }
 
-      console.error("❌ [DEBUG Profile Page] No active auth session found in Supabase or localStorage!");
       setIsLoadingUser(false);
       return;
     }
-
-    console.log("✅ [DEBUG Profile Page] Session found for user ID:", session.user.id, "Fetching /api/me...");
 
     const res = await fetch("/api/me", {
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
 
-    console.log("🔍 [DEBUG Profile Page] /api/me response status:", res.status);
-
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      console.error("❌ [DEBUG Profile Page] /api/me returned error:", body);
       setLoadError(body.error || `Gagal memuat profil (${res.status})`);
       setIsLoadingUser(false);
       return;
     }
 
     const data = await res.json();
-    console.log("✅ [DEBUG Profile Page] /api/me data loaded:", data);
 
     const parsed: StoredUser = {
       nama: data.nama,
@@ -1568,7 +1598,6 @@ export default function ProfilePage() {
       ringkasan: data.ringkasanSelf,
       foto: data.fotoUrl,
     };
-    console.log("✅ [DEBUG Profile Page] Setting user state with parsed API data:", parsed);
     setUser(parsed);
 
     if (data.equippedFrameCode) {
@@ -1581,10 +1610,6 @@ export default function ProfilePage() {
       streakCount: data.streakCount ?? 0,
       reputationScore: data.reputationScore ?? 0,
       responseRate: data.responseRate ?? 0,
-    });
-    console.log("⚡ [DEBUG setUserMetrics applied]", {
-      appliedXp: data.xp ?? 0,
-      appliedPts: data.pts ?? data.xp ?? 0,
     });
     if (Array.isArray(data.badges)) {
       setDbBadges(data.badges);
@@ -1609,12 +1634,10 @@ export default function ProfilePage() {
     if (currentPengajuan.length === 0) {
       const { data: authUser } = await supabase.auth.getUser();
       if (authUser?.user?.id) {
-        const { data: dbData, error: dbErr } = await supabase
+        const { data: dbData } = await supabase
           .from("pendaftaran_kolaborasi")
           .select("id, status, tanggal_daftar, kolaborasi:kolaborasi_id(judul, perusahaan:perusahaan_id(nama_perusahaan))")
           .eq("mahasiswa_id", authUser.user.id);
-
-        console.log("🚀 [DEBUG Client Profile] Direct Supabase count:", dbData?.length ?? 0, "Err:", dbErr?.message);
 
         if (dbData && dbData.length > 0) {
           currentPengajuan = dbData.map((item: any) => ({
@@ -1634,7 +1657,6 @@ export default function ProfilePage() {
     // Jika masih 0 (misalnya registrasi lokal tanpa DB pendaftaran), ambil dari localStorage bridgeu_pengajuan
     if (currentPengajuan.length === 0) {
       const stored = localStorage.getItem("bridgeu_pengajuan");
-      console.log("🚀 [DEBUG Client Profile] Checking localStorage bridgeu_pengajuan:", stored);
       if (stored) {
         try {
           const parsedLocal = JSON.parse(stored);
@@ -1654,7 +1676,6 @@ export default function ProfilePage() {
       }
     }
 
-    console.log("🚀 [DEBUG Client Profile] FINAL pengajuan state count:", currentPengajuan.length);
     setPengajuan(currentPengajuan);
     setIsLoadingUser(false);
     if (!data.universitas || !data.prodi) {
