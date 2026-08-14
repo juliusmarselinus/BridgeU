@@ -415,20 +415,9 @@ export function useKolaborasiDetail() {
     newStatus: StatusLamaran,
     catatan?: string
   ) => {
-    const confirmMsg =
-      newStatus === "Diterima"
-        ? "Apakah Anda yakin ingin menerima pelamar ini?"
-        : newStatus === "Ditolak"
-        ? "Apakah Anda yakin ingin menolak pelamar ini?"
-        : newStatus === "Minta Revisi"
-        ? "Apakah Anda yakin ingin meminta revisi pengerjaan kepada pelamar ini?"
-        : "Apakah Anda yakin ingin menandai proyek selesai untuk mahasiswa ini?";
-
-    if (!confirm(confirmMsg)) return;
-
     const isSuccess = await pelamarService.updateStatusPelamar(pendaftaranId, newStatus, catatan);
     if (!isSuccess) {
-      alert("Gagal memperbarui status pendaftaran.");
+      setDeleteErrorMsg("Gagal memperbarui status pendaftaran.");
       return;
     }
 
