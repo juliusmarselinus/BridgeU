@@ -153,3 +153,43 @@ export function checkBadgeUnlockCondition(kodeBadge: string, ctx: StudentContext
       return false;
   }
 }
+
+/**
+ * Mendapatkan deskripsi cara mencapai / kriteria unlock untuk masing-masing kode badge
+ */
+export function getBadgeRequirementText(kodeBadge: string): string {
+  switch (kodeBadge) {
+    case "FIRST_PROFILE":
+      return "Lengkapi data profil utama kamu (Nama, Universitas, Program Studi, dan Skills).";
+    case "FIRST_APPLY":
+      return "Kirimkan pengajuan lamaran kolaborasi atau magang pertama kamu ke mitra perusahaan.";
+    case "FIRST_ACCEPT":
+      return "Dapatkan status Diterima pada salah satu pengajuan kolaborasi yang kamu ajukan.";
+    case "FIRST_FINISH":
+      return "Selesaikan 1 proyek kolaborasi akademik/industri hingga memberikan laporan akhir.";
+    case "FIRST_REVIEW":
+      return "Dapatkan evaluasi ulasan & performa pertama dari mitra perusahaan tempat kamu berkontribusi.";
+    case "PROJ_3":
+      return "Selesaikan minimal 3 proyek kolaborasi industri dengan hasil memuaskan.";
+    case "PROJ_5":
+      return "Selesaikan minimal 5 proyek kolaborasi industri di platform BridgeU.";
+    case "PROJ_10":
+      return "Selesaikan 10 proyek industri dan raih gelar Mahasiswa Duta Kolaborasi.";
+    case "STREAK_7":
+      return "Pertahankan login dan aktivitas harian selama 7 hari berturut-turut di BridgeU.";
+    case "STREAK_30":
+      return "Pertahankan login dan aktivitas harian secara konsisten selama 30 hari berturut-turut.";
+    case "FAST_RESPONDER":
+      return "Jaga response rate komunikasi di atas 90% dalam menanggapi balasan pesan perusahaan.";
+    case "XP_1000":
+      return "Kumpulkan akumulasi 1.000 XP dari aktivitas profil, pengajuan, dan penyelesaian proyek.";
+    case "XP_5000":
+      return "Kumpulkan akumulasi 5.000 XP untuk memasuki jajaran Talenta Pro BridgeU.";
+    case "XP_10000":
+      return "Kumpulkan 10.000 XP dan raih status Puncak Mahasiswa Teladan Utama.";
+    case "NETWORK_BUILDER":
+      return "Ajukan kolaborasi atau bekerja sama dengan minimal 3 mitra perusahaan yang berbeda.";
+    default:
+      return "Selesaikan proyek kolaborasi industri yang relevan untuk membuka badge prestasi ini.";
+  }
+}

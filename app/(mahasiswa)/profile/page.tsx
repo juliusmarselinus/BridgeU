@@ -18,6 +18,7 @@ import {
 } from "@/lib/avatar-frames";
 import { AvatarFramePickerModal } from "@/components/profile/AvatarFramePickerModal";
 import { FloatingAvatarOverlay } from "@/components/profile/FloatingAvatarOverlay";
+import { getBadgeRequirementText } from "@/lib/badge-evaluator";
 
 type StoredUser = {
   nama: string;
@@ -1480,6 +1481,7 @@ export default function ProfilePage() {
   const [pengajuan, setPengajuan] = useState<Pengajuan[]>([]);
   const [dbBadges, setDbBadges] = useState<DbBadge[]>([]);
   const [badgePage, setBadgePage] = useState(1);
+  const [selectedBadgeDetail, setSelectedBadgeDetail] = useState<any | null>(null);
 
   // tracks badges seen so far in THIS session only (in-memory, not persisted)
   const seenBadgeIdsRef = useRef<Set<string> | null>(null);
@@ -2269,10 +2271,11 @@ export default function ProfilePage() {
                                 ? currentPageBadges.map((b) => (
                                     <div
                                       key={b.id}
-                                      className={`group rounded-xl border p-4 transition-all duration-200 ${
+                                      onClick={() => setSelectedBadgeDetail(b)}
+                                      className={`group cursor-pointer rounded-xl border p-4 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
                                         b.isUnlocked
-                                          ? "border-sky/40 bg-sky/15 hover:border-sky/60"
-                                          : "border-border bg-card opacity-60"
+                                          ? "border-sky/40 bg-sky/15 hover:border-sky/60 shadow-sm"
+                                          : "border-border bg-card opacity-65 hover:opacity-100 hover:border-steel/40"
                                       }`}
                                     >
                                       <div className="flex items-center justify-between gap-2">
@@ -2291,7 +2294,7 @@ export default function ProfilePage() {
                                           </span>
                                         )}
                                       </div>
-                                      <p className="mt-2 text-[11px] text-steel leading-relaxed">{b.deskripsi}</p>
+                                      <p className="mt-2 text-[11px] text-steel line-clamp-2 leading-relaxed">{b.deskripsi}</p>
                                       <div className="mt-3 flex items-center justify-between">
                                         <span className="text-[9px] font-mono font-medium text-steel/70">{b.kategori}</span>
                                         {b.isUnlocked ? (
@@ -2368,6 +2371,91 @@ export default function ProfilePage() {
         userInisial={inisial}
         onSelectFrame={handleFrameChange}
       />
+
+      {/* Modal Pop-up Detail Badge Prestasi */}
+      <AnimatePresence>
+        {selectedBadgeDetail && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedBadgeDetail(null)}
+              className="absolute inset-0 bg-ink/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-sky/30 bg-card p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-border/60 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky/15 border border-sky/30 text-ocean">
+                    {selectedBadgeDetail.iconUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={selectedBadgeDetail.iconUrl} alt={selectedBadgeDetail.namaBadge} className="h-6 w-6 object-contain" />
+                    ) : (
+                      <IconTrophy className="h-5 w-5" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-ink tracking-tight">{selectedBadgeDetail.namaBadge || selectedBadgeDetail.nama}</h3>
+                    <span className="font-mono text-[10px] font-bold text-steel uppercase">{selectedBadgeDetail.kategori || "Badge Prestasi"}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBadgeDetail(null)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-clouds text-steel hover:bg-border transition"
+                >
+                  <IconX className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-4">
+                <div>
+                  <h4 className="text-xs font-extrabold text-steel uppercase tracking-wider">Deskripsi Badge</h4>
+                  <p className="mt-1 text-xs text-ink leading-relaxed">{selectedBadgeDetail.deskripsi}</p>
+                </div>
+
+                <div className="rounded-2xl bg-surface p-3.5 border border-border/60">
+                  <p className="font-mono text-[10px] font-bold text-ocean uppercase tracking-wider flex items-center gap-1.5">
+                    Cara Mencapai / Syarat Unlock:
+                  </p>
+                  <p className="font-mono text-xs text-ink leading-snug mt-1 font-medium">
+                    {getBadgeRequirementText(selectedBadgeDetail.kodeBadge || selectedBadgeDetail.kode_badge || "")}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs">
+                  <span className="font-mono text-steel">Status Klaim</span>
+                  {selectedBadgeDetail.isUnlocked ? (
+                    <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full text-[11px]">
+                      <IconCheck className="w-3.5 h-3.5" /> Terbuka (+{selectedBadgeDetail.xpBonus || 0} XP)
+                    </span>
+                  ) : (
+                    <span className="font-bold text-steel/80 bg-steel/10 px-2.5 py-1 rounded-full text-[11px]">
+                      Masih Terkunci
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBadgeDetail(null)}
+                  className="w-full rounded-xl bg-ink py-2.5 text-xs font-bold text-paper shadow-md transition hover:bg-ink/90"
+                >
+                  Tutup Detail
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

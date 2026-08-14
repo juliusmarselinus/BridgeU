@@ -212,12 +212,17 @@ export function AvatarFramePickerModal({
 
                         <h5 className="text-xs font-bold text-ink truncate w-full">{frame.name}</h5>
 
-                        {isLocked ? (
-                          <div className="mt-1.5 flex items-center justify-center gap-1 text-[11px] font-bold text-rose-500">
-                            <IconLock className="w-3 h-3" /> Syarat: Level {frame.requiredLevel} ({frame.tierName})
+                        <p className="mt-1 text-[10px] text-steel line-clamp-2 leading-relaxed">{frame.description}</p>
+
+                        <div className="mt-2 text-left rounded-xl bg-surface/80 p-2 border border-border/50">
+                          <p className="font-mono text-[9px] font-bold text-ocean uppercase tracking-wider">Cara Mencapai:</p>
+                          <p className="font-mono text-[10px] text-steel/90 leading-snug mt-0.5">{frame.howToAchieve}</p>
+                        </div>
+
+                        {isLocked && (
+                          <div className="mt-2 flex items-center justify-center gap-1 text-[10px] font-bold text-rose-500 bg-rose-50 border border-rose-200 rounded-lg py-1">
+                            <IconLock className="w-3 h-3" /> Butuh Level {frame.requiredLevel} ({frame.tierName})
                           </div>
-                        ) : (
-                          <p className="mt-1 text-[10px] text-steel line-clamp-1">{frame.description}</p>
                         )}
                       </div>
                     </button>
