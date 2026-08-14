@@ -669,8 +669,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 8000); // 8 Detik Timeout Limit
+
     async function fetchProfile() {
       setIsLoading(true);
+      setErrorMsg("");
       console.log("🔍 [DEBUG Public Profile] Fetching profile for rawProfileId:", rawProfileId);
       try {
         const { data: authData } = await supabase.auth.getSession();
@@ -678,7 +684,12 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         if (authData.session?.access_token) {
           headers.Authorization = `Bearer ${authData.session.access_token}`;
         }
-        const res = await fetch(`/api/profile/${rawProfileId}`, { headers });
+        const res = await fetch(`/api/profile/${rawProfileId}`, {
+          headers,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
         console.log("🔍 [DEBUG Public Profile] API response status:", res.status);
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -690,14 +701,25 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
           if (isMounted) setProfileData(data);
         }
       } catch (err: any) {
+        clearTimeout(timeoutId);
         console.error("🔥 [DEBUG Public Profile] Fetch exception:", err);
-        if (isMounted) setErrorMsg(err.message || "Gagal memuat profil");
+        if (isMounted) {
+          if (err.name === "AbortError") {
+            setErrorMsg("Koneksi Waktu Habis (Connection Timed Out). Gagal menghubungkan ke server.");
+          } else {
+            setErrorMsg(err.message || "Gagal memuat profil");
+          }
+        }
       } finally {
         if (isMounted) setIsLoading(false);
       }
     }
     fetchProfile();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
   }, [rawProfileId]);
 
   useEffect(() => {
@@ -741,6 +763,37 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
 
   if (isLoading) {
     return <MahasiswaSkeletonPage />;
+  }
+
+  if (errorMsg) {
+    return (
+      <main className="min-h-screen bg-clouds flex flex-col items-center justify-center p-6 text-center pt-24">
+        <div className="max-w-md w-full rounded-3xl border border-rose-200 bg-card p-8 shadow-xl flex flex-col items-center">
+          <div className="h-16 w-16 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 mb-4">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-extrabold text-ink">Gagal Memuat Profil</h2>
+          <p className="mt-2 text-xs font-mono text-steel leading-relaxed">{errorMsg}</p>
+          <div className="mt-6 flex gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="flex-1 rounded-xl bg-ink py-2.5 text-xs font-bold text-paper shadow-md transition hover:bg-ink/90"
+            >
+              Coba Lagi
+            </button>
+            <Link
+              href="/dashboard"
+              className="flex-1 rounded-xl border border-border bg-surface py-2.5 text-xs font-bold text-steel transition hover:text-ink text-center"
+            >
+              Ke Dashboard
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (
