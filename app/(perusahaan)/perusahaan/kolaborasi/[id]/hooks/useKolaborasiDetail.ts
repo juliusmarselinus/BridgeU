@@ -54,7 +54,9 @@ export function useKolaborasiDetail() {
   const [isSubmittingRevisi, setIsSubmittingRevisi] = useState<boolean>(false);
 
   // Delete Request Catatan
-  const [deleteCatatanPerusahaan, setDeleteCatatanPerusahaan] = useState<string>("");
+  const [deleteAlasan, setDeleteAlasan] = useState<string>("");
+  const [deleteKompensasi, setDeleteKompensasi] = useState<string>("");
+  
 
   const [statusVerifikasi, setStatusVerifikasi] = useState<string>("Menunggu Verifikasi");
   const [successModal, setSuccessModal] = useState<{
@@ -425,29 +427,69 @@ export function useKolaborasiDetail() {
     if (!confirm(confirmMsg)) return;
 
     const isSuccess = await pelamarService.updateStatusPelamar(pendaftaranId, newStatus, catatan);
-
-    if (isSuccess) {
-      setPelamarList((prev) =>
-        prev.map((p) =>
-          p.id === pendaftaranId
-            ? { ...p, status: newStatus, catatan_perusahaan: catatan || p.catatan_perusahaan }
-            : p
-        )
-      );
-      if (selectedPelamar && selectedPelamar.id === pendaftaranId) {
-        setSelectedPelamar((prev) =>
-          prev ? { ...prev, status: newStatus, catatan_perusahaan: catatan || prev.catatan_perusahaan } : null
-        );
-      }
-
-      setSuccessModal({
-        isOpen: true,
-        title: "Status Diperbarui",
-        message: `Status pelamar telah berhasil diubah menjadi: ${newStatus}.`,
-      });
-    } else {
+    if (!isSuccess) {
       alert("Gagal memperbarui status pendaftaran.");
+      return;
     }
+
+    // Update local state dulu
+    let updatedList = pelamarList.map((p) =>
+      p.id === pendaftaranId
+        ? { ...p, status: newStatus, catatan_perusahaan: catatan || p.catatan_perusahaan }
+        : p
+    );
+    setPelamarList(updatedList);
+
+    if (selectedPelamar && selectedPelamar.id === pendaftaranId) {
+      setSelectedPelamar((prev) =>
+        prev ? { ...prev, status: newStatus, catatan_perusahaan: catatan || prev.catatan_perusahaan } : null
+      );
+    }
+
+    // ===== AUTO-TOLAK SISA PELAMAR KALAU SLOT SUDAH PENUH =====
+    if (newStatus === "Diterima" && kolaborasi?.slot) {
+      const jumlahDiterima = updatedList.filter((p) => p.status === "Diterima").length;
+
+      if (jumlahDiterima >= kolaborasi.slot) {
+        const sisaMenunggu = updatedList.filter((p) => p.status === "Menunggu");
+
+        if (sisaMenunggu.length > 0) {
+          const idsToReject = sisaMenunggu.map((p) => p.id);
+
+          const { error: bulkError } = await supabase
+            .from("pendaftaran_kolaborasi")
+            .update({ status: "Ditolak", updated_at: new Date().toISOString() })
+            .in("id", idsToReject);
+
+          if (!bulkError) {
+            // Kirim notifikasi ke masing-masing pelamar yang otomatis ditolak
+            await Promise.all(
+              sisaMenunggu.map((p) =>
+                supabase.from("notifikasi").insert({
+                  recipient_user_id: p.mahasiswa_id,
+                  judul: "Pendaftaran Ditutup",
+                  pesan: `Slot untuk proyek "${kolaborasi.judul}" sudah penuh. Pendaftaran ditutup dan pengajuan kamu tidak dapat dilanjutkan.`,
+                  is_read: false,
+                })
+              )
+            );
+
+            updatedList = updatedList.map((p) =>
+              idsToReject.includes(p.id) ? { ...p, status: "Ditolak" as StatusLamaran } : p
+            );
+            setPelamarList(updatedList);
+          } else {
+            console.error("Gagal auto-tolak sisa pelamar:", bulkError.message);
+          }
+        }
+      }
+    }
+
+    setSuccessModal({
+      isOpen: true,
+      title: "Status Diperbarui",
+      message: `Status pelamar telah berhasil diubah menjadi: ${newStatus}.`,
+    });
   };
 
   const handleMintaRevisi = async (catatanRevisi?: string) => {
@@ -657,22 +699,28 @@ export function useKolaborasiDetail() {
     }
   };
 
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState<string>("");
+
   const handleRequestDeleteProyek = async () => {
     if (!id) return;
     setIsDeleting(true);
+    setDeleteErrorMsg("");
 
-    const isSuccess = await deleteRequestService.ajukan(id as string, deleteCatatanPerusahaan);
+    const result = await deleteRequestService.ajukan(id as string, deleteAlasan, deleteKompensasi, currentUserId);
     setIsDeleting(false);
-    setIsDeleteModalOpen(false);
 
-    if (isSuccess) {
+    if (result.success) {
+      setIsDeleteModalOpen(false);
       setSuccessModal({
         isOpen: true,
-        title: "Permintaan Terkirim",
-        message: "Permintaan penghapusan proyek dan notifikasi kompensasi telah dikirim ke semua pelamar aktif. Proyek akan terhapus otomatis setelah disetujui pelamar.",
+        title: result.langsungTerhapus ? "Proyek Dihapus" : "Permintaan Terkirim",
+        message: result.langsungTerhapus
+          ? "Belum ada mahasiswa yang diterima, proyek langsung dihapus."
+          : "Permintaan penghapusan dan penawaran kompensasi telah dikirim via chat ke mahasiswa yang diterima. Proyek terhapus otomatis setelah semua menyetujui.",
+        redirectOnClose: true,
       });
     } else {
-      alert("Gagal mengirim permintaan hapus proyek.");
+      setDeleteErrorMsg("Gagal mengirim permintaan hapus proyek. Coba lagi.");
     }
   };
 
@@ -917,11 +965,31 @@ export function useKolaborasiDetail() {
     selesai: pelamarList.filter((p) => p.status === "Selesai").length,
   };
 
-  const hasPelamarAktif = pelamarList.some((p) => p.status !== "Ditolak");
+  const hasPelamarAktif = pelamarList.some(
+    (p) => p.status === "Diterima" || p.status === "Minta Revisi" || p.status === "Selesai"
+  );
 
   const getKategoriDisplay = () => {
     return kolaborasi?.kategori_minat?.nama_kategori || "Umum";
   };
+
+  const statusSortPriority: Record<string, number> = {
+    Diterima: 0,
+    "Minta Revisi": 0,
+    Selesai: 0,
+    Menunggu: 1,
+    Ditolak: 2,
+  };
+
+  const sortedPelamarList = useMemo(() => {
+    return [...pelamarList].sort(
+      (a, b) => (statusSortPriority[a.status] ?? 3) - (statusSortPriority[b.status] ?? 3)
+    );
+  }, [pelamarList]);
+
+  const isSlotPenuh = kolaborasi?.slot
+    ? pelamarList.filter((p) => p.status === "Diterima").length >= kolaborasi.slot
+    : false;
 
   return {
     router,
@@ -934,7 +1002,9 @@ export function useKolaborasiDetail() {
     chatMessages, chatInput, setChatInput, isSendingChat, handleKirimChat, unreadCounts,
     evaluasiInput, setEvaluasiInput, isSubmittingEvaluasi, handleKirimEvaluasi,
     isSubmittingRevisi, handleMintaRevisi,
-    deleteCatatanPerusahaan, setDeleteCatatanPerusahaan,
+    deleteAlasan, setDeleteAlasan,
+    deleteKompensasi, setDeleteKompensasi,
+    deleteErrorMsg,
     statusVerifikasi, isVerified,
     successModal, setSuccessModal,
     kategoriList, kotaList, prodiList, skillList,
@@ -965,6 +1035,7 @@ export function useKolaborasiDetail() {
     searchedKotaOptions, searchedKategoriOptions, isKategoriSearchEmpty,
     searchedProdiOptions, isProdiSearchEmpty,
     searchedSkillOptions, isSkillSearchEmpty,
-    selectedKotaObj, stats, hasPelamarAktif, getKategoriDisplay
+    selectedKotaObj, stats, hasPelamarAktif, getKategoriDisplay,
+    sortedPelamarList, isSlotPenuh
   };
 }

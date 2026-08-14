@@ -29,8 +29,11 @@ export default function DetailKolaborasiPage() {
     handleKirimEvaluasi,
     isSubmittingRevisi,
     handleMintaRevisi,
-    deleteCatatanPerusahaan,
-    setDeleteCatatanPerusahaan,
+    deleteAlasan,
+    setDeleteAlasan,
+    deleteKompensasi,
+    setDeleteKompensasi,
+    deleteErrorMsg,
     statusVerifikasi,
     isVerified,
     successModal,
@@ -92,6 +95,9 @@ export default function DetailKolaborasiPage() {
     stats,
     hasPelamarAktif,
     getKategoriDisplay,
+    sortedPelamarList,
+    isSlotPenuh,
+
   } = useKolaborasiDetail();
 
   // Categorize pelamar
@@ -277,7 +283,7 @@ export default function DetailKolaborasiPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {pelamarList.map((pelamar) => (
+                {sortedPelamarList.map((pelamar) => (
                   <div
                     key={pelamar.id}
                     className="rounded-2xl border border-steel/15 bg-white p-5 shadow-sm space-y-4 flex flex-col"
@@ -890,12 +896,34 @@ export default function DetailKolaborasiPage() {
             {hasPelamarAktif ? (
               <div className="space-y-3 font-mono">
                 <p className="text-[11px] text-ink leading-relaxed">
-                  Ada <strong>{stats.total}</strong> pelamar terdaftar. Proyek tidak bisa langsung dihapus.
+                  Ada <strong>{pelamarAktif.length}</strong> mahasiswa yang sudah diterima di proyek ini. Proyek tidak bisa langsung dihapus tanpa persetujuan mereka.
                 </p>
                 <div>
                   <label className="block text-[10px] font-bold text-ink mb-1">Catatan / Penawaran Kompensasi:</label>
-                  <textarea rows={3} value={deleteCatatanPerusahaan} onChange={(e) => setDeleteCatatanPerusahaan(e.target.value)} placeholder="Alasan pembatalan & kompensasi untuk pelamar..." className="w-full rounded-xl border border-steel/20 p-2.5 text-xs outline-none focus:border-bridge-gold" />
+                  <textarea rows={3} value={deleteAlasan} onChange={(e) => setDeleteAlasan(e.target.value)} placeholder="Alasan pembatalan & kompensasi untuk pelamar..." className="w-full rounded-xl border border-steel/20 p-2.5 text-xs outline-none focus:border-bridge-gold" />
                 </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-ink mb-1">Kompensasi:</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-steel pointer-events-none">
+                      Rp
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={deleteKompensasi ? Number(deleteKompensasi).toLocaleString("id-ID") : ""}
+                      onChange={(e) => {
+                        const angkaSaja = e.target.value.replace(/[^0-9]/g, "");
+                        setDeleteKompensasi(angkaSaja);
+                      }}
+                      placeholder="500.000"
+                      className="w-full rounded-xl border border-steel/20 pl-9 pr-2.5 py-2.5 text-xs outline-none focus:border-bridge-gold"
+                    />
+                  </div>
+                </div>
+                {deleteErrorMsg && (
+                  <p className="text-[11px] text-red-600 font-bold">{deleteErrorMsg}</p>
+                )}
                 <div className="flex justify-end gap-2 pt-2">
                   <button onClick={() => setIsDeleteModalOpen(false)} className="rounded-full border border-steel/20 px-4 py-2 text-[11px] text-steel">Batal</button>
                   <button onClick={handleRequestDeleteProyek} disabled={isDeleting} className="rounded-full bg-red-600 px-4 py-2 text-[11px] font-bold text-white hover:bg-red-700 disabled:opacity-50">

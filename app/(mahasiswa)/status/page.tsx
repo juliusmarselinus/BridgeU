@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { notifyPengajuanDiterima, notifyPengajuanDitolak } from "@/lib/notifications";
 import { MahasiswaSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
-type StatusKey = "Menunggu" | "Diproses" | "Diterima" | "Evaluasi" | "Revisi" | "Ditolak" | "Selesai";
+type StatusKey = "Menunggu" | "Diproses" | "Diterima" | "Evaluasi" | "Revisi" | "Ditolak" | "Selesai" | "Dibatalkan";
 
 type StatusItem = {
   id: string;
@@ -19,6 +19,7 @@ type StatusItem = {
   tanggal_daftar: string;
   tanggal_raw: number;
   catatan_perusahaan?: string;
+  catatan_pembatalan?: string;
   url_hasil_kolaborasi?: string;
 };
 
@@ -47,6 +48,7 @@ const statusMeta: Record<
   Revisi: { label: "Perlu Revisi", stage: 2, tone: "text-orange-700", chipBg: "bg-orange-50", needsAction: true, rejected: false, group: "aksi" },
   Ditolak: { label: "Tidak Lolos", stage: 2, tone: "text-rose-700", chipBg: "bg-rose-50", needsAction: true, rejected: true, group: "aksi" },
   Selesai: { label: "Kolaborasi Selesai", stage: 3, tone: "text-emerald-700", chipBg: "bg-emerald-50", needsAction: false, rejected: false, group: "selesai" },
+  Dibatalkan: { label: "Proyek Dibatalkan", stage: 1, tone: "text-rose-700", chipBg: "bg-rose-50", needsAction: false, rejected: true, group: "aksi" },
 };
 
 const TABS = [
@@ -221,6 +223,22 @@ export default function StatusPage() {
             .order("tanggal_daftar", { ascending: false });
 
           if (dbData && dbData.length > 0) {
+            const kolaborasiDibatalkanIds = dbData
+              .filter((item: any) => item.status === "Dibatalkan")
+              .map((item: any) => item.kolaborasi_id);
+
+            let catatanPembatalanMap: Record<string, string> = {};
+            if (kolaborasiDibatalkanIds.length > 0) {
+              const { data: permintaanRows } = await supabase
+                .from("permintaan_hapus_kolaborasi")
+                .select("kolaborasi_id, catatan_perusahaan")
+                .in("kolaborasi_id", kolaborasiDibatalkanIds)
+                .eq("status", "Selesai");
+
+              (permintaanRows || []).forEach((row: any) => {
+                catatanPembatalanMap[row.kolaborasi_id] = row.catatan_perusahaan;
+              });
+            }
             const mapped: StatusItem[] = dbData.map((item: any) => {
               const riwayatList = item.riwayat_pengumpulan_kolaborasi || [];
               const latestSubmission =
@@ -243,6 +261,7 @@ export default function StatusPage() {
                   : "-",
                 tanggal_raw: rawDate ? rawDate.getTime() : 0,
                 catatan_perusahaan: item.catatan_perusahaan,
+                catatan_pembatalan: catatanPembatalanMap[item.kolaborasi_id],
                 url_hasil_kolaborasi: latestSubmission?.url_hasil || item.url_hasil_kolaborasi,
               };
             });
@@ -507,12 +526,26 @@ export default function StatusPage() {
                         <span>Tanggal daftar</span>
                         <span className="text-ink font-semibold">{item.tanggal_daftar}</span>
                       </div>
-                      {!meta.rejected && (
-                        <div className="flex justify-between text-steel/70">
-                          <span>Pengumpulan hasil</span>
-                          <span className={item.url_hasil_kolaborasi ? "text-emerald-700 font-semibold" : "text-amber-700 font-semibold"}>
-                            {item.url_hasil_kolaborasi ? "Sudah diunggah" : "Belum dikirim"}
-                          </span>
+                      {meta.rejected && item.status !== "Dibatalkan" && (
+                        <div className="mt-3 rounded-2xl bg-rose-50 border border-rose-100 px-3 py-2.5">
+                          <p className="text-[9px] font-mono uppercase text-rose-500 font-bold mb-0.5">
+                            Alasan dari perusahaan
+                          </p>
+                          <p className="text-[11px] text-rose-800 italic leading-snug">
+                            {item.catatan_perusahaan || "Perusahaan tidak menyertakan catatan spesifik."}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Dibatalkan — alasan & kompensasi dari perusahaan */}
+                      {item.status === "Dibatalkan" && (
+                        <div className="mt-3 rounded-2xl bg-rose-50 border border-rose-100 px-3 py-2.5">
+                          <p className="text-[9px] font-mono uppercase text-rose-500 font-bold mb-0.5">
+                            Proyek Dibatalkan Perusahaan
+                          </p>
+                          <p className="text-[11px] text-rose-800 leading-snug whitespace-pre-line">
+                            {item.catatan_pembatalan || "Perusahaan tidak menyertakan detail."}
+                          </p>
                         </div>
                       )}
                     </div>

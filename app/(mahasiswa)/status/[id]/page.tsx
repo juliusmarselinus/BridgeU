@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { chatService, ChatMessage } from "@/app/(perusahaan)/perusahaan/kolaborasi/baru/services/chatService";
+import { deleteRequestService } from "@/app/(perusahaan)/perusahaan/kolaborasi/baru/services/deleteRequestService";
 
 type StatusDetail = {
   id: string; // uuid pendaftaran_kolaborasi
@@ -14,7 +15,7 @@ type StatusDetail = {
   tipe: string;
   deskripsi: string;
   batasWaktu: string;
-  status: "Menunggu" | "Diproses" | "Diterima" | "Evaluasi" | "Revisi" | "Ditolak" | "Selesai";
+  status: "Menunggu" | "Diproses" | "Diterima" | "Evaluasi" | "Revisi" | "Ditolak" | "Selesai" | "Dibatalkan";
   tanggalDaftar: string;
   catatanPerusahaan?: string;
   urlPortofolioDokumen?: string;
@@ -90,6 +91,8 @@ function statusMeta(status: StatusDetail["status"]) {
       return { label: "Pelaksanaan Aktif", pill: "bg-blue-100 text-blue-800 border border-blue-300" };
     case "Ditolak":
       return { label: "Ditolak", pill: "bg-rose-100 text-rose-800 border border-rose-300" };
+    case "Dibatalkan":
+      return { label: "Proyek Dibatalkan", pill: "bg-rose-100 text-rose-800 border border-rose-300" };
     default:
       return { label: "Menunggu Review", pill: "bg-steel/15 text-steel border border-steel/30" };
   }
@@ -113,11 +116,14 @@ export default function StatusDetailPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isSendingChat, setIsSendingChat] = useState(false);
+  const [processingHapusId, setProcessingHapusId] = useState<string | null>(null);
+  const [hapusResponded, setHapusResponded] = useState<Record<string, "Disetujui" | "Ditolak">>({});
   const [currentUserId, setCurrentUserId] = useState<string>("");
   // ====== AKHIR CHAT STATE ======
 
   const [draftSaved, setDraftSaved] = useState(false);
   const [riwayatList, setRiwayatList] = useState<any[]>([]);
+  const [infoPembatalan, setInfoPembatalan] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -224,7 +230,19 @@ export default function StatusDetailPage() {
             if (latestSubmission?.url_hasil) setUrlHasil(latestSubmission.url_hasil);
             if (latestSubmission?.catatan_mahasiswa) setCatatanHasil(latestSubmission.catatan_mahasiswa);
             setRiwayatList(dbRiwayat);
-
+            if (mapped.status === "Dibatalkan") {
+              const { data: permintaan } = await supabase
+                .from("permintaan_hapus_kolaborasi")
+                .select("catatan_perusahaan")
+                .eq("kolaborasi_id", mapped.kolaborasi_id)
+                .eq("status", "Selesai")
+                .order("resolved_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (permintaan?.catatan_perusahaan) {
+                setInfoPembatalan(permintaan.catatan_perusahaan);
+              }
+            }
             setLoading(false);
             return;
           }
@@ -325,6 +343,7 @@ export default function StatusDetailPage() {
       senderId,
       "mahasiswa",
       pesan
+      
     );
 
     setIsSendingChat(false);
@@ -338,6 +357,34 @@ export default function StatusDetailPage() {
       alert("Gagal mengirim pesan. Coba lagi.");
     }
   };
+
+    const [hapusErrorId, setHapusErrorId] = useState<string | null>(null);
+
+    const handleSetujuHapus = async (persetujuanId: string) => {
+      setProcessingHapusId(persetujuanId);
+      setHapusErrorId(null);
+      const ok = await deleteRequestService.setujui(persetujuanId);
+      setProcessingHapusId(null);
+      if (ok !== false) {
+        setHapusResponded((prev) => ({ ...prev, [persetujuanId]: "Disetujui" }));
+      } else {
+        setHapusErrorId(persetujuanId);
+      }
+    };
+
+    const handleTolakHapus = async (persetujuanId: string) => {
+      setProcessingHapusId(persetujuanId);
+      setHapusErrorId(null);
+      const ok = await deleteRequestService.tolak(persetujuanId);
+      setProcessingHapusId(null);
+      if (ok) {
+        setHapusResponded((prev) => ({ ...prev, [persetujuanId]: "Ditolak" }));
+      } else {
+        setHapusErrorId(persetujuanId);
+      }
+    };
+
+    
   // ====== AKHIR REALTIME CHAT ======
 
   const handleSubmitHasil = async (e: React.FormEvent) => {
@@ -469,6 +516,17 @@ export default function StatusDetailPage() {
   const isRejected = detail.status === "Ditolak";
   const isPending = detail.status === "Menunggu";
   const meta = statusMeta(detail.status);
+  function parseHapusProyekMarker(pesan: string) {
+  const match = pesan.match(/^__HAPUS_PROYEK__(\{.*?\})__/);
+  if (!match) return null;
+  try {
+    const data = JSON.parse(match[1]);
+    const teksBersih = pesan.slice(match[0].length).trim();
+    return { persetujuan_id: data.persetujuan_id as string, permintaan_id: data.permintaan_id as string, teksBersih };
+  } catch {
+    return null;
+  }
+}
 
   const timelineSteps = [
     {
@@ -659,7 +717,18 @@ export default function StatusDetailPage() {
                         <p className="text-xs text-ink font-medium leading-relaxed italic">
                           &ldquo;{detail.catatanPerusahaan}&rdquo;
                         </p>
+                        {infoPembatalan && (
+                        <div className="rounded-2xl border border-rose-300 bg-rose-50 p-5 space-y-2">
+                          <span className="font-mono text-[10px] uppercase font-bold text-rose-700 tracking-wider">
+                            Proyek Dibatalkan oleh Perusahaan
+                          </span>
+                          <p className="text-xs text-rose-900 font-medium leading-relaxed">
+                            {infoPembatalan}
+                          </p>
+                        </div>
+                      )}
                       </div>
+                      
                     )}
                   </div>
                 )}
@@ -907,14 +976,57 @@ export default function StatusDetailPage() {
                 chatMessages.map((msg) => {
                   const isMe = msg.tipe_pengirim === "mahasiswa";
                   const time = new Date(msg.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+                  const hapusInfo = parseHapusProyekMarker(msg.pesan);
+                  const responded = hapusInfo ? hapusResponded[hapusInfo.persetujuan_id] : undefined;
+
                   return (
                     <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
                         isMe
                           ? "bg-ink text-paper rounded-br-sm"
+                          : hapusInfo
+                          ? "bg-rose-50 text-ink border border-rose-200 rounded-bl-sm"
                           : "bg-white text-ink border border-steel/15 rounded-bl-sm"
                       }`}>
-                        <p>{msg.pesan}</p>
+                        {hapusInfo && (
+                          <p className="font-mono text-[9px] uppercase font-bold text-rose-600 mb-1.5 tracking-wider">
+                            Permintaan Pembatalan Proyek
+                          </p>
+                        )}
+                        <p className="whitespace-pre-line">{hapusInfo ? hapusInfo.teksBersih : msg.pesan}</p>
+
+                        {hapusInfo && !responded && (
+                            <div className="mt-3 space-y-2">
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetujuHapus(hapusInfo.persetujuan_id)}
+                                  disabled={processingHapusId === hapusInfo.persetujuan_id}
+                                  className="flex-1 rounded-full bg-emerald-600 text-white px-3 py-1.5 font-mono text-[10px] font-bold hover:bg-emerald-700 transition disabled:opacity-50"
+                                >
+                                  {processingHapusId === hapusInfo.persetujuan_id ? "..." : "Setuju"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTolakHapus(hapusInfo.persetujuan_id)}
+                                  disabled={processingHapusId === hapusInfo.persetujuan_id}
+                                  className="flex-1 rounded-full border border-steel/30 text-ink px-3 py-1.5 font-mono text-[10px] font-bold hover:bg-steel/10 transition disabled:opacity-50"
+                                >
+                                  Tidak Setuju
+                                </button>
+                              </div>
+                              {hapusErrorId === hapusInfo.persetujuan_id && (
+                                <p className="font-mono text-[10px] text-red-600 font-bold">Gagal mengirim respons. Coba lagi.</p>
+                              )}
+                            </div>
+                          )}
+
+                        {hapusInfo && responded && (
+                          <p className={`mt-2.5 font-mono text-[10px] font-bold ${responded === "Disetujui" ? "text-emerald-700" : "text-rose-700"}`}>
+                            {responded === "Disetujui" ? "✓ Kamu sudah menyetujui" : "✕ Kamu menolak permintaan ini"}
+                          </p>
+                        )}
+
                         <p className={`font-mono text-[9px] mt-1 ${isMe ? "text-paper/60" : "text-steel/60"}`}>
                           {time}
                         </p>
@@ -922,7 +1034,7 @@ export default function StatusDetailPage() {
                     </div>
                   );
                 })
-              )}
+              )}  
             </div>
 
             {/* Input */}
