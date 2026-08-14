@@ -45,6 +45,8 @@ export function useKolaborasiDetail() {
   const [chatInput, setChatInput] = useState<string>("");
   const [isSendingChat, setIsSendingChat] = useState<boolean>(false);
   const chatChannelRef = useRef<any>(null);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const globalChatChannelRef = useRef<any>(null);
 
   // Evaluasi & Revisi State
   const [evaluasiInput, setEvaluasiInput] = useState<string>("");
@@ -146,6 +148,11 @@ export function useKolaborasiDetail() {
       if (isMounted) {
         setChatMessages(msgs);
       }
+      // Tandai pesan mahasiswa ini sudah dibaca karena workspace-nya sedang dibuka
+      await chatService.markAsRead(id as string, selectedPelamar!.mahasiswa_id, "perusahaan");
+      if (isMounted) {
+        setUnreadCounts((prev) => ({ ...prev, [selectedPelamar!.mahasiswa_id]: 0 }));
+      }
     }
 
     loadChat();
@@ -159,6 +166,10 @@ export function useKolaborasiDetail() {
           if (prev.some((m) => m.id === pesanBaru.id)) return prev;
           return [...prev, pesanBaru];
         });
+        // Karena workspace mahasiswa ini sedang terbuka, langsung mark as read juga
+        if (pesanBaru.tipe_pengirim === "mahasiswa") {
+          chatService.markAsRead(id as string, selectedPelamar.mahasiswa_id, "perusahaan");
+        }
       }
     );
     chatChannelRef.current = channel;
@@ -170,6 +181,47 @@ export function useKolaborasiDetail() {
       }
     };
   }, [id, selectedPelamar?.mahasiswa_id]);
+
+  // Realtime subscription GLOBAL untuk semua mahasiswa di kolaborasi ini
+  // (update badge unread di semua kartu, bukan cuma yang lagi dibuka)
+  useEffect(() => {
+    if (!id) return;
+
+    let isMounted = true;
+
+    async function loadUnreadCounts() {
+      const counts = await chatService.fetchUnreadCounts(id as string, "perusahaan");
+      if (isMounted) setUnreadCounts(counts);
+    }
+
+    loadUnreadCounts();
+
+    const channel = chatService.subscribeAllForKolaborasi
+      ? chatService.subscribeAllForKolaborasi(id as string, (pesanBaru: ChatMessage) => {
+          if (pesanBaru.tipe_pengirim !== "mahasiswa") return;
+
+          setSelectedPelamar((currentSelected) => {
+            const isCurrentlyOpen = currentSelected?.mahasiswa_id === pesanBaru.mahasiswa_id;
+            if (!isCurrentlyOpen) {
+              setUnreadCounts((prev) => ({
+                ...prev,
+                [pesanBaru.mahasiswa_id]: (prev[pesanBaru.mahasiswa_id] || 0) + 1,
+              }));
+            }
+            return currentSelected;
+          });
+        })
+      : null;
+
+    globalChatChannelRef.current = channel;
+
+    return () => {
+      isMounted = false;
+      if (globalChatChannelRef.current) {
+        chatService.unsubscribe(globalChatChannelRef.current);
+      }
+    };
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -879,7 +931,7 @@ export function useKolaborasiDetail() {
     kolaborasi, setKolaborasi,
     pelamarList, setPelamarList,
     selectedPelamar, setSelectedPelamar,
-    chatMessages, chatInput, setChatInput, isSendingChat, handleKirimChat,
+    chatMessages, chatInput, setChatInput, isSendingChat, handleKirimChat, unreadCounts,
     evaluasiInput, setEvaluasiInput, isSubmittingEvaluasi, handleKirimEvaluasi,
     isSubmittingRevisi, handleMintaRevisi,
     deleteCatatanPerusahaan, setDeleteCatatanPerusahaan,

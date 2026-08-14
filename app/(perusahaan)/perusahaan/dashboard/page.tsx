@@ -92,7 +92,7 @@ export default function CompanyDashboardPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 pb-16">
       {/* Header Banner */}
-      <div className={`relative overflow-hidden rounded-3xl bg-white p-8 sm:p-10 text-ink ${NEO_CARD}`}>
+      <div className={`relative overflow-hidden rounded-3xl bg-white p-15 sm:p-17 text-ink ${NEO_CARD}`}>
         <div className="absolute -right-12 -top-12 h-64 w-64 rounded-full bg-[#97B8D8]/20 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">

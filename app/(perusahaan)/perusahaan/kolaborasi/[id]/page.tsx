@@ -117,7 +117,7 @@ export default function DetailKolaborasiPage() {
 
   if (statusVerifikasi !== "Terverifikasi") {
     return (
-      <main className="mx-auto max-w-2xl px-4 pt-16 pb-16 text-center font-sans">
+      <main className="mx-auto max-w-2xl px-4 pt-28 pb-16 text-center font-sans">
         <div className="rounded-2xl border border-dashed border-red-200 bg-red-50/40 p-10 shadow-sm">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
             <svg className="h-7 w-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -143,7 +143,7 @@ export default function DetailKolaborasiPage() {
 
   if (!kolaborasi) {
     return (
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 pt-16 text-center">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 pt-28 text-center">
         <h2 className="font-display text-2xl font-bold text-ink">Proyek tidak ditemukan</h2>
         <p className="mt-2 text-xs text-steel">Proyek mungkin sudah dihapus atau tautan tidak valid.</p>
         <Link
@@ -157,7 +157,7 @@ export default function DetailKolaborasiPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 sm:px-6 pt-6 pb-16 font-sans">
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 pt-28 pb-16 font-sans">
       {/* Header */}
       <div className="border-b border-steel/15 pb-5">
         <div className="flex items-center gap-2 font-mono text-xs text-steel mb-2">

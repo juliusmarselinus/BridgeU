@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCompanyDashboard } from "../dashboard/hooks/useCompanyDashboard";
 import { KolaborasiHeader } from "./components/KolaborasiHeader";
 import { KolaborasiItemCard } from "./components/KolaborasiItemCard";
 import { KolaborasiEmptyState } from "./components/KolaborasiEmptyState";
+import { chatService } from "./baru/services/chatService";
 
 export default function KolaborasiPage() {
   const router = useRouter();
@@ -19,6 +21,55 @@ export default function KolaborasiPage() {
     handleDeleteKolaborasi,
     handleExportCSV,
   } = useCompanyDashboard();
+
+  const [unreadByKolaborasi, setUnreadByKolaborasi] = useState<Record<string, number>>({});
+
+  // Initial fetch sekali pas mount / company berubah
+  useEffect(() => {
+    if (!company?.user_id) return;
+
+    let isMounted = true;
+
+    async function loadUnread() {
+      const counts = await chatService.fetchUnreadCountsPerKolaborasi(company!.user_id);
+      if (isMounted) setUnreadByKolaborasi(counts);
+    }
+
+    loadUnread();
+
+    // Refresh ulang count asli pas tab/halaman ini kebuka lagi
+    // (misal user abis buka detail kolaborasi, baca chat, terus balik ke list ini)
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        loadUnread();
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", loadUnread);
+
+    return () => {
+      isMounted = false;
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", loadUnread);
+    };
+  }, [company?.user_id]);
+
+  // Realtime subscription, gantiin polling. Pas ada pesan baru masuk, refetch count asli
+  // (bukan increment manual) biar selalu sinkron sama status is_read di database.
+  useEffect(() => {
+    if (!company?.user_id || kolaborasiList.length === 0) return;
+
+    const ids = kolaborasiList.map((k) => k.id);
+
+    const channel = chatService.subscribeAllUnreadForPerusahaan(ids, async () => {
+      const counts = await chatService.fetchUnreadCountsPerKolaborasi(company!.user_id);
+      setUnreadByKolaborasi(counts);
+    });
+
+    return () => {
+      chatService.unsubscribe(channel);
+    };
+  }, [company?.user_id, kolaborasiList]);
 
   if (isLoading) {
     return (
@@ -45,7 +96,7 @@ export default function KolaborasiPage() {
           <div className="mt-6">
             <Link
               href="/perusahaan/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#97B8D8] px-6 py-2.5 font-mono text-xs font-bold text-[#12284B] hover:bg-[#ADC9E2] transition shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-full bg-ink px-6 py-2.5 font-mono text-xs font-bold text-paper hover:bg-steel transition shadow-sm"
             >
               Kembali ke Dashboard
             </Link>
@@ -59,14 +110,21 @@ export default function KolaborasiPage() {
     router.push("/perusahaan/kolaborasi/baru");
   };
 
+  const counts = {
+    menunggu: kolaborasiList.filter((k) => k.status_moderasi === "Menunggu").length,
+    disetujui: kolaborasiList.filter((k) => k.status_moderasi === "Disetujui").length,
+    ditolak: kolaborasiList.filter((k) => k.status_moderasi === "Ditolak").length,
+  };
+
   return (
-    <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 pb-16">
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 pt-28 pb-16">
       <KolaborasiHeader
         selectedTab={selectedTab}
         onSelectTab={setSelectedTab}
         onOpenModal={handleOpenCreatePage}
         onExportCSV={handleExportCSV}
         totalCount={kolaborasiList.length}
+        counts={counts}
       />
 
       {filteredKolaborasi.length === 0 ? (
@@ -75,13 +133,19 @@ export default function KolaborasiPage() {
           onOpenModal={handleOpenCreatePage}
         />
       ) : (
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredKolaborasi.map((item) => (
-            <KolaborasiItemCard
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filteredKolaborasi.map((item, index) => (
+            <div
               key={item.id}
-              item={item}
-              onDelete={handleDeleteKolaborasi}
-            />
+              className="animate-card-in"
+              style={{ animationDelay: `${Math.min(index * 60, 400)}ms` }}
+            >
+              <KolaborasiItemCard
+                item={item}
+                onDelete={handleDeleteKolaborasi}
+                unreadCount={unreadByKolaborasi[item.id] || 0}
+              />
+            </div>
           ))}
         </div>
       )}
