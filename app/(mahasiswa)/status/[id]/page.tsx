@@ -103,6 +103,18 @@ function statusMeta(status: StatusDetail["status"]) {
       return { label: "Menunggu Review", pill: "bg-steel/15 text-steel border border-steel/30" };
   }
 }
+function parseHapusProyekMarker(pesan: string) {
+  const match = pesan.match(/^__HAPUS_PROYEK__(\{.*?\})__/);
+  if (!match) return null;
+  try {
+    const data = JSON.parse(match[1]);
+    const teksBersih = pesan.slice(match[0].length).trim();
+    return { persetujuan_id: data.persetujuan_id as string, permintaan_id: data.permintaan_id as string, teksBersih };
+  } catch {
+    return null;
+  }
+}
+
 
 export default function StatusDetailPage() {
   const { id } = useParams();
@@ -305,6 +317,30 @@ export default function StatusDetailPage() {
   }, [id]);
 
   // ====== REALTIME CHAT: fetch histori + subscribe pesan baru ======
+    async function syncHapusResponses(msgs: ChatMessage[]) {
+    const ids: string[] = [];
+    msgs.forEach((m) => {
+      const info = parseHapusProyekMarker(m.pesan);
+      if (info) ids.push(info.persetujuan_id);
+    });
+    if (ids.length === 0) return;
+
+    const { data } = await supabase
+      .from("persetujuan_hapus")
+      .select("id, status")
+      .in("id", ids);
+
+    if (data) {
+      const map: Record<string, "Disetujui" | "Ditolak"> = {};
+      data.forEach((row: any) => {
+        if (row.status === "Disetujui" || row.status === "Ditolak") {
+          map[row.id] = row.status;
+        }
+      });
+      setHapusResponded((prev) => ({ ...prev, ...map }));
+    }
+  }
+
   useEffect(() => {
     if (!detail?.kolaborasi_id || !currentUserId) {
       setChatMessages([]);
@@ -315,9 +351,11 @@ export default function StatusDetailPage() {
 
     async function loadChat() {
       const msgs = await chatService.fetchPesan(detail!.kolaborasi_id, currentUserId);
-      if (isMounted) setChatMessages(msgs);
+      if (isMounted) {
+        setChatMessages(msgs);
+        syncHapusResponses(msgs);
+      }
     }
-
     loadChat();
 
     const channel = chatService.subscribe(
@@ -388,28 +426,60 @@ export default function StatusDetailPage() {
     const [hapusErrorId, setHapusErrorId] = useState<string | null>(null);
 
     const handleSetujuHapus = async (persetujuanId: string) => {
-      setProcessingHapusId(persetujuanId);
-      setHapusErrorId(null);
-      const ok = await deleteRequestService.setujui(persetujuanId);
-      setProcessingHapusId(null);
-      if (ok !== false) {
-        setHapusResponded((prev) => ({ ...prev, [persetujuanId]: "Disetujui" }));
-      } else {
-        setHapusErrorId(persetujuanId);
-      }
-    };
+    setProcessingHapusId(persetujuanId);
+    setHapusErrorId(null);
+    const ok = await deleteRequestService.setujui(persetujuanId);
+    setProcessingHapusId(null);
+    if (ok !== false) {
+      setHapusResponded((prev) => ({ ...prev, [persetujuanId]: "Disetujui" }));
 
-    const handleTolakHapus = async (persetujuanId: string) => {
-      setProcessingHapusId(persetujuanId);
-      setHapusErrorId(null);
-      const ok = await deleteRequestService.tolak(persetujuanId);
-      setProcessingHapusId(null);
-      if (ok) {
-        setHapusResponded((prev) => ({ ...prev, [persetujuanId]: "Ditolak" }));
-      } else {
-        setHapusErrorId(persetujuanId);
+      if (detail?.kolaborasi_id && currentUserId) {
+        const konfirmasiMsg = await chatService.kirim(
+          detail.kolaborasi_id,
+          currentUserId,
+          currentUserId,
+          "mahasiswa",
+          "✅ Saya menyetujui pembatalan proyek ini."
+        );
+        if (konfirmasiMsg) {
+          setChatMessages((prev) => {
+            if (prev.some((m) => m.id === konfirmasiMsg.id)) return prev;
+            return [...prev, konfirmasiMsg];
+          });
+        }
       }
-    };
+    } else {
+      setHapusErrorId(persetujuanId);
+    }
+  };
+
+  const handleTolakHapus = async (persetujuanId: string) => {
+    setProcessingHapusId(persetujuanId);
+    setHapusErrorId(null);
+    const ok = await deleteRequestService.tolak(persetujuanId);
+    setProcessingHapusId(null);
+    if (ok) {
+      setHapusResponded((prev) => ({ ...prev, [persetujuanId]: "Ditolak" }));
+
+      if (detail?.kolaborasi_id && currentUserId) {
+        const konfirmasiMsg = await chatService.kirim(
+          detail.kolaborasi_id,
+          currentUserId,
+          currentUserId,
+          "mahasiswa",
+          "❌ Saya tidak menyetujui pembatalan proyek ini."
+        );
+        if (konfirmasiMsg) {
+          setChatMessages((prev) => {
+            if (prev.some((m) => m.id === konfirmasiMsg.id)) return prev;
+            return [...prev, konfirmasiMsg];
+          });
+        }
+      }
+    } else {
+      setHapusErrorId(persetujuanId);
+    }
+  };
 
     
   // ====== AKHIR REALTIME CHAT ======
@@ -543,18 +613,6 @@ export default function StatusDetailPage() {
   const isRejected = detail.status === "Ditolak";
   const isPending = detail.status === "Menunggu";
   const meta = statusMeta(detail.status);
-  function parseHapusProyekMarker(pesan: string) {
-  const match = pesan.match(/^__HAPUS_PROYEK__(\{.*?\})__/);
-  if (!match) return null;
-  try {
-    const data = JSON.parse(match[1]);
-    const teksBersih = pesan.slice(match[0].length).trim();
-    return { persetujuan_id: data.persetujuan_id as string, permintaan_id: data.permintaan_id as string, teksBersih };
-  } catch {
-    return null;
-  }
-}
-
   const timelineSteps = [
     {
       title: "Pendaftaran Berhasil",

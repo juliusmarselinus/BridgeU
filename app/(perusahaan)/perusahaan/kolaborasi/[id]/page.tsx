@@ -322,18 +322,48 @@ export default function DetailKolaborasiPage() {
 
                     {/* Self Description */}
                     {pelamar.ringkasan_self && (
-                      <p className="font-sans text-xs text-steel bg-steel/5 rounded-xl p-3.5 leading-relaxed border border-steel/10 flex-1">
+                      <p className="font-sans text-xs text-steel bg-steel/5 rounded-xl p-3.5 leading-relaxed border border-steel/10">
                         {pelamar.ringkasan_self}
                       </p>
                     )}
 
+                    {/* Data Form Pengajuan */}
+                    {(pelamar.tujuan_mengajukan || pelamar.ketersediaan || pelamar.tanggal_mulai_diinginkan) && (
+                      <div className="space-y-2 flex-1">
+                        {pelamar.tujuan_mengajukan && (
+                          <div>
+                            <p className="font-mono text-[9px] font-bold text-steel/70 uppercase mb-1">Tujuan Mengajukan</p>
+                            <p className="font-sans text-xs text-ink bg-steel/5 rounded-xl p-3 leading-relaxed border border-steel/10">
+                              {pelamar.tujuan_mengajukan}
+                            </p>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-2">
+                          {pelamar.ketersediaan && (
+                            <div className="bg-steel/5 rounded-xl p-2.5 border border-steel/10">
+                              <p className="font-mono text-[9px] font-bold text-steel/70 uppercase mb-0.5">Ketersediaan</p>
+                              <p className="font-sans text-xs text-ink font-semibold">{pelamar.ketersediaan}</p>
+                            </div>
+                          )}
+                          {pelamar.tanggal_mulai_diinginkan && (
+                            <div className="bg-steel/5 rounded-xl p-2.5 border border-steel/10">
+                              <p className="font-mono text-[9px] font-bold text-steel/70 uppercase mb-0.5">Tanggal Mulai</p>
+                              <p className="font-sans text-xs text-ink font-semibold">
+                                {new Date(pelamar.tanggal_mulai_diinginkan).toLocaleDateString("id-ID", { dateStyle: "medium" })}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Portofolio */}
-                    {pelamar.url_portofolio_dokumen && (
-                      <a
-                        href={pelamar.url_portofolio_dokumen}
+                    {pelamar.url_portofolio_dokumen?.trim() && (
+  
+                      <a href={pelamar.url_portofolio_dokumen}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between font-mono text-xs text-bridge-gold font-bold hover:underline bg-amber-50/40 p-3 rounded-xl border border-amber-100"
+                        className="flex items-center justify-between font-mono text-xs text-amber-800 font-bold hover:underline bg-amber-100 p-3 rounded-xl border border-amber-300 hover:bg-amber-200 transition"
                       >
                         <span>Lihat Dokumen Portofolio</span>
                         <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -350,12 +380,12 @@ export default function DetailKolaborasiPage() {
 
                       {pelamar.status === "Menunggu" ? (
                         <div className="flex items-center gap-2 font-mono text-xs">
-                          <button
-                            onClick={() => setDetailPelamar(pelamar)}
+                          <Link
+                            href={`/profile/${pelamar.mahasiswa_id}`}
                             className="rounded-full border border-steel/20 bg-white text-ink px-4 py-1.5 font-semibold hover:bg-steel/5 transition"
                           >
-                            Lihat Detail
-                          </button>
+                            Lihat Profil
+                          </Link>
                           <button
                             onClick={() => handleUpdateStatus(pelamar.id, "Ditolak")}
                             className="rounded-full border border-red-200 bg-red-50 text-red-700 px-4 py-1.5 font-semibold hover:bg-red-100 transition"
@@ -370,15 +400,23 @@ export default function DetailKolaborasiPage() {
                           </button>
                         </div>
                       ) : pelamar.status === "Diterima" || pelamar.status === "Minta Revisi" || pelamar.status === "Selesai" ? (
-                        <button
-                          onClick={() => {
-                            setSelectedPelamar(pelamar);
-                            setActiveTab("workspace" as any);
-                          }}
-                          className="rounded-full bg-ink text-white px-4 py-1.5 font-mono text-xs font-semibold hover:bg-steel transition"
-                        >
-                          Buka Workspace
-                        </button>
+                        <div className="flex items-center gap-2 font-mono text-xs">
+                          <Link
+                            href={`/profile/${pelamar.mahasiswa_id}`}
+                            className="rounded-full border border-steel/20 bg-white text-ink px-4 py-1.5 font-semibold hover:bg-steel/5 transition"
+                          >
+                            Lihat Profil
+                          </Link>
+                          <button
+                            onClick={() => {
+                              setSelectedPelamar(pelamar);
+                              setActiveTab("workspace" as any);
+                            }}
+                            className="rounded-full bg-ink text-white px-4 py-1.5 font-mono text-xs font-semibold hover:bg-steel transition"
+                          >
+                            Buka Workspace
+                          </button>
+                        </div>
                       ) : null}
                     </div>
                   </div>
@@ -398,21 +436,6 @@ export default function DetailKolaborasiPage() {
                   Mahasiswa yang sudah diterima. Chat 1-on-1, pantau progres, dan berikan evaluasi.
                 </p>
               </div>
-              <button
-                onClick={() => setActiveTab("pelamar")}
-                className="inline-flex items-center gap-1.5 font-mono text-xs text-steel hover:text-ink transition border border-steel/20 rounded-full px-4 py-2 bg-white hover:bg-steel/5 shrink-0"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                </svg>
-                Review Pendaftaran
-                {pelamarMenunggu.length > 0 && (
-                  <span className="inline-flex items-center justify-center h-4 min-w-4 rounded-full bg-amber-500 text-white text-[9px] font-bold px-1">
-                    {pelamarMenunggu.length}
-                  </span>
-                )}
-              </button>
             </div>
 
             {/* Pilihan Pelamar Aktif */}
@@ -487,16 +510,24 @@ export default function DetailKolaborasiPage() {
                         ) : (
                           chatMessages.map((msg) => {
                             const isMe = msg.tipe_pengirim === "perusahaan";
+                            const hapusInfo = parseHapusProyekMarker(msg.pesan);
                             return (
                               <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                                 <div
                                   className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-sm ${
                                     isMe
                                       ? "bg-ink text-paper rounded-br-none"
+                                      : hapusInfo
+                                      ? "bg-rose-50 text-ink border border-rose-200 rounded-bl-none"
                                       : "bg-white text-ink border border-steel/15 rounded-bl-none"
                                   }`}
                                 >
-                                  {msg.pesan}
+                                  {hapusInfo && (
+                                    <p className={`font-mono text-[9px] uppercase font-bold mb-1.5 tracking-wider ${isMe ? "text-paper/80" : "text-rose-600"}`}>
+                                      Permintaan Pembatalan Proyek
+                                    </p>
+                                  )}
+                                  <p className="whitespace-pre-line">{hapusInfo ? hapusInfo.teksBersih : msg.pesan}</p>
                                 </div>
                                 <span className="font-mono text-[9px] text-steel/50 mt-1 px-1">
                                   {new Date(msg.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
@@ -547,12 +578,21 @@ export default function DetailKolaborasiPage() {
                             </p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleUpdateStatus(selectedPelamar.id, "Selesai")}
-                          className="rounded-full border border-blue-200 bg-blue-50 text-blue-700 px-4 py-1.5 font-mono text-xs font-semibold hover:bg-blue-100 transition shrink-0"
-                        >
-                          Tandai Selesai
-                        </button>
+                        {selectedPelamar.status === "Selesai" ? (
+                          <span className="rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 px-4 py-1.5 font-mono text-xs font-semibold shrink-0 inline-flex items-center gap-1.5">
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Selesai
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleUpdateStatus(selectedPelamar.id, "Selesai")}
+                            className="rounded-full border border-blue-200 bg-blue-50 text-blue-700 px-4 py-1.5 font-mono text-xs font-semibold hover:bg-blue-100 transition shrink-0"
+                          >
+                            Tandai Selesai
+                          </button>
+                        )}
                       </div>
 
                       {/* Progres & Hasil */}
@@ -1029,114 +1069,114 @@ export default function DetailKolaborasiPage() {
 
       {/* Modals: Kota, Kategori, Prodi, Skill — compact versions */}
       {/* ==================== MODAL: DETAIL PELAMAR ==================== */}
-{detailPelamar && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-    <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-steel/20 space-y-4 font-sans max-h-[85vh] overflow-y-auto">
-      <div className="flex items-center justify-between border-b border-steel/10 pb-3">
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 shrink-0 rounded-full bg-bridge-gold/15 border border-bridge-gold/30 flex items-center justify-center font-display text-base font-bold text-ink overflow-hidden">
-            {detailPelamar.foto_url ? (
-              <img src={detailPelamar.foto_url} alt={detailPelamar.nama_lengkap} className="h-full w-full object-cover" />
-            ) : (
-              detailPelamar.nama_lengkap.charAt(0).toUpperCase()
-            )}
-          </div>
-          <div>
-            <h3 className="font-display text-base font-bold text-ink">{detailPelamar.nama_lengkap}</h3>
-            <p className="font-mono text-[11px] text-steel">
-              {detailPelamar.universitas} &bull; {detailPelamar.program_studi} &bull; Semester {detailPelamar.semester}
-            </p>
+      {detailPelamar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-steel/20 space-y-4 font-sans max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-steel/10 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 shrink-0 rounded-full bg-bridge-gold/15 border border-bridge-gold/30 flex items-center justify-center font-display text-base font-bold text-ink overflow-hidden">
+                  {detailPelamar.foto_url ? (
+                    <img src={detailPelamar.foto_url} alt={detailPelamar.nama_lengkap} className="h-full w-full object-cover" />
+                  ) : (
+                    detailPelamar.nama_lengkap.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-bold text-ink">{detailPelamar.nama_lengkap}</h3>
+                  <p className="font-mono text-[11px] text-steel">
+                    {detailPelamar.universitas} &bull; {detailPelamar.program_studi} &bull; Semester {detailPelamar.semester}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setDetailPelamar(null)} className="text-steel hover:text-ink">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-3 font-mono text-xs">
+              {detailPelamar.ringkasan_self && (
+                <div>
+                  <p className="text-[10px] font-bold text-steel uppercase mb-1">Ringkasan Diri</p>
+                  <p className="font-sans text-xs text-ink bg-steel/5 rounded-xl p-3 leading-relaxed border border-steel/10">
+                    {detailPelamar.ringkasan_self}
+                  </p>
+                </div>
+              )}
+
+              {detailPelamar.tujuan_mengajukan && (
+                <div>
+                  <p className="text-[10px] font-bold text-steel uppercase mb-1">Tujuan Mengajukan</p>
+                  <p className="font-sans text-xs text-ink bg-steel/5 rounded-xl p-3 leading-relaxed border border-steel/10">
+                    {detailPelamar.tujuan_mengajukan}
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                {detailPelamar.ketersediaan && (
+                  <div>
+                    <p className="text-[10px] font-bold text-steel uppercase mb-1">Ketersediaan</p>
+                    <p className="text-ink">{detailPelamar.ketersediaan}</p>
+                  </div>
+                )}
+                {detailPelamar.tanggal_mulai_diinginkan && (
+                  <div>
+                    <p className="text-[10px] font-bold text-steel uppercase mb-1">Tanggal Mulai</p>
+                    <p className="text-ink">
+                      {new Date(detailPelamar.tanggal_mulai_diinginkan).toLocaleDateString("id-ID", { dateStyle: "medium" })}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {detailPelamar.url_portofolio_dokumen && (
+                
+                <a href={detailPelamar.url_portofolio_dokumen}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between text-bridge-gold font-bold hover:underline bg-amber-50/40 p-3 rounded-xl border border-amber-100"
+                >
+                  <span>Lihat Portofolio / Dokumen</span>
+                  <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-steel/10">
+              <Link
+                href={`/profile/${detailPelamar.mahasiswa_id}`}
+                className="rounded-full border border-steel/20 bg-white text-ink px-4 py-2 font-mono text-xs font-semibold hover:bg-steel/5 transition inline-flex items-center gap-1.5"
+              >
+                Lihat Profil Lengkap
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </Link>
+
+              {detailPelamar.status === "Menunggu" && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { handleUpdateStatus(detailPelamar.id, "Ditolak"); setDetailPelamar(null); }}
+                    className="rounded-full border border-red-200 bg-red-50 text-red-700 px-4 py-2 font-mono text-xs font-semibold hover:bg-red-100 transition"
+                  >
+                    Tolak
+                  </button>
+                  <button
+                    onClick={() => { handleUpdateStatus(detailPelamar.id, "Diterima"); setDetailPelamar(null); }}
+                    className="rounded-full bg-emerald-600 text-white px-5 py-2 font-mono text-xs font-semibold hover:bg-emerald-700 transition shadow-sm"
+                  >
+                    Terima
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        <button onClick={() => setDetailPelamar(null)} className="text-steel hover:text-ink">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <div className="space-y-3 font-mono text-xs">
-        {detailPelamar.ringkasan_self && (
-          <div>
-            <p className="text-[10px] font-bold text-steel uppercase mb-1">Ringkasan Diri</p>
-            <p className="font-sans text-xs text-ink bg-steel/5 rounded-xl p-3 leading-relaxed border border-steel/10">
-              {detailPelamar.ringkasan_self}
-            </p>
-          </div>
-        )}
-
-        {detailPelamar.tujuan_mengajukan && (
-          <div>
-            <p className="text-[10px] font-bold text-steel uppercase mb-1">Tujuan Mengajukan</p>
-            <p className="font-sans text-xs text-ink bg-steel/5 rounded-xl p-3 leading-relaxed border border-steel/10">
-              {detailPelamar.tujuan_mengajukan}
-            </p>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
-          {detailPelamar.ketersediaan && (
-            <div>
-              <p className="text-[10px] font-bold text-steel uppercase mb-1">Ketersediaan</p>
-              <p className="text-ink">{detailPelamar.ketersediaan}</p>
-            </div>
-          )}
-          {detailPelamar.tanggal_mulai_diinginkan && (
-            <div>
-              <p className="text-[10px] font-bold text-steel uppercase mb-1">Tanggal Mulai</p>
-              <p className="text-ink">
-                {new Date(detailPelamar.tanggal_mulai_diinginkan).toLocaleDateString("id-ID", { dateStyle: "medium" })}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {detailPelamar.url_portofolio_dokumen && (
-          
-          <a href={detailPelamar.url_portofolio_dokumen}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between text-bridge-gold font-bold hover:underline bg-amber-50/40 p-3 rounded-xl border border-amber-100"
-          >
-            <span>Lihat Portofolio / Dokumen</span>
-            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between gap-2 pt-3 border-t border-steel/10">
-        <Link
-          href={`/profile/${detailPelamar.mahasiswa_id}`}
-          className="rounded-full border border-steel/20 bg-white text-ink px-4 py-2 font-mono text-xs font-semibold hover:bg-steel/5 transition inline-flex items-center gap-1.5"
-        >
-          Lihat Profil Lengkap
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-        </Link>
-
-        {detailPelamar.status === "Menunggu" && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => { handleUpdateStatus(detailPelamar.id, "Ditolak"); setDetailPelamar(null); }}
-              className="rounded-full border border-red-200 bg-red-50 text-red-700 px-4 py-2 font-mono text-xs font-semibold hover:bg-red-100 transition"
-            >
-              Tolak
-            </button>
-            <button
-              onClick={() => { handleUpdateStatus(detailPelamar.id, "Diterima"); setDetailPelamar(null); }}
-              className="rounded-full bg-emerald-600 text-white px-5 py-2 font-mono text-xs font-semibold hover:bg-emerald-700 transition shadow-sm"
-            >
-              Terima
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+      )}
         
       {[
         { open: isKotaModalOpen, close: () => { setIsKotaModalOpen(false); setKotaSearch(""); }, title: "Cari Kota Lokasi", search: kotaSearch, setSearch: setKotaSearch, options: searchedKotaOptions, onSelect: (k: any) => { setFormData((p) => ({ ...p, lokasi_id: k.id })); setIsKotaModalOpen(false); setKotaSearch(""); }, getLabel: (k: any) => k.nama_kota, isSelected: (k: any) => formData.lokasi_id === k.id },
@@ -1266,6 +1306,18 @@ function StatusBadge({ status, small = false }: { status: string; small?: boolea
       {status}
     </span>
   );
+}
+
+function parseHapusProyekMarker(pesan: string) {
+  const match = pesan.match(/^__HAPUS_PROYEK__(\{.*?\})__/);
+  if (!match) return null;
+  try {
+    const data = JSON.parse(match[1]);
+    const teksBersih = pesan.slice(match[0].length).trim();
+    return { persetujuan_id: data.persetujuan_id as string, permintaan_id: data.permintaan_id as string, teksBersih };
+  } catch {
+    return null;
+  }
 }
 
 interface PickerModalProps {

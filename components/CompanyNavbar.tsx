@@ -73,7 +73,7 @@ export function CompanyNavbar() {
   const isProfileActive = pathname === "/perusahaan/profile";
 
   return (
-    <div className="sticky top-4 z-40 px-4 sm:px-6">
+    <div className="fixed inset-x-0 top-4 z-40 px-4 sm:px-6">
       <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/15 bg-[#12284B]/75 backdrop-blur-2xl backdrop-saturate-150 px-5 py-3 shadow-[0_8px_32px_-6px_rgba(18,40,75,0.45),inset_0_1px_0_0_rgba(255,255,255,0.08)]">
         {/* Brand Logo -> Ke Dashboard Perusahaan */}
         <Link

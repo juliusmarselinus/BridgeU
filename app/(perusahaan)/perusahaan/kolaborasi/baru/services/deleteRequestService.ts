@@ -93,15 +93,21 @@ export const deleteRequestService = {
   },
 
   async setujui(persetujuanId: string) {
-  const { data, error } = await supabase.rpc("setujui_hapus_kolaborasi", {
-    p_persetujuan_id: persetujuanId,
-  });
-  if (error) {
-    console.error("[hapus] gagal setujui:", error.message);
-    return false;
-  }
-  return data === true;
-},
+    const { data: pers, error } = await supabase
+      .from("persetujuan_hapus")
+      .update({ status: "Disetujui", responded_at: new Date().toISOString() })
+      .eq("id", persetujuanId)
+      .select("permintaan_id")
+      .single();
+
+    if (error || !pers) {
+      console.error("[hapus] gagal setujui:", error?.message);
+      return false;
+    }
+
+    await this.cekSemuaSetuju(pers.permintaan_id);
+    return true;
+  },
 
   async tolak(persetujuanId: string) {
     const { error } = await supabase
@@ -127,8 +133,18 @@ export const deleteRequestService = {
         .single();
 
       if (req) {
-        const deleted = await companyService.deleteKolaborasi(req.kolaborasi_id);
-        return deleted;
+        const { error: updateKolErr } = await supabase
+          .from("kolaborasi")
+          .update({ status_aktif: "Dibatalkan" })
+          .eq("id", req.kolaborasi_id);
+
+        const { error: updatePendaftaranErr } = await supabase
+          .from("pendaftaran_kolaborasi")
+          .update({ status: "Dibatalkan" })
+          .eq("kolaborasi_id", req.kolaborasi_id)
+          .eq("status", "Diterima");
+
+        return !updateKolErr && !updatePendaftaranErr;
       }
       return false;
     }
