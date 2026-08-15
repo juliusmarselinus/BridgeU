@@ -53,7 +53,6 @@ export const statusMeta: Record<
 
 export const TABS = [
   { key: "semua", label: "Semua" },
-  { key: "wawancara", label: "Jadwal Wawancara" },
   { key: "aksi", label: "Perlu Aksi" },
   { key: "berjalan", label: "Berjalan" },
   { key: "selesai", label: "Selesai" },
