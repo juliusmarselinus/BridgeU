@@ -195,6 +195,31 @@ export default function StatusPage() {
                         <span>Tanggal daftar</span>
                         <span className="text-ink font-semibold">{item.tanggal_daftar}</span>
                       </div>
+
+                      {item.status === "Selesai" && (
+                        <div className="mt-3 rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2 flex items-center justify-between">
+                          <span className="text-[9px] font-mono uppercase text-emerald-800 font-bold">
+                            Penilaian Mitra
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <svg
+                                key={star}
+                                className={`w-3.5 h-3.5 ${
+                                  (item.ratings || 0) >= star ? "text-amber-400 fill-amber-400" : "text-emerald-200 fill-emerald-100"
+                                }`}
+                                viewBox="0 0 24 24"
+                              >
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                            ))}
+                            <span className="text-[10px] font-bold text-emerald-900 ml-0.5">
+                              {item.ratings != null ? `${item.ratings}.0` : "-"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
                       {meta.rejected && item.status !== "Dibatalkan" && (
                         <div className="mt-3 rounded-2xl bg-rose-50 border border-rose-100 px-3 py-2.5">
                           <p className="text-[9px] font-mono uppercase text-rose-500 font-bold mb-0.5">

@@ -9,6 +9,8 @@ type StoredUser = {
   universitas: string;
   prodi: string;
   semester?: string;
+  nomorRekening?: string;
+  bankName?: string;
 };
 
 type Kolaborasi = {

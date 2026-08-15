@@ -13,6 +13,8 @@ type StoredUser = {
   nama: string;
   universitas: string;
   prodi: string;
+  nomorRekening?: string;
+  bankName?: string;
 };
 
 export default function DetailKolaborasiPage() {
@@ -26,6 +28,7 @@ export default function DetailKolaborasiPage() {
   const [data, setData] = useState<Kolaborasi | null>(null);
 
   const [showLowMatchConfirmModal, setShowLowMatchConfirmModal] = useState(false);
+  const [showBankRequiredModal, setShowBankRequiredModal] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -54,6 +57,8 @@ export default function DetailKolaborasiPage() {
                 nama: me.nama,
                 universitas: me.universitas || "-",
                 prodi: me.prodi || "Mahasiswa",
+                nomorRekening: me.nomorRekening || "",
+                bankName: me.bankName || "",
               });
               return;
             }
@@ -86,7 +91,7 @@ export default function DetailKolaborasiPage() {
         .from("kolaborasi")
         .select(`
           id, judul, tipe, deskripsi, lokasi_id, batas_waktu, status_moderasi,
-          tingkat_kesulitan, gaji_stipend, perusahaan_id, kategori_id,
+          tingkat_kesulitan, gaji_stipend, perusahaan_id, kategori_id, tipe_lokasi,
           perusahaan:perusahaan_id ( nama_perusahaan ),
           kategori:kategori_id ( nama_kategori ),
           kota:lokasi_id ( nama_kota ),
@@ -104,7 +109,13 @@ export default function DetailKolaborasiPage() {
         const kategoriMinatIds = row.kategori_id ? [row.kategori_id] : [];
 
         const matchResult = calculateMatchScore(
-          { skillIds, kategoriMinatIds, prodiIds },
+          {
+            tipe: row.tipe,
+            tipeLokasi: row.tipe_lokasi,
+            skillIds,
+            kategoriMinatIds,
+            prodiIds,
+          },
           matchProfile
         );
 
@@ -148,6 +159,12 @@ export default function DetailKolaborasiPage() {
   }, [id]);
 
   const handleApplyClick = () => {
+    // Alert awal: Cek tipe Magang & kelengkapan rekening bank
+    if (data?.tipe === "Magang" && (!user?.nomorRekening || user.nomorRekening.trim().length === 0)) {
+      setShowBankRequiredModal(true);
+      return;
+    }
+
     if (data && (data.matchScore ?? 0) < 50) {
       setShowLowMatchConfirmModal(true);
     } else {
@@ -440,6 +457,45 @@ export default function DetailKolaborasiPage() {
                 className="rounded-xl bg-bridge-gold px-5 py-2 text-xs font-bold text-ink hover:bg-bridge-gold/90 transition shadow-md"
               >
                 Yakin & Lanjutkan →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PERINGATAN WAJIB REKENING BANK SEBELUM MASUK PENDAFTARAN */}
+      {showBankRequiredModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl bg-paper p-6 sm:p-8 shadow-2xl border border-steel/20 space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
+                <svg className="w-6 h-6 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-display text-lg font-bold text-ink">Rekening Bank Wajib Diisi!</h3>
+                <p className="font-mono text-xs text-steel">Persyaratan Tipe: <span className="font-bold text-amber-600">Magang</span></p>
+              </div>
+            </div>
+
+            <p className="text-xs text-steel leading-relaxed">
+              Untuk mendaftar peluang kolaborasi tipe <strong className="text-ink font-semibold">Magang</strong>, Anda wajib mendaftarkan informasi <strong className="text-ink font-semibold">Rekening Bank</strong> terlebih dahulu pada profil Anda untuk penyaluran insentif/pencairan.
+            </p>
+
+            <div className="flex flex-col gap-2 pt-2 border-t border-steel/15">
+              <Link
+                href="/profile"
+                className="w-full rounded-xl bg-ink py-2.5 text-center text-xs font-bold text-paper transition hover:bg-steel shadow-md"
+              >
+                Lengkapi Rekening Bank di Profil →
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowBankRequiredModal(false)}
+                className="w-full rounded-xl border border-steel/20 bg-white py-2.5 text-xs font-semibold text-steel hover:bg-paper transition"
+              >
+                Tutup & Nanti Saja
               </button>
             </div>
           </div>

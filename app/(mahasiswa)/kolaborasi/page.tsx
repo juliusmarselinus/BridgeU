@@ -19,6 +19,8 @@ type StoredUser = {
   universitas: string;
   prodi: string;
   semester?: string;
+  nomorRekening?: string;
+  bankName?: string;
 };
 
 function initials(name: string) {
@@ -37,6 +39,7 @@ function mapDbRow(row: any): Kolaborasi {
     kategori: row.kategori?.nama_kategori ?? "Kolaborasi",
     deskripsi: row.deskripsi,
     lokasi: row.kota?.nama_kota ?? "-",
+    tipeLokasi: row.tipe_lokasi ?? "Remote",
     batasWaktu: row.batas_waktu
       ? new Date(row.batas_waktu).toLocaleDateString("id-ID", {
           day: "numeric",
@@ -83,7 +86,7 @@ async function fetchKolaborasiFromSupabase(): Promise<Kolaborasi[]> {
     .from("kolaborasi")
     .select(`
       id, judul, tipe, deskripsi, lokasi_id, batas_waktu, status_moderasi,
-      tingkat_kesulitan, gaji_stipend, perusahaan_id, slot,
+      tingkat_kesulitan, gaji_stipend, perusahaan_id, slot, tipe_lokasi,
       perusahaan:perusahaan_id ( nama_perusahaan ),
       kategori:kategori_id ( nama_kategori ),
       kota:lokasi_id ( nama_kota ),
@@ -102,7 +105,7 @@ async function fetchKolaborasiFromSupabase(): Promise<Kolaborasi[]> {
   return (data ?? []).map(mapDbRow);
 }
 
-/** Fetch profil pemohon (nama, universitas, prodi, semester) langsung dari Supabase — bukan localStorage */
+/** Fetch profil pemohon (nama, universitas, prodi, semester, nomor_rekening) langsung dari Supabase — bukan localStorage */
 async function fetchApplicantProfile(): Promise<StoredUser | null> {
   const { data: authData } = await supabase.auth.getUser();
   const uid = authData?.user?.id;
@@ -113,11 +116,12 @@ async function fetchApplicantProfile(): Promise<StoredUser | null> {
     .select(`
       nama_lengkap,
       semester,
+      nomor_rekening,
       universitas:universitas_id ( nama_universitas ),
       prodi:prodi_id ( nama_prodi )
     `)
     .eq("user_id", uid)
-    .single();
+    .maybeSingle();
 
   if (error || !profile) {
     console.error("Gagal memuat profil mahasiswa:", error?.message);
@@ -129,6 +133,7 @@ async function fetchApplicantProfile(): Promise<StoredUser | null> {
     universitas: (profile.universitas as any)?.nama_universitas ?? "-",
     prodi: (profile.prodi as any)?.nama_prodi ?? "-",
     semester: profile.semester ?? undefined,
+    nomorRekening: profile.nomor_rekening ?? undefined,
   };
 }
 
@@ -143,9 +148,39 @@ export default function KolaborasiPage() {
   const [tipeFilter, setTipeFilter] = useState<"Semua" | "Akademik" | "Magang">("Semua");
   const [applyTarget, setApplyTarget] = useState<Kolaborasi | null>(null);
   const [detailTarget, setDetailTarget] = useState<Kolaborasi | null>(null);
+  const [showBankRequiredModal, setShowBankRequiredModal] = useState(false);
+  const [showLowMatchConfirmModal, setShowLowMatchConfirmModal] = useState(false);
+  const [lowMatchTarget, setLowMatchTarget] = useState<Kolaborasi | null>(null);
   const [successToast, setSuccessToast] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+
+  const handleApplyTargetClick = async (target: Kolaborasi) => {
+    // 1. Cek Rekening Bank jika Magang
+    let noRek = applicantProfile?.nomorRekening;
+    if (noRek === undefined) {
+      const p = await fetchApplicantProfile();
+      if (p) {
+        setApplicantProfile(p);
+        noRek = p.nomorRekening;
+      }
+    }
+
+    if (target.tipe === "Magang" && (!noRek || noRek.trim().length === 0)) {
+      setShowBankRequiredModal(true);
+      return;
+    }
+
+    // 2. Cek Match Score jika dibawah 50%
+    const score = (target as any).match?.scorePercent ?? (target as any).matchScore ?? 0;
+    if (score < 50) {
+      setLowMatchTarget(target);
+      setShowLowMatchConfirmModal(true);
+      return;
+    }
+
+    setApplyTarget(target);
+  };
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 18;
 
@@ -631,7 +666,7 @@ export default function KolaborasiPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setApplyTarget(k)}
+                          onClick={() => handleApplyTargetClick(k)}
                           className="flex-1 rounded-full bg-primary py-2 text-center font-mono text-xs font-bold text-white transition hover:brightness-110 shadow-sm flex items-center justify-center"
                         >
                           Ajukan
@@ -695,8 +730,9 @@ export default function KolaborasiPage() {
           data={detailTarget}
           onClose={() => setDetailTarget(null)}
           onAjukan={() => {
-            setApplyTarget(detailTarget);
+            const target = detailTarget;
             setDetailTarget(null);
+            handleApplyTargetClick(target);
           }}
         />
       )}
@@ -708,6 +744,93 @@ export default function KolaborasiPage() {
           onClose={() => setApplyTarget(null)}
           onSuccess={handleApplySuccess}
         />
+      )}
+
+      {/* MODAL KONFIRMASI SKOR KECOCOKAN DIBAWAH 50% */}
+      {showLowMatchConfirmModal && lowMatchTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl bg-paper p-6 sm:p-8 shadow-2xl border border-steel/20 space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-display text-lg font-bold text-ink">Kecocokan Profil Dibawah 50%</h3>
+                <p className="font-mono text-xs text-steel">Skor Match: <span className="font-bold text-amber-600">{(lowMatchTarget as any).match?.scorePercent ?? (lowMatchTarget as any).matchScore ?? 0}%</span></p>
+              </div>
+            </div>
+
+            <p className="text-xs text-steel leading-relaxed">
+              Tingkat kecocokan profil kamu dengan persyaratan proyek ini berada di bawah 50% (atau 0%). Apakah Anda yakin tetap ingin melanjutkan pengajuan kolaborasi ini?
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-steel/15">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLowMatchConfirmModal(false);
+                  setLowMatchTarget(null);
+                }}
+                className="rounded-xl border border-steel/20 bg-white px-4 py-2 text-xs font-semibold text-steel hover:border-ink hover:text-ink transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = lowMatchTarget;
+                  setShowLowMatchConfirmModal(false);
+                  setLowMatchTarget(null);
+                  if (target) setApplyTarget(target);
+                }}
+                className="rounded-xl bg-bridge-gold px-5 py-2 text-xs font-bold text-ink hover:bg-bridge-gold/90 transition shadow-md"
+              >
+                Yakin & Lanjutkan →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PERINGATAN WAJIB REKENING BANK SEBELUM POPUP APPLY */}
+      {showBankRequiredModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl bg-paper p-6 sm:p-8 shadow-2xl border border-steel/20 space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
+                <svg className="w-6 h-6 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-display text-lg font-bold text-ink">Rekening Bank Wajib Diisi!</h3>
+                <p className="font-mono text-xs text-steel">Persyaratan Tipe: <span className="font-bold text-amber-600">Magang</span></p>
+              </div>
+            </div>
+
+            <p className="text-xs text-steel leading-relaxed">
+              Untuk mendaftar peluang kolaborasi tipe <strong className="text-ink font-semibold">Magang</strong>, Anda wajib mendaftarkan informasi <strong className="text-ink font-semibold">Rekening Bank</strong> terlebih dahulu pada profil Anda untuk penyaluran insentif/pencairan.
+            </p>
+
+            <div className="flex flex-col gap-2 pt-2 border-t border-steel/15">
+              <a
+                href="/profile"
+                className="w-full rounded-xl bg-ink py-2.5 text-center text-xs font-bold text-paper transition hover:bg-steel shadow-md"
+              >
+                Lengkapi Rekening Bank di Profil →
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowBankRequiredModal(false)}
+                className="w-full rounded-xl border border-steel/20 bg-white py-2.5 text-xs font-semibold text-steel hover:bg-paper transition"
+              >
+                Tutup & Nanti Saja
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );

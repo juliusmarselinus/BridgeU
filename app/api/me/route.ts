@@ -35,15 +35,36 @@ export async function GET(req: NextRequest) {
   }
 
   if (userRow.role === "mahasiswa") {
-    const { data: profile, error: profileError } = await db
+    let profile: any = null;
+    let profileError: any = null;
+
+    const resWithBank = await db
       .from("mahasiswa_profiles")
       .select(
-        `nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate, equipped_frame_code,
+        `nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate, equipped_frame_code, bank_id, nomor_rekening,
          universitas:universitas_id ( nama_universitas ),
-         prodi:prodi_id ( nama_prodi )`
+         prodi:prodi_id ( nama_prodi ),
+         bank:bank_id ( id, bank_code, bank_name, short_name )`
       )
       .eq("user_id", authUser.id)
-      .single();
+      .maybeSingle();
+
+    if (resWithBank.error) {
+      const resFallback = await db
+        .from("mahasiswa_profiles")
+        .select(
+          `nama_lengkap, semester, preferensi_tipe, preferensi_lokasi, ringkasan_self, foto_url, xp, points, streak_count, last_active_at, reputation_score, response_rate, equipped_frame_code, nomor_rekening,
+           universitas:universitas_id ( nama_universitas ),
+           prodi:prodi_id ( nama_prodi )`
+        )
+        .eq("user_id", authUser.id)
+        .maybeSingle();
+
+      profile = resFallback.data;
+      profileError = resFallback.error;
+    } else {
+      profile = resWithBank.data;
+    }
 
     if (profileError || !profile) {
       const fallbackName = authUser.user_metadata?.nama_lengkap || authUser.email?.split("@")[0] || "Mahasiswa";
@@ -276,6 +297,10 @@ export async function GET(req: NextRequest) {
       ringkasanSelf: profile.ringkasan_self,
       fotoUrl: profile.foto_url,
       equippedFrameCode: (profile as any).equipped_frame_code ?? "none",
+      bankId: (profile as any).bank_id ?? null,
+      nomorRekening: (profile as any).nomor_rekening ?? "",
+      bankName: (profile as any).bank?.bank_name ?? null,
+      bankCode: (profile as any).bank?.bank_code ?? null,
       xp: currentXp,
       pts: currentPts,
       streakCount: streakCount,
@@ -373,6 +398,8 @@ export async function PUT(req: NextRequest) {
     ringkasan,
     fotoUrl,
     equippedFrameCode,
+    bankId,
+    nomorRekening,
     minatKategori,
     skills,
   } = body;
@@ -386,6 +413,8 @@ export async function PUT(req: NextRequest) {
     if (ringkasan !== undefined) updatePayload.ringkasan_self = ringkasan;
     if (fotoUrl !== undefined) updatePayload.foto_url = fotoUrl;
     if (equippedFrameCode !== undefined) updatePayload.equipped_frame_code = equippedFrameCode;
+    if (bankId !== undefined) updatePayload.bank_id = bankId ? Number(bankId) : null;
+    if (nomorRekening !== undefined) updatePayload.nomor_rekening = nomorRekening;
 
     if (universitas) {
       updatePayload.universitas_id = await getOrCreateRefId(db, "universitas", "nama_universitas", universitas);
@@ -401,9 +430,23 @@ export async function PUT(req: NextRequest) {
         .eq("user_id", authUser.id)
         .select("user_id");
 
-      if (updateError) throw new Error(`mahasiswa_profiles: ${updateError.message}`);
-      if (!updatedRows || updatedRows.length === 0) {
-        // Update "berhasil" tapi 0 baris kena — biasanya RLS block, bukan error eksplisit
+      if (updateError) {
+        // Jika error terjadi karena kolom bank_id belum ada pada schema supabase env, coba update tanpa bank_id
+        if (updateError.message.includes("bank_id")) {
+          delete updatePayload.bank_id;
+          const { error: retryErr, data: retryRows } = await db
+            .from("mahasiswa_profiles")
+            .update(updatePayload)
+            .eq("user_id", authUser.id)
+            .select("user_id");
+          if (retryErr) throw new Error(`mahasiswa_profiles: ${retryErr.message}`);
+          if (!retryRows || retryRows.length === 0) {
+            throw new Error("Update tidak mengubah data apapun di mahasiswa_profiles.");
+          }
+        } else {
+          throw new Error(`mahasiswa_profiles: ${updateError.message}`);
+        }
+      } else if (!updatedRows || updatedRows.length === 0) {
         throw new Error(
           "Update tidak mengubah data apapun (kemungkinan diblokir RLS policy di tabel mahasiswa_profiles — cek policy UPDATE ... USING (auth.uid() = user_id))"
         );

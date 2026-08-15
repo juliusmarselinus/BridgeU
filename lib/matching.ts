@@ -6,9 +6,11 @@ import { supabase } from "@/lib/supabase";
  * ============================================================
  */
 export const MATCH_WEIGHTS = {
-  skill: 0.5,
-  minat: 0.3,
-  prodi: 0.2,
+  skill: 0.35,
+  minat: 0.25,
+  prodi: 0.15,
+  preferensiTipe: 0.15,
+  preferensiLokasi: 0.1,
 };
 
 /** Skor di bawah ini dianggap "kurang mirip", gak dimasukin ke rekomendasi */
@@ -28,9 +30,13 @@ export type MahasiswaMatchProfile = {
   prodiId: number | null;
   skillIds: number[];
   kategoriMinatIds: number[];
+  preferensiTipe?: string | null;
+  preferensiLokasi?: string | null;
 };
 
 export type KolaborasiMatchInput = {
+  tipe?: string; // "Magang" | "Akademik"
+  tipeLokasi?: string; // "Remote" | "Hybrid" | "Onsite"
   skillIds: number[];
   kategoriMinatIds: number[];
   prodiIds: number[]; // dari kolaborasi_target_prodi, kosong = terbuka utk semua prodi
@@ -45,7 +51,7 @@ export type MatchResult = {
 
 /**
  * ============================================================
- * FETCH: profil mahasiswa yang lagi login (skills, minat, prodi)
+ * FETCH: profil mahasiswa yang lagi login (skills, minat, prodi, preferensi_tipe, preferensi_lokasi)
  * Diambil langsung dari Supabase Auth session, BUKAN dari localStorage,
  * biar selalu sinkron dengan database.
  * ============================================================
@@ -62,9 +68,9 @@ export async function fetchMahasiswaMatchProfile(): Promise<MahasiswaMatchProfil
     await Promise.all([
       supabase
         .from("mahasiswa_profiles")
-        .select("prodi_id")
+        .select("prodi_id, preferensi_tipe, preferensi_lokasi")
         .eq("user_id", userId)
-        .single(),
+        .maybeSingle(),
       supabase.from("mahasiswa_skills").select("skill_id").eq("mahasiswa_id", userId),
       supabase.from("mahasiswa_minat").select("kategori_id").eq("mahasiswa_id", userId),
     ]);
@@ -79,6 +85,8 @@ export async function fetchMahasiswaMatchProfile(): Promise<MahasiswaMatchProfil
     prodiId: profile?.prodi_id ?? null,
     skillIds: (skillsRows ?? []).map((r) => r.skill_id),
     kategoriMinatIds: (minatRows ?? []).map((r) => r.kategori_id),
+    preferensiTipe: profile?.preferensi_tipe ?? "Semua",
+    preferensiLokasi: profile?.preferensi_lokasi ?? "Remote",
   };
 }
 
@@ -86,12 +94,7 @@ export async function fetchMahasiswaMatchProfile(): Promise<MahasiswaMatchProfil
  * ============================================================
  * SCORING — inti logic rekomendasi
  *
- * score = (skillScore * 0.5) + (minatScore * 0.3) + (prodiScore * 0.2)
- *
- * - skillScore = (skill kolaborasi yang dimiliki mahasiswa) / (total skill dibutuhkan)
- * - minatScore = (kategori minat yang overlap) / (total kategori minat kolaborasi)
- * - prodiScore = 1 kalau prodi mahasiswa termasuk target, 0 kalau tidak
- *                (kalau kolaborasi gak set target prodi sama sekali, dianggap terbuka -> prodiScore = 1)
+ * score = (skillScore * 0.35) + (minatScore * 0.25) + (prodiScore * 0.15) + (tipeScore * 0.15) + (lokasiScore * 0.10)
  * ============================================================
  */
 export function calculateMatchScore(
@@ -119,10 +122,36 @@ export function calculateMatchScore(
   const prodiCocok = !punyaTargetProdi || (profile.prodiId != null && kolab.prodiIds.includes(profile.prodiId));
   const prodiScore = prodiCocok ? 1 : 0;
 
+  // --- Preferensi Tipe (Semua / Akademik / Magang) ---
+  const prefTipe = profile.preferensiTipe || "Semua";
+  let tipeScore = 1; // default jika "Semua" atau "Keduanya"
+  if (prefTipe !== "Semua" && kolab.tipe) {
+    if (prefTipe.toLowerCase().includes(kolab.tipe.toLowerCase())) {
+      tipeScore = 1;
+    } else {
+      tipeScore = 0;
+    }
+  }
+
+  // --- Preferensi Lokasi (Remote / Hybrid / Onsite) ---
+  const prefLokasi = profile.preferensiLokasi || "Remote";
+  let lokasiScore = 1;
+  if (kolab.tipeLokasi && prefLokasi) {
+    if (prefLokasi.toLowerCase() === kolab.tipeLokasi.toLowerCase()) {
+      lokasiScore = 1;
+    } else if (prefLokasi.toLowerCase() === "hybrid" || kolab.tipeLokasi.toLowerCase() === "hybrid") {
+      lokasiScore = 0.5; // parsial match untuk hybrid
+    } else {
+      lokasiScore = 0;
+    }
+  }
+
   const rawScore =
     skillScore * MATCH_WEIGHTS.skill +
     minatScore * MATCH_WEIGHTS.minat +
-    prodiScore * MATCH_WEIGHTS.prodi;
+    prodiScore * MATCH_WEIGHTS.prodi +
+    tipeScore * MATCH_WEIGHTS.preferensiTipe +
+    lokasiScore * MATCH_WEIGHTS.preferensiLokasi;
 
   const hardFilterBlocked = PRODI_IS_HARD_FILTER && punyaTargetProdi && !prodiCocok;
   const lolosThreshold = !hardFilterBlocked && rawScore >= MIN_MATCH_THRESHOLD;

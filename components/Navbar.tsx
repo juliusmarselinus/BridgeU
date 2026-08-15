@@ -477,7 +477,8 @@ export function Navbar() {
 
           <NotificationBell />
 
-          <div className="relative shrink-0">
+          {/* Profile Avatar Icon (Desktop only to prevent double profile icon on mobile view) */}
+          <div className="relative shrink-0 hidden md:block">
             {user && getFrameDefinition(user.equippedFrameCode).glowClass && (
               <div className={`absolute inset-0 rounded-full ${getFrameDefinition(user.equippedFrameCode).glowClass}`} />
             )}
@@ -544,10 +545,15 @@ export function Navbar() {
               transition={{ duration: 0.2, ease: "easeOut" }}
               className="absolute inset-x-0 top-full mt-3 overflow-hidden rounded-3xl border border-white/50 bg-white/95 p-4 shadow-[0_20px_50px_-12px_rgba(23,59,108,0.25)] backdrop-blur-2xl md:hidden"
             >
-              {/* Nav Links */}
+              {/* Nav Links (Includes flat links for Kolaborasi on Mobile without dropdown) */}
               <div className="flex flex-col gap-1 font-mono text-sm">
-                {navLinks.map((link) => {
-                  const active = pathname === link.href;
+                {[
+                  { href: "/dashboard", label: "Dashboard" },
+                  { href: "/kolaborasi", label: "Peluang Kolaborasi" },
+                  { href: "/status", label: "Status Pengajuan" },
+                  { href: "/tracker", label: "Portfolio Tracker" },
+                ].map((link) => {
+                  const active = pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href));
                   return (
                     <Link
                       key={link.href}

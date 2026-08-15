@@ -118,6 +118,39 @@ export function Step2ProfilAkademik({ formData, updateField, openPicker }: Step2
           </button>
         </div>
 
+        {/* Preferensi Tipe & Preferensi Sistem Kerja Dropdowns */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-xs font-mono font-bold text-[#173B6C] uppercase mb-1.5">
+              Preferensi Tipe Kolaborasi
+            </label>
+            <select
+              value={formData.preferensiTipe || "Semua"}
+              onChange={(e) => updateField("preferensiTipe", e.target.value)}
+              className="w-full rounded-xl border border-[#173B6C]/20 bg-white/70 px-4 py-3 text-xs font-bold text-[#173B6C] hover:border-[#2475C5] focus:bg-white focus:outline-none transition shadow-sm"
+            >
+              <option value="Semua">Semua (Akademik &amp; Magang)</option>
+              <option value="Akademik">Hanya Studi Kasus / Riset</option>
+              <option value="Magang">Hanya Magang</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono font-bold text-[#173B6C] uppercase mb-1.5">
+              Preferensi Sistem Kerja
+            </label>
+            <select
+              value={formData.preferensiLokasi || "Remote"}
+              onChange={(e) => updateField("preferensiLokasi", e.target.value)}
+              className="w-full rounded-xl border border-[#173B6C]/20 bg-white/70 px-4 py-3 text-xs font-bold text-[#173B6C] hover:border-[#2475C5] focus:bg-white focus:outline-none transition shadow-sm"
+            >
+              <option value="Remote">Remote</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="Onsite">Onsite</option>
+            </select>
+          </div>
+        </div>
+
         <div>
           <label className="block text-xs font-mono font-bold text-[#173B6C] uppercase mb-1.5">
             Ringkasan Singkat Diri

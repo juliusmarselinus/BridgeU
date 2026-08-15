@@ -19,4 +19,5 @@ export type Kolaborasi = {
   skillIds: number[];
   kategoriMinatIds: number[];
   prodiIds: number[];
+  tipeLokasi?: string;
 };

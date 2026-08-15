@@ -24,6 +24,7 @@ type StatusDetail = {
   urlHasilKolaborasi?: string;
   catatanHasilKolaborasi?: string;
   tanggalPengumpulan?: string;
+  ratings?: number | null;
 };
 
 type Tab = "timeline" | "pengumpulan" | "riwayat";
@@ -175,6 +176,7 @@ export default function StatusDetailPage() {
               id,
               kolaborasi_id,
               status,
+              ratings,
               tanggal_daftar,
               catatan_perusahaan,
               url_portofolio_dokumen,
@@ -231,6 +233,7 @@ export default function StatusDetailPage() {
                     day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
                   })
                 : undefined,
+              ratings: row.ratings != null ? Number(row.ratings) : null,
             };
 
             setDetail(mapped);
@@ -724,6 +727,37 @@ export default function StatusDetailPage() {
                       })}
                     </div>
 
+                    {detail.status === "Selesai" && (
+                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] uppercase font-bold text-emerald-800 tracking-wider">
+                            Penilaian &amp; Performa dari Mitra
+                          </span>
+                          <span className="font-mono text-xs font-bold text-emerald-800">
+                            {detail.ratings != null ? `${detail.ratings}.0 / 5.0` : "Belum Beri Rating"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 py-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg
+                              key={star}
+                              className={`w-6 h-6 ${
+                                (detail.ratings || 0) >= star ? "text-amber-400 fill-amber-400" : "text-emerald-200 fill-emerald-100"
+                              }`}
+                              viewBox="0 0 24 24"
+                            >
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                          ))}
+                        </div>
+                        <p className="text-xs text-emerald-900 leading-relaxed font-medium">
+                          {detail.ratings != null
+                            ? `Mitra ${detail.perusahaan} memberikan penilaian ${detail.ratings} dari 5 bintang untuk hasil kerja kamu.`
+                            : `Mitra ${detail.perusahaan} belum menyertakan penilaian bintang untuk kolaborasi ini.`}
+                        </p>
+                      </div>
+                    )}
+
                     {detail.catatanPerusahaan && (
                       <div className="rounded-2xl border border-bridge-gold/30 bg-bridge-gold/5 p-5 space-y-2">
                         <span className="font-mono text-[10px] uppercase font-bold text-bridge-gold tracking-wider">
@@ -733,17 +767,16 @@ export default function StatusDetailPage() {
                           &ldquo;{detail.catatanPerusahaan}&rdquo;
                         </p>
                         {infoPembatalan && (
-                        <div className="rounded-2xl border border-rose-300 bg-rose-50 p-5 space-y-2">
-                          <span className="font-mono text-[10px] uppercase font-bold text-rose-700 tracking-wider">
-                            Proyek Dibatalkan oleh Perusahaan
-                          </span>
-                          <p className="text-xs text-rose-900 font-medium leading-relaxed">
-                            {infoPembatalan}
-                          </p>
-                        </div>
-                      )}
+                          <div className="rounded-2xl border border-rose-300 bg-rose-50 p-5 space-y-2">
+                            <span className="font-mono text-[10px] uppercase font-bold text-rose-700 tracking-wider">
+                              Proyek Dibatalkan oleh Perusahaan
+                            </span>
+                            <p className="text-xs text-rose-900 font-medium leading-relaxed">
+                              {infoPembatalan}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      
                     )}
                   </div>
                 )}

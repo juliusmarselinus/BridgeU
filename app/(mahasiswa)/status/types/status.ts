@@ -12,6 +12,7 @@ export type StatusItem = {
   catatan_perusahaan?: string;
   catatan_pembatalan?: string;
   url_hasil_kolaborasi?: string;
+  ratings?: number | null;
 };
 
 export const STAGES = ["Diajukan", "Diproses", "Dievaluasi", "Selesai"] as const;

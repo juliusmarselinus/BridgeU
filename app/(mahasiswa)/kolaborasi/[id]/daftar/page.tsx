@@ -12,6 +12,8 @@ type StoredUser = {
   universitas?: string;
   prodi?: string;
   semester?: string;
+  nomorRekening?: string;
+  bankName?: string;
 };
 
 const KETERSEDIAAN_OPTIONS = [
@@ -57,6 +59,8 @@ export default function DaftarKolaborasiPage() {
   const [user, setUser] = useState<StoredUser | null>(null);
   const [kolaborasi, setKolaborasi] = useState<any | null>(null);
 
+  const [showBankAlertModal, setShowBankAlertModal] = useState(false);
+
   // Form Fields
   const [step, setStep] = useState(0);
   const [tujuan, setTujuan] = useState("");
@@ -89,6 +93,8 @@ export default function DaftarKolaborasiPage() {
               universitas: me.universitas || "-",
               prodi: me.prodi || "Mahasiswa",
               semester: me.semester || "-",
+              nomorRekening: me.nomorRekening || "",
+              bankName: me.bankName || "",
             };
           }
         } catch (e) {
@@ -145,6 +151,15 @@ export default function DaftarKolaborasiPage() {
   };
 
   const handleSubmit = async () => {
+    // Validasi Wajib Rekening Bank jika tipe Magang
+    const isMagang = kolaborasi?.tipe === "Magang";
+    const hasRekening = Boolean(user?.nomorRekening && user.nomorRekening.trim().length > 0);
+
+    if (isMagang && !hasRekening) {
+      setShowBankAlertModal(true);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const { data: authData } = await supabase.auth.getUser();
@@ -447,6 +462,42 @@ export default function DaftarKolaborasiPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Pop Up Alert: Wajib Isi Rekening Bank untuk Kolaborasi Tipe Magang */}
+      {showBankAlertModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 animate-in fade-in duration-200">
+          <div className="flex w-full max-w-md flex-col rounded-3xl bg-white p-6 shadow-2xl border border-steel/20 space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-900 mx-auto">
+              <svg className="w-6 h-6 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-bold text-ink">Rekening Bank Wajib Diisi!</h3>
+              <p className="text-xs text-steel leading-relaxed">
+                Untuk mengajukan kolaborasi tipe <strong className="text-ink font-semibold">Magang</strong>, kamu wajib mendaftarkan informasi <strong className="text-ink font-semibold">Rekening Bank</strong> terlebih dahulu pada profil kamu untuk proses penyaluran insentif/pencairan.
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-col gap-2">
+              <Link
+                href="/profile"
+                className="w-full rounded-xl bg-ink py-2.5 text-center text-xs font-bold text-paper transition hover:bg-steel shadow-sm"
+              >
+                Lengkapi Rekening Bank di Profil →
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowBankAlertModal(false)}
+                className="w-full rounded-xl border border-steel/20 py-2.5 text-xs font-semibold text-steel hover:bg-paper transition"
+              >
+                Tutup & Nanti Saja
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

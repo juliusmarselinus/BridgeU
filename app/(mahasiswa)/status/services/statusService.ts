@@ -14,6 +14,7 @@ export async function fetchMahasiswaStatusList(): Promise<StatusItem[]> {
       id,
       kolaborasi_id,
       status,
+      ratings,
       tanggal_daftar,
       catatan_perusahaan,
       kolaborasi:kolaborasi_id (
@@ -93,6 +94,7 @@ export async function fetchMahasiswaStatusList(): Promise<StatusItem[]> {
       catatan_perusahaan: item.catatan_perusahaan || undefined,
       catatan_pembatalan: catatanPembatalanMap[item.kolaborasi_id] || undefined,
       url_hasil_kolaborasi: latestSubmission?.url_hasil || undefined,
+      ratings: item.ratings != null ? Number(item.ratings) : null,
     };
   });
 

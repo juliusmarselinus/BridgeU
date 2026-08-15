@@ -1,3 +1,11 @@
+export type BankItem = {
+  id: number;
+  bankCode: string;
+  bankName: string;
+  shortName: string;
+  bankType: string;
+};
+
 export type StoredUser = {
   nama: string;
   email: string;
@@ -10,6 +18,10 @@ export type StoredUser = {
   preferensiLokasi?: string;
   ringkasan?: string;
   foto?: string;
+  bankId?: number | null;
+  nomorRekening?: string;
+  bankName?: string | null;
+  bankCode?: string | null;
 };
 
 export type Pengajuan = {
@@ -26,6 +38,7 @@ export type ReferenceData = {
   prodi: string[];
   skills: string[];
   kategoriMinat: string[];
+  banks: BankItem[];
 };
 
 export type DbBadge = {

@@ -61,10 +61,13 @@ CREATE TABLE public.mahasiswa_profiles (
   nim text,
   gender text,
   equipped_frame_code text DEFAULT 'FRAME_NONE'::text,
+  nomor_rekening text,
+  bank_id integer,
   CONSTRAINT mahasiswa_profiles_pkey PRIMARY KEY (user_id),
   CONSTRAINT mahasiswa_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT mahasiswa_profiles_universitas_id_fkey FOREIGN KEY (universitas_id) REFERENCES public.universitas(id),
-  CONSTRAINT mahasiswa_profiles_prodi_id_fkey FOREIGN KEY (prodi_id) REFERENCES public.program_studi(id)
+  CONSTRAINT mahasiswa_profiles_prodi_id_fkey FOREIGN KEY (prodi_id) REFERENCES public.program_studi(id),
+  CONSTRAINT mahasiswa_profiles_bank_id_fkey FOREIGN KEY (bank_id) REFERENCES public.banks(id)
 );
 CREATE TABLE public.mahasiswa_minat (
   mahasiswa_id uuid NOT NULL,
@@ -120,6 +123,7 @@ CREATE TABLE public.kolaborasi (
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   slot integer,
   tanggal_selesai date,
+  tipe_lokasi text DEFAULT 'Remote'::text,
   CONSTRAINT kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT kolaborasi_perusahaan_id_fkey FOREIGN KEY (perusahaan_id) REFERENCES public.perusahaan_profiles(user_id),
   CONSTRAINT kolaborasi_kategori_id_fkey FOREIGN KEY (kategori_id) REFERENCES public.kategori_minat(id),
@@ -150,7 +154,9 @@ CREATE TABLE public.pendaftaran_kolaborasi (
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   url_portofolio_dokumen text,
   status_pengerjaan text DEFAULT 'Belum Dikirim'::text,
-  ratings bigint,
+  ratings bigint DEFAULT '0'::bigint,
+  url_bukti_bayar text,
+  status_pembayaran text,
   CONSTRAINT pendaftaran_kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT pendaftaran_kolaborasi_kolaborasi_id_fkey FOREIGN KEY (kolaborasi_id) REFERENCES public.kolaborasi(id),
   CONSTRAINT pendaftaran_kolaborasi_mahasiswa_id_fkey FOREIGN KEY (mahasiswa_id) REFERENCES public.mahasiswa_profiles(user_id)
@@ -288,4 +294,14 @@ CREATE TABLE public.persetujuan_hapus (
   CONSTRAINT persetujuan_hapus_pkey PRIMARY KEY (id),
   CONSTRAINT persetujuan_hapus_permintaan_id_fkey FOREIGN KEY (permintaan_id) REFERENCES public.permintaan_hapus_kolaborasi(id),
   CONSTRAINT persetujuan_hapus_pendaftaran_id_fkey FOREIGN KEY (pendaftaran_id) REFERENCES public.pendaftaran_kolaborasi(id)
+);
+CREATE TABLE public.banks (
+  id integer NOT NULL DEFAULT nextval('banks_id_seq'::regclass),
+  bank_code character varying NOT NULL UNIQUE,
+  bank_name character varying NOT NULL,
+  short_name character varying NOT NULL,
+  bank_type character varying NOT NULL,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT banks_pkey PRIMARY KEY (id)
 );

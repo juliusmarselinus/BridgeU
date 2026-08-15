@@ -20,6 +20,14 @@ import { AvatarFramePickerModal } from "@/components/profile/AvatarFramePickerMo
 import { FloatingAvatarOverlay } from "@/components/profile/FloatingAvatarOverlay";
 import { getBadgeRequirementText } from "@/lib/badge-evaluator";
 
+export type BankItem = {
+  id: number;
+  bankCode: string;
+  bankName: string;
+  shortName: string;
+  bankType: string;
+};
+
 type StoredUser = {
   nama: string;
   email: string;
@@ -32,6 +40,10 @@ type StoredUser = {
   preferensiLokasi?: string;
   ringkasan?: string;
   foto?: string;
+  bankId?: number | null;
+  nomorRekening?: string;
+  bankName?: string | null;
+  bankCode?: string | null;
 };
 
 type Pengajuan = {
@@ -48,6 +60,7 @@ type ReferenceData = {
   prodi: string[];
   skills: string[];
   kategoriMinat: string[];
+  banks: BankItem[];
 };
 
 export type DbBadge = {
@@ -147,7 +160,16 @@ function BadgeUnlockModal({
   );
 }
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const SEMESTER_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8"];
+const SEMESTER_OPTIONS = [
+  "Semester 1",
+  "Semester 2",
+  "Semester 3",
+  "Semester 4",
+  "Semester 5",
+  "Semester 6",
+  "Semester 7",
+  "Semester 8+",
+];
 
 /* ------------------------------------------------------------------ */
 /* SVG Icon Components                                                */
@@ -853,11 +875,19 @@ function EditProfileModal({
   const [minatKategori, setMinatKategori] = useState<string[]>(user.minatKategori || []);
   const [skills, setSkills] = useState<string[]>(user.skills || []);
 
-  const [activePicker, setActivePicker] = useState<"univ" | "prodi" | "semester" | null>(null);
+  const [activePicker, setActivePicker] = useState<"univ" | "prodi" | "semester" | "minat" | "skill" | "bank" | null>(null);
   const [isCustomUniv, setIsCustomUniv] = useState(false);
   const [customUnivInput, setCustomUnivInput] = useState("");
   const [isCustomProdi, setIsCustomProdi] = useState(false);
   const [customProdiInput, setCustomProdiInput] = useState("");
+
+  const [bankId, setBankId] = useState<number | null>(user.bankId ?? null);
+  const [bankName, setBankName] = useState<string>(user.bankName || "");
+  const [nomorRekening, setNomorRekening] = useState<string>(user.nomorRekening || "");
+
+  // Limit expand per 10 items
+  const [minatLimit, setMinatLimit] = useState(10);
+  const [skillLimit, setSkillLimit] = useState(10);
 
   // Data referensi dari database
   const [refData, setRefData] = useState<ReferenceData>({
@@ -865,6 +895,7 @@ function EditProfileModal({
     prodi: [],
     skills: [],
     kategoriMinat: [],
+    banks: [],
   });
   const [isLoadingRef, setIsLoadingRef] = useState(true);
   const [refError, setRefError] = useState("");
@@ -885,11 +916,12 @@ function EditProfileModal({
             prodi: data.prodi ?? [],
             skills: data.skills ?? [],
             kategoriMinat: data.kategoriMinat ?? [],
+            banks: data.banks ?? [],
           });
         }
       } catch (err) {
         console.error("Gagal memuat data referensi:", err);
-        if (!cancelled) setRefError("Gagal memuat data skill/minat/universitas dari server.");
+        if (!cancelled) setRefError("Gagal memuat data skill/minat/universitas/bank dari server.");
       } finally {
         if (!cancelled) setIsLoadingRef(false);
       }
@@ -924,12 +956,42 @@ function EditProfileModal({
       ringkasan,
       minatKategori,
       skills,
+      bankId,
+      nomorRekening,
+      bankName,
     });
   };
 
   // Universitas & Prodi dari database + opsi "Lainnya" biar tetap bisa custom
   const universitasOptions = useMemo(() => [...refData.universitas, "Lainnya"], [refData.universitas]);
   const prodiOptions = useMemo(() => [...refData.prodi, "Lainnya"], [refData.prodi]);
+
+  // Urutkan minat: yang sudah dipilih selalu di atas
+  const sortedMinatList = useMemo(() => {
+    const list = [...refData.kategoriMinat];
+    return list.sort((a, b) => {
+      const aSel = minatKategori.includes(a);
+      const bSel = minatKategori.includes(b);
+      if (aSel && !bSel) return -1;
+      if (!aSel && bSel) return 1;
+      return 0;
+    });
+  }, [refData.kategoriMinat, minatKategori]);
+
+  // Urutkan skill: yang sudah dipilih selalu di atas
+  const sortedSkillList = useMemo(() => {
+    const list = [...refData.skills];
+    return list.sort((a, b) => {
+      const aSel = skills.includes(a);
+      const bSel = skills.includes(b);
+      if (aSel && !bSel) return -1;
+      if (!aSel && bSel) return 1;
+      return 0;
+    });
+  }, [refData.skills, skills]);
+
+  const visibleMinatList = useMemo(() => sortedMinatList.slice(0, minatLimit), [sortedMinatList, minatLimit]);
+  const visibleSkillList = useMemo(() => sortedSkillList.slice(0, skillLimit), [sortedSkillList, skillLimit]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 animate-in fade-in duration-200">
@@ -1027,21 +1089,32 @@ function EditProfileModal({
                 onClick={() => setActivePicker("semester")}
                 className="mt-1 w-full flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-2 text-xs text-left text-ink hover:border-ink transition"
               >
-                <span className="truncate">{semester ? `Semester ${semester}` : "-- Pilih Semester --"}</span>
+                <span className="truncate">{semester ? (semester.startsWith("Semester") ? semester : `Semester ${semester}`) : "-- Pilih Semester --"}</span>
                 <span className="text-steel text-[10px]">▼</span>
               </button>
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold tracking-wider text-steel uppercase mb-2">Kategori Proyek Minat</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-[10px] font-bold tracking-wider text-steel uppercase">
+                Kategori Proyek Minat ({minatKategori.length} Dipilih)
+              </label>
+              <button
+                type="button"
+                onClick={() => setActivePicker("minat")}
+                className="font-mono text-[10px] font-bold text-primary hover:underline"
+              >
+                Cari &amp; Pilih Semua Kategori Minat
+              </button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {isLoadingRef ? (
                 <p className="text-xs text-steel/60">Memuat kategori minat...</p>
-              ) : refData.kategoriMinat.length === 0 ? (
+              ) : visibleMinatList.length === 0 ? (
                 <p className="text-xs text-steel/60">Belum ada data kategori minat.</p>
               ) : (
-                refData.kategoriMinat.map((m) => {
+                visibleMinatList.map((m) => {
                   const selected = minatKategori.includes(m);
                   return (
                     <button
@@ -1050,8 +1123,8 @@ function EditProfileModal({
                       onClick={() => toggleMinat(m)}
                       className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
                         selected
-                          ? "bg-ink text-paper"
-                          : "border border-border bg-card text-steel hover:bg-paper"
+                          ? "bg-ink text-paper font-bold"
+                          : "border border-border bg-card text-ink hover:bg-paper"
                       }`}
                     >
                       {selected ? "✓ " : "+ "}
@@ -1064,14 +1137,25 @@ function EditProfileModal({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold tracking-wider text-steel uppercase mb-2">Skill & Tools</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-[10px] font-bold tracking-wider text-steel uppercase">
+                Skill &amp; Tools ({skills.length} Dipilih)
+              </label>
+              <button
+                type="button"
+                onClick={() => setActivePicker("skill")}
+                className="font-mono text-[10px] font-bold text-primary hover:underline"
+              >
+                Cari &amp; Pilih Semua Skill &amp; Tools
+              </button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {isLoadingRef ? (
                 <p className="text-xs text-steel/60">Memuat skill...</p>
-              ) : refData.skills.length === 0 ? (
+              ) : visibleSkillList.length === 0 ? (
                 <p className="text-xs text-steel/60">Belum ada data skill.</p>
               ) : (
-                refData.skills.map((s) => {
+                visibleSkillList.map((s) => {
                   const selected = skills.includes(s);
                   return (
                     <button
@@ -1080,8 +1164,8 @@ function EditProfileModal({
                       onClick={() => toggleSkill(s)}
                       className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
                         selected
-                          ? "bg-primary text-white"
-                          : "border border-border bg-card text-steel hover:bg-paper"
+                          ? "bg-primary text-white font-bold"
+                          : "border border-border bg-card text-ink hover:bg-paper"
                       }`}
                     >
                       {selected ? "✓ " : "+ "}
@@ -1196,6 +1280,146 @@ function EditProfileModal({
           onSelect={(val) => {
             setSemester(val);
             setActivePicker(null);
+          }}
+        />
+
+        <ModalPicker
+          isOpen={activePicker === "minat"}
+          onClose={() => setActivePicker(null)}
+          title="Pilih Kategori Minat"
+          options={refData.kategoriMinat}
+          selectedValue={minatKategori[0] || ""}
+          allowLainnya={false}
+          onSelect={(val) => {
+            toggleMinat(val);
+            setActivePicker(null);
+          }}
+        />
+
+        <ModalPicker
+          isOpen={activePicker === "skill"}
+          onClose={() => setActivePicker(null)}
+          title="Pilih Skill & Tools"
+          options={refData.skills}
+          selectedValue={skills[0] || ""}
+          allowLainnya={false}
+          onSelect={(val) => {
+            toggleSkill(val);
+            setActivePicker(null);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Dedicated Modal Edit Data Bank Pencairan                           */
+/* ------------------------------------------------------------------ */
+function EditBankModal({
+  user,
+  banks = [],
+  isSaving = false,
+  onClose,
+  onSave,
+}: {
+  user: StoredUser;
+  banks: BankItem[];
+  isSaving?: boolean;
+  onClose: () => void;
+  onSave: (bankId: number | null, nomorRekening: string, bankName: string) => void;
+}) {
+  const [bankId, setBankId] = useState<number | null>(user.bankId ?? null);
+  const [bankName, setBankName] = useState<string>(user.bankName || "");
+  const [nomorRekening, setNomorRekening] = useState<string>(user.nomorRekening || "");
+  const [isBankPickerOpen, setIsBankPickerOpen] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSaving) return;
+    onSave(bankId, nomorRekening, bankName);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 animate-in fade-in duration-200">
+      <div className="flex w-full max-w-md flex-col rounded-2xl bg-paper shadow-2xl border border-steel/20 animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between border-b border-steel/10 px-6 py-4 shrink-0">
+          <h3 className="text-base font-bold text-ink flex items-center gap-2">
+            <IconClipboard className="w-4 h-4 text-ink/60" />
+            Edit Rekening Bank Pencairan
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup Modal"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-steel/70 hover:bg-steel/10 hover:text-steel transition active:scale-90"
+          >
+            <IconX className="w-4 h-4 text-steel" />
+          </button>
+        </div>
+
+        <form id="edit-bank-form" onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <div>
+            <label className="text-[10px] font-bold tracking-wider text-steel uppercase">Nama Bank *</label>
+            <button
+              type="button"
+              onClick={() => setIsBankPickerOpen(true)}
+              className="mt-1.5 w-full flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-2.5 text-xs text-left text-ink hover:border-ink transition shadow-xs"
+            >
+              <span className="truncate font-semibold">{bankName || "-- Pilih Nama Bank --"}</span>
+              <span className="text-steel text-[10px]">▼</span>
+            </button>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold tracking-wider text-steel uppercase">Nomor Rekening *</label>
+            <input
+              type="text"
+              value={nomorRekening}
+              onChange={(e) => setNomorRekening(e.target.value)}
+              placeholder="Masukkan nomor rekening bank..."
+              className="mt-1.5 w-full rounded-xl border border-border bg-card px-3.5 py-2.5 text-xs text-ink outline-none focus:border-ink transition shadow-xs"
+              required
+            />
+            <p className="mt-1 text-[10px] text-steel/70">
+              Pastikan nomor rekening aktif dan sesuai atas nama kamu untuk proses insentif/pencairan.
+            </p>
+          </div>
+        </form>
+
+        <div className="flex items-center justify-end gap-3 border-t border-steel/10 px-6 py-4 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-steel/20 px-4 py-2.5 text-xs font-semibold text-steel hover:bg-paper transition active:scale-95"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            form="edit-bank-form"
+            disabled={isSaving}
+            className="rounded-xl bg-ink px-5 py-2.5 text-xs font-bold text-paper transition-colors flex items-center gap-2 active:scale-95 disabled:opacity-50"
+          >
+            <IconSave className="w-4 h-4 text-sky" />
+            {isSaving ? "Menyimpan..." : "Simpan Rekening"}
+          </button>
+        </div>
+
+        <ModalPicker
+          isOpen={isBankPickerOpen}
+          onClose={() => setIsBankPickerOpen(false)}
+          title="Pilih Bank"
+          options={banks.map((b) => b.bankName)}
+          selectedValue={bankName}
+          allowLainnya={false}
+          onSelect={(val) => {
+            const foundBank = banks.find((b) => b.bankName === val);
+            if (foundBank) {
+              setBankId(foundBank.id);
+              setBankName(foundBank.bankName);
+            }
+            setIsBankPickerOpen(false);
           }}
         />
       </div>
@@ -1499,6 +1723,8 @@ export default function ProfilePage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditSaving, setIsEditSaving] = useState(false);
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+  const [isBankSaving, setIsBankSaving] = useState(false);
   const [fileError, setFileError] = useState("");
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
@@ -1537,6 +1763,29 @@ export default function ProfilePage() {
     reputationScore: 0,
     responseRate: 0,
   });
+
+  const [refData, setRefData] = useState<ReferenceData>({
+    universitas: [],
+    prodi: [],
+    skills: [],
+    kategoriMinat: [],
+    banks: [],
+  });
+
+  useEffect(() => {
+    fetch("/api/reference")
+      .then((res) => res.json())
+      .then((data) => {
+        setRefData({
+          universitas: data.universitas ?? [],
+          prodi: data.prodi ?? [],
+          skills: data.skills ?? [],
+          kategoriMinat: data.kategoriMinat ?? [],
+          banks: data.banks ?? [],
+        });
+      })
+      .catch((err) => console.error("Error fetching reference in ProfilePage:", err));
+  }, []);
 
   const [loadError, setLoadError] = useState("");
 
@@ -1597,6 +1846,10 @@ export default function ProfilePage() {
       preferensiLokasi: data.preferensiLokasi,
       ringkasan: data.ringkasanSelf,
       foto: data.fotoUrl,
+      bankId: data.bankId,
+      nomorRekening: data.nomorRekening,
+      bankName: data.bankName,
+      bankCode: data.bankCode,
     };
     setUser(parsed);
 
@@ -1778,6 +2031,33 @@ export default function ProfilePage() {
     setShowSuccessModal(true);
   };
 
+  const handleBankDataSave = async (bankId: number | null, nomorRekening: string, bankName: string) => {
+    if (isBankSaving) return;
+    setIsBankSaving(true);
+    const result = await saveToDatabase({
+      bankId,
+      nomorRekening,
+    });
+    setIsBankSaving(false);
+
+    if (!result.ok) {
+      setFileError(result.error);
+      return;
+    }
+
+    if (user) {
+      setUser({
+        ...user,
+        bankId,
+        nomorRekening,
+        bankName,
+      });
+    }
+
+    setIsBankModalOpen(false);
+    setShowSuccessModal(true);
+  };
+
   const totalPengajuan = pengajuan.length;
   const diterima = pengajuan.filter((p) => p.status === "Diterima" || p.status === "Selesai").length;
   const gMetrics = getGamificationMetrics(userMetrics.xp, userMetrics.pts);
@@ -1874,6 +2154,16 @@ export default function ProfilePage() {
           isSaving={isEditSaving}
           onClose={() => setIsEditModalOpen(false)}
           onSave={handleProfileDataSave}
+        />
+      )}
+
+      {isBankModalOpen && (
+        <EditBankModal
+          user={user}
+          banks={refData.banks}
+          isSaving={isBankSaving}
+          onClose={() => setIsBankModalOpen(false)}
+          onSave={handleBankDataSave}
         />
       )}
 
@@ -2120,6 +2410,37 @@ export default function ProfilePage() {
                     </span>
                   </div>
                   <p className="text-xs font-bold text-ink">{user.preferensiLokasi || "Remote"}</p>
+                </div>
+                <div
+                  className="col-span-2 group rounded-xl p-3 transition-all duration-200 hover:-translate-y-0.5"
+                  style={{
+                    background: "#EAF2FB",
+                    boxShadow: "5px 5px 12px rgba(23,59,108,0.12), -5px -5px 12px rgba(255,255,255,0.9)",
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-ocean"
+                        style={{ boxShadow: "inset 2px 2px 5px rgba(23,59,108,0.15), inset -2px -2px 5px rgba(255,255,255,0.8)" }}
+                      >
+                        <IconClipboard className="w-3 h-3 text-ocean" />
+                      </span>
+                      <span className="font-mono text-[9px] uppercase tracking-wide text-steel/70 font-semibold">
+                        Rekening Bank Pencairan
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsBankModalOpen(true)}
+                      className="text-[10px] font-bold text-primary hover:underline"
+                    >
+                      Edit Bank
+                    </button>
+                  </div>
+                  <p className="text-xs font-bold text-ink">
+                    {user.bankName ? `${user.bankName} - ${user.nomorRekening || "Nomor belum diisi"}` : "— Belum diatur"}
+                  </p>
                 </div>
               </div>
             </RevealCard>
