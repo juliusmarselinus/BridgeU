@@ -18,13 +18,15 @@ export function HeroScrollSection() {
             </>
           }
         >
-          <iframe
-            src="https://www.youtube.com/embed/WSNszd1CaZo?rel=0&modestbranding=1"
-            title="Preview BridgeU"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="mx-auto h-full w-full rounded-2xl"
-          />
+          <div className="relative w-full h-full rounded-2xl overflow-hidden bg-black flex items-center justify-center">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/WSNszd1CaZo?rel=0&modestbranding=1&playsinline=1"
+              title="Preview BridgeU"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full border-0 rounded-2xl"
+            />
+          </div>
         </ContainerScroll>
       </div>
     </div>
