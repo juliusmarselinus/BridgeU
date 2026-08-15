@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
     const userId = authData.user.id;
     const body = await req.json();
-    const { kolaborasiId, portofolio } = body;
+    const { kolaborasiId, portofolio, tujuanMengajukan, ketersediaan, tanggalMulaiDiinginkan } = body;
 
     if (!kolaborasiId) {
       return NextResponse.json({ error: "kolaborasiId wajib diisi." }, { status: 400 });
@@ -106,39 +106,53 @@ export async function POST(req: NextRequest) {
         return { error: "Kolaborasi tidak ditemukan.", status: 404 };
       }
 
-      const activeSlotCount = kolab.current_slot !== null && kolab.current_slot !== undefined ? kolab.current_slot : kolab.slot;
+      // Slot awal yang dibuka = kolab.slot
+      // Sisa slot saat ini = kolab.current_slot (jika null, default ke kolab.slot)
+      const currentAvailable = kolab.current_slot !== null && kolab.current_slot !== undefined ? Number(kolab.current_slot) : (kolab.slot ?? 0);
 
       // 3. Validasi Slot tersisa jika slot tidak null
-      if (activeSlotCount !== null && activeSlotCount <= 0) {
+      if (kolab.slot !== null && currentAvailable <= 0) {
         return { error: "Maaf, slot kuota untuk kolaborasi ini telah habis.", status: 400 };
       }
 
-      // 4. Atomic Decrement Slot & Insert Pendaftaran
-      // Kurangi slot 1 jika slot not null
-      let newSlot = activeSlotCount;
-      if (activeSlotCount !== null) {
-        newSlot = Math.max(0, activeSlotCount - 1);
-        const { error: updateErr } = await db
-          .from("kolaborasi")
-          .update({ slot: newSlot, current_slot: newSlot, updated_at: new Date().toISOString() })
-          .eq("id", kolaborasiId);
+      // 4. Update current_slot (slot awal 'slot' TETAP, 'current_slot' BERKURANG 1)
+      let newCurrentSlot = currentAvailable;
+      if (kolab.slot !== null) {
+        newCurrentSlot = Math.max(0, currentAvailable - 1);
+        
+        // Coba panggil RPC decrement_kolaborasi_slot jika ada di Supabase
+        const { error: rpcErr } = await supabase.rpc("decrement_kolaborasi_slot", { p_kolaborasi_id: kolaborasiId });
 
-        if (updateErr) {
-          return { error: "Gagal memperbarui kuota slot kolaborasi.", status: 500 };
+        if (rpcErr) {
+          // Fallback ke direct update menggunakan supabase client
+          const { error: pubUpdateErr } = await supabase
+            .from("kolaborasi")
+            .update({ current_slot: newCurrentSlot, updated_at: new Date().toISOString() })
+            .eq("id", kolaborasiId);
+
+          if (pubUpdateErr) {
+            console.error("❌ Gagal update current_slot:", pubUpdateErr.message);
+            // Tetap berlanjut jika RLS menolak update, tapi catat error
+          }
         }
       }
 
-      // 5. Insert pendaftaran_kolaborasi
+      // 5. Insert pendaftaran_kolaborasi (termasuk tujuan_mengajukan, ketersediaan, & tanggal_mulai_diinginkan)
+      const insertPayload = {
+        kolaborasi_id: kolaborasiId,
+        mahasiswa_id: userId,
+        status: "Menunggu",
+        url_portofolio_dokumen: portofolio || null,
+        tujuan_mengajukan: tujuanMengajukan || null,
+        ketersediaan: ketersediaan || null,
+        tanggal_mulai_diinginkan: tanggalMulaiDiinginkan || null,
+        updated_at: new Date().toISOString(),
+      };
+
       let inserted = null;
       let { data: insData, error: insertErr } = await db
         .from("pendaftaran_kolaborasi")
-        .insert({
-          kolaborasi_id: kolaborasiId,
-          mahasiswa_id: userId,
-          status: "Menunggu",
-          url_portofolio_dokumen: portofolio || null,
-          updated_at: new Date().toISOString(),
-        })
+        .insert(insertPayload)
         .select()
         .maybeSingle();
 
@@ -146,22 +160,16 @@ export async function POST(req: NextRequest) {
         // Fallback pakai service role / admin client jika RLS blocking
         const { data: pubData, error: pubErr } = await supabase
           .from("pendaftaran_kolaborasi")
-          .insert({
-            kolaborasi_id: kolaborasiId,
-            mahasiswa_id: userId,
-            status: "Menunggu",
-            url_portofolio_dokumen: portofolio || null,
-            updated_at: new Date().toISOString(),
-          })
+          .insert(insertPayload)
           .select()
           .maybeSingle();
 
         if (pubErr) {
-          // Rollback slot jika insert pendaftaran gagal di kedua client
-          if (activeSlotCount !== null) {
-            await db
+          // Rollback current_slot jika insert pendaftaran gagal di kedua client
+          if (kolab.slot !== null) {
+            await supabase
               .from("kolaborasi")
-              .update({ slot: activeSlotCount, current_slot: activeSlotCount })
+              .update({ current_slot: currentAvailable })
               .eq("id", kolaborasiId);
           }
           return { error: `Gagal mendaftar kolaborasi: ${pubErr.message}`, status: 500 };
@@ -171,7 +179,7 @@ export async function POST(req: NextRequest) {
         inserted = insData;
       }
 
-      return { success: true, data: inserted, slotTersisa: newSlot };
+      return { success: true, data: inserted, slotTersisa: newCurrentSlot };
     });
 
     if (result.error) {

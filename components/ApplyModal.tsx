@@ -119,6 +119,9 @@ export function ApplyModal({
           body: JSON.stringify({
             kolaborasiId: data.id,
             portofolio,
+            tujuanMengajukan: tujuan,
+            ketersediaan,
+            tanggalMulaiDiinginkan: tanggalMulai || null,
           }),
         });
 

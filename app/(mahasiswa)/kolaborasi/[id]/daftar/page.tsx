@@ -175,6 +175,9 @@ export default function DaftarKolaborasiPage() {
           body: JSON.stringify({
             kolaborasiId: id as string,
             portofolio,
+            tujuanMengajukan: tujuan,
+            ketersediaan,
+            tanggalMulaiDiinginkan: tanggalMulai || null,
           }),
         });
 
