@@ -190,6 +190,7 @@ export interface CreateFullKolaborasiPayload {
   kategori_id: number;
   deskripsi: string;
   lokasi_id: number;
+  tipe_lokasi?: "Onsite" | "Hybrid" | "Remote";
   batas_waktu: string;
   tanggal_selesai?: string;
   tingkat_kesulitan: "Pemula" | "Menengah" | "Lanjut";
@@ -243,6 +244,7 @@ export const companyServiceExtended = {
           kategori_id: payload.kategori_id,
           deskripsi: payload.deskripsi,
           lokasi_id: payload.lokasi_id,
+          tipe_lokasi: payload.tipe_lokasi || "Remote",
           batas_waktu: payload.batas_waktu,
           tanggal_selesai: payload.tanggal_selesai || null,
           tingkat_kesulitan: payload.tingkat_kesulitan,
@@ -326,6 +328,7 @@ export const companyServiceExtended = {
         kategori_id: payload.kategori_id,
         deskripsi: payload.deskripsi,
         lokasi_id: payload.lokasi_id,
+        tipe_lokasi: payload.tipe_lokasi || "Remote",
         batas_waktu: payload.batas_waktu,
         tanggal_selesai: payload.tanggal_selesai || null,
         tingkat_kesulitan: payload.tingkat_kesulitan,

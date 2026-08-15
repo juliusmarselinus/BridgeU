@@ -60,6 +60,7 @@ export function useKolaborasiBaru() {
     tipe: "Akademik",
     selectedKategoriIds: [], // Empty by default!
     lokasi_id: 1,
+    tipe_lokasi: "Remote",
     tingkat_kesulitan: "Menengah",
     slot: 5,
     batas_waktu: "",
@@ -310,6 +311,7 @@ export function useKolaborasiBaru() {
         kategori_id: formData.selectedKategoriIds[0] || 1, // primary fallback
         deskripsi: formData.deskripsi,
         lokasi_id: formData.lokasi_id,
+        tipe_lokasi: formData.tipe_lokasi,
         batas_waktu: formData.batas_waktu,
         tanggal_selesai: formData.tanggal_selesai || undefined,
         tingkat_kesulitan: formData.tingkat_kesulitan,
