@@ -45,6 +45,7 @@ export interface KolaborasiWithMeta {
   perusahaan_nama?: string;
   pelamar_count?: number;
   status_aktif?: string;
+  semua_pelamar_selesai?: boolean;
 }
 
 export interface KolaborasiFormData {

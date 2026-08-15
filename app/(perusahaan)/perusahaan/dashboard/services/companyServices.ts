@@ -83,7 +83,7 @@ export const companyService = {
         kategori_minat:kategori_id ( nama_kategori ),
         kota ( nama_kota ),
         perusahaan_profiles ( nama_perusahaan ),
-        pendaftaran_kolaborasi ( id )
+        pendaftaran_kolaborasi ( id, status )
       `)
       .eq("perusahaan_id", perusahaanId)
       .order("created_at", { ascending: false });
@@ -93,25 +93,36 @@ export const companyService = {
       return [];
     }
 
-    return (data || []).map((item) => ({
-      id: item.id,
-      perusahaan_id: item.perusahaan_id,
-      judul: item.judul,
-      tipe: item.tipe,
-      kategori_id: item.kategori_id,
-      nama_kategori: item.kategori_minat?.nama_kategori || "Umum",
-      deskripsi: item.deskripsi,
-      lokasi_id: item.lokasi_id,
-      nama_kota: item.kota?.nama_kota || "Tidak Diketahui",
-      batas_waktu: item.batas_waktu,
-      tanggal_selesai: item.tanggal_selesai,
-      status_moderasi: item.status_moderasi,
-      tingkat_kesulitan: item.tingkat_kesulitan,
-      gaji_stipend: item.gaji_stipend,
-      slot: item.slot,
-      perusahaan_nama: item.perusahaan_profiles?.nama_perusahaan,
-      pelamar_count: item.pendaftaran_kolaborasi?.length || 0,
-    }));
+    return (data || []).map((item) => {
+      const pelamarDiterima = (item.pendaftaran_kolaborasi || []).filter(
+        (p: any) => p.status !== "Ditolak"
+      );
+      const semuaSelesai =
+        pelamarDiterima.length > 0 &&
+        pelamarDiterima.every((p: any) => p.status === "Selesai");
+
+      return {
+        id: item.id,
+        perusahaan_id: item.perusahaan_id,
+        judul: item.judul,
+        tipe: item.tipe,
+        kategori_id: item.kategori_id,
+        nama_kategori: item.kategori_minat?.nama_kategori || "Umum",
+        deskripsi: item.deskripsi,
+        lokasi_id: item.lokasi_id,
+        nama_kota: item.kota?.nama_kota || "Tidak Diketahui",
+        batas_waktu: item.batas_waktu,
+        tanggal_selesai: item.tanggal_selesai,
+        status_moderasi: item.status_moderasi,
+        status_aktif: item.status_aktif,
+        semua_pelamar_selesai: semuaSelesai,
+        tingkat_kesulitan: item.tingkat_kesulitan,
+        gaji_stipend: item.gaji_stipend,
+        slot: item.slot,
+        perusahaan_nama: item.perusahaan_profiles?.nama_perusahaan,
+        pelamar_count: item.pendaftaran_kolaborasi?.length || 0,
+      };
+    });
   },
 
   // 5. Buat Proyek Kolaborasi Baru
@@ -169,16 +180,47 @@ export const companyService = {
     };
   },
 
-  // 6. Hapus Proyek Kolaborasi
   async deleteKolaborasi(id: string): Promise<boolean> {
-    const { error } = await supabase.from("kolaborasi").delete().eq("id", id);
+    try {
+      const { data: pendaftaranRows } = await supabase
+        .from("pendaftaran_kolaborasi")
+        .select("id")
+        .eq("kolaborasi_id", id);
+      const pendaftaranIds = (pendaftaranRows || []).map((p) => p.id);
 
-    if (error) {
-      console.error("Gagal menghapus kolaborasi:", error.message);
+      if (pendaftaranIds.length > 0) {
+        await supabase.from("riwayat_pengumpulan_kolaborasi").delete().in("pendaftaran_id", pendaftaranIds);
+      }
+
+      const { data: permintaanRows } = await supabase
+        .from("permintaan_hapus_kolaborasi")
+        .select("id")
+        .eq("kolaborasi_id", id);
+      const permintaanIds = (permintaanRows || []).map((p) => p.id);
+
+      if (permintaanIds.length > 0) {
+        await supabase.from("persetujuan_hapus").delete().in("permintaan_id", permintaanIds);
+      }
+
+      await supabase.from("permintaan_hapus_kolaborasi").delete().eq("kolaborasi_id", id);
+      await supabase.from("pendaftaran_kolaborasi").delete().eq("kolaborasi_id", id);
+      await supabase.from("chat_kolaborasi").delete().eq("kolaborasi_id", id);
+      await supabase.from("kolaborasi_target_prodi").delete().eq("kolaborasi_id", id);
+      await supabase.from("kolaborasi_skills").delete().eq("kolaborasi_id", id);
+      await supabase.from("kolaborasi_kategori_minat").delete().eq("kolaborasi_id", id);
+
+      const { error } = await supabase.from("kolaborasi").delete().eq("id", id);
+
+      if (error) {
+        console.error("Gagal menghapus kolaborasi:", error.message);
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Gagal menghapus kolaborasi (cascade):", err);
       return false;
     }
-
-    return true;
   },
 };
 

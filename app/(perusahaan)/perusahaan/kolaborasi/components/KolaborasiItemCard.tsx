@@ -13,16 +13,20 @@ const statusConfig: Record<string, { label: string; bg: string; text: string }> 
   Disetujui: { label: "Tayang", bg: "bg-emerald-100", text: "text-emerald-800" },
   Ditolak: { label: "Ditolak", bg: "bg-red-100", text: "text-red-800" },
   Dibatalkan: { label: "Dibatalkan", bg: "bg-rose-100", text: "text-rose-800" },
+  Selesai: { label: "Selesai", bg: "bg-blue-100", text: "text-blue-800" },
 };
 
 export function KolaborasiItemCard({ item, onDelete, unreadCount = 0 }: KolaborasiItemCardProps) {
   const statusModerasi = item.status_moderasi;
   const isAkademik = item.tipe === "Akademik";
   const isDibatalkan = item.status_aktif === "Dibatalkan";
+  const isSelesai = !isDibatalkan && item.semua_pelamar_selesai;
   const status = isDibatalkan
     ? statusConfig.Dibatalkan
+    : isSelesai
+    ? statusConfig.Selesai
     : statusConfig[statusModerasi] || statusConfig.Menunggu;
-  const isPending = !isDibatalkan && statusModerasi === "Menunggu";
+  const isPending = !isDibatalkan && !isSelesai && statusModerasi === "Menunggu";
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_10px_rgba(151,184,216,0.18)] transition-all duration-300 hover:shadow-[0_10px_30px_rgba(151,184,216,0.3)] hover:-translate-y-1">
