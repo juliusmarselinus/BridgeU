@@ -1288,4 +1288,4 @@ export function useKolaborasiDetail() {
     selectedKotaObj, stats, hasPelamarAktif, getKategoriDisplay,
     sortedPelamarList, isSlotPenuh
   };
-}
+} 

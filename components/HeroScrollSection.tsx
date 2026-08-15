@@ -4,7 +4,7 @@ import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 
 export function HeroScrollSection() {
   return (
-    <div className="relative w-full bg-clouds rounded-t-[3rem] shadow-[0_-12px_40px_-20px_rgba(18,40,75,0.25)] -mt-8">
+    <div id="cara-kerja" className="relative w-full bg-clouds rounded-t-[3rem] shadow-[0_-12px_40px_-20px_rgba(18,40,75,0.25)] -mt-8">
       <div className="flex flex-col overflow-hidden pt-8">
         <ContainerScroll
           titleComponent={
