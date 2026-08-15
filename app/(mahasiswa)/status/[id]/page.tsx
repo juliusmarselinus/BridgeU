@@ -17,6 +17,8 @@ type StatusDetail = {
   tipe: string;
   deskripsi: string;
   batasWaktu: string;
+  startKolaborasi?: string;
+  batasPelaksanaan?: string;
   status: "Menunggu" | "Diproses" | "Diterima" | "Evaluasi" | "Revisi" | "Ditolak" | "Selesai" | "Dibatalkan";
   tanggalDaftar: string;
   catatanPerusahaan?: string;
@@ -202,6 +204,7 @@ export default function StatusDetailPage() {
                 tipe,
                 deskripsi,
                 batas_waktu,
+                tanggal_selesai,
                 gaji_stipend,
                 perusahaan:perusahaan_id ( nama_perusahaan )
               ),
@@ -233,6 +236,16 @@ export default function StatusDetailPage() {
               deskripsi: (row.kolaborasi as any)?.deskripsi ?? "",
               batasWaktu: (row.kolaborasi as any)?.batas_waktu
                 ? new Date((row.kolaborasi as any).batas_waktu).toLocaleDateString("id-ID", {
+                    day: "numeric", month: "long", year: "numeric",
+                  })
+                : "-",
+              startKolaborasi: (row.kolaborasi as any)?.batas_waktu
+                ? new Date((row.kolaborasi as any).batas_waktu).toLocaleDateString("id-ID", {
+                    day: "numeric", month: "long", year: "numeric",
+                  })
+                : "-",
+              batasPelaksanaan: (row.kolaborasi as any)?.tanggal_selesai
+                ? new Date((row.kolaborasi as any).tanggal_selesai).toLocaleDateString("id-ID", {
                     day: "numeric", month: "long", year: "numeric",
                   })
                 : "-",
@@ -708,10 +721,16 @@ export default function StatusDetailPage() {
                       <strong className="text-emerald-700 font-bold">{detail.gajiStipend}</strong>
                     </div>
                   )}
-                  {detail.batasWaktu !== "-" && (
+                  {detail.startKolaborasi && detail.startKolaborasi !== "-" && (
+                    <div className="col-span-2">
+                      <span className="text-steel block">Start Kolaborasi</span>
+                      <strong className="text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-block mt-0.5">{detail.startKolaborasi}</strong>
+                    </div>
+                  )}
+                  {detail.batasPelaksanaan && detail.batasPelaksanaan !== "-" && (
                     <div className="col-span-2">
                       <span className="text-steel block">Batas Pelaksanaan</span>
-                      <strong className="text-ink">{detail.batasWaktu}</strong>
+                      <strong className="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block mt-0.5">{detail.batasPelaksanaan}</strong>
                     </div>
                   )}
                 </div>

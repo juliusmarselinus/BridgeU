@@ -131,7 +131,7 @@ export default function CompanyDashboardPage() {
         const dt = new Date(inv.scheduled_at);
         const colabLink = inv.kolaborasi_id
           ? `/perusahaan/kolaborasi/${inv.kolaborasi_id}?tab=pelamar`
-          : `/perusahaan/jadwal`;
+          : `/perusahaan/kolaborasi`;
 
         list.push({
           id: `interview-${inv.id}`,

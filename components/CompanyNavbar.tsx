@@ -9,7 +9,6 @@ import { supabase } from "@/lib/supabase";
 const companyNavLinks = [
   { href: "/perusahaan/dashboard", label: "Dashboard Perusahaan" },
   { href: "/perusahaan/kolaborasi", label: "Kelola Kolaborasi" },
-  { href: "/perusahaan/jadwal", label: "Jadwal Wawancara" },
 ];
 
 type CompanyProfileNav = {
