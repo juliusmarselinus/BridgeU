@@ -125,28 +125,17 @@ export const deleteRequestService = {
       .neq("status", "Disetujui");
 
     if (belum && belum.length === 0) {
-      const { data: req } = await supabase
-        .from("permintaan_hapus_kolaborasi")
-        .update({ status: "Selesai", resolved_at: new Date().toISOString() })
-        .eq("id", permintaanId)
-        .select("kolaborasi_id")
-        .single();
+      const { data: berhasil, error } = await supabase.rpc(
+        "finalisasi_pembatalan_kolaborasi",
+        { p_permintaan_id: permintaanId }
+      );
 
-      if (req) {
-        const { error: updateKolErr } = await supabase
-          .from("kolaborasi")
-          .update({ status_aktif: "Dibatalkan" })
-          .eq("id", req.kolaborasi_id);
-
-        const { error: updatePendaftaranErr } = await supabase
-          .from("pendaftaran_kolaborasi")
-          .update({ status: "Dibatalkan" })
-          .eq("kolaborasi_id", req.kolaborasi_id)
-          .eq("status", "Diterima");
-
-        return !updateKolErr && !updatePendaftaranErr;
+      if (error) {
+        console.error("[hapus] gagal finalisasi pembatalan:", error.message);
+        return false;
       }
-      return false;
+
+      return berhasil === true;
     }
     return false;
   },
