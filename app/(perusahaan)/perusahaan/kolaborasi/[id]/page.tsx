@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useKolaborasiDetail } from "./hooks/useKolaborasiDetail";
@@ -30,6 +31,7 @@ export default function DetailKolaborasiPage() {
     isSubmittingEvaluasi,
     handleKirimEvaluasi,
     handleGiveRating,
+    handleUploadBuktiBayar,
     isSubmittingRevisi,
     handleMintaRevisi,
     deleteAlasan,
@@ -107,10 +109,13 @@ export default function DetailKolaborasiPage() {
 
   } = useKolaborasiDetail();
 
+  const [buktiBayarInput, setBuktiBayarInput] = useState("");
+  const [ratingHover, setRatingHover] = useState<number | null>(null);
+
   // Categorize pelamar
   const pelamarMenunggu = pelamarList.filter((p) => p.status === "Menunggu");
   const pelamarAktif = pelamarList.filter(
-    (p) => p.status === "Diterima" || p.status === "Minta Revisi" || p.status === "Selesai"
+    (p) => p.status === "Diterima" || p.status === "Evaluasi" || p.status === "Minta Revisi" || p.status === "Selesai"
   );
   const pelamarDitolak = pelamarList.filter((p) => p.status === "Ditolak");
 
@@ -174,9 +179,26 @@ export default function DetailKolaborasiPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink leading-tight">
-            {kolaborasi.judul}
-          </h1>
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink leading-tight">
+              {kolaborasi.judul}
+            </h1>
+            <div className="flex items-center gap-3 mt-2 font-mono text-xs text-steel">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-steel/10 border border-steel/15 text-ink font-semibold">
+                <svg className="w-3.5 h-3.5 text-steel" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                </svg>
+                Sisa Slot Kuota:{" "}
+                <strong className={ (kolaborasi.current_slot ?? kolaborasi.slot ?? 0) === 0 ? "text-red-600" : "text-emerald-700" }>
+                  {kolaborasi.current_slot ?? kolaborasi.slot ?? 0}
+                </strong>{" "}
+                / {kolaborasi.slot || 0}
+              </span>
+              <span>&bull;</span>
+              <span>Tipe Lokasi: <strong className="text-ink">{kolaborasi.tipe_lokasi || "Remote"}</strong></span>
+            </div>
+          </div>
           <Link
             href="/perusahaan/kolaborasi"
             className="inline-flex items-center gap-1.5 rounded-full border border-steel/20 bg-white px-4 py-2 font-mono text-xs font-medium text-ink hover:bg-steel/5 transition shadow-sm shrink-0"
@@ -632,101 +654,192 @@ export default function DetailKolaborasiPage() {
                           </div>
                         )}
 
-                        {/* Form Evaluasi */}
-                        <form onSubmit={handleKirimEvaluasi} className="pt-4 border-t border-steel/10 space-y-3">
-                          <label className="block font-mono text-xs font-bold text-ink">
-                            Evaluasi &amp; Catatan Masukan Perusahaan:
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={evaluasiInput}
-                            onChange={(e) => setEvaluasiInput(e.target.value)}
-                            placeholder="Tulis masukan, apresiasi, atau instruksi revisi untuk mahasiswa..."
-                            className="w-full rounded-xl border border-steel/20 p-3.5 text-xs outline-none focus:border-bridge-gold font-sans leading-relaxed bg-white"
-                          />
-                          <div className="flex items-center justify-end gap-2.5">
-                            <button
-                              type="button"
-                              onClick={() => handleMintaRevisi(evaluasiInput)}
-                              disabled={isSubmittingRevisi || !evaluasiInput.trim()}
-                              className="rounded-full border border-purple-200 bg-purple-50 text-purple-700 px-5 py-2 font-mono text-xs font-semibold hover:bg-purple-100 transition disabled:opacity-40"
-                            >
-                              {isSubmittingRevisi ? "Memproses..." : "Minta Revisi"}
-                            </button>
-                            <button
-                              type="submit"
-                              disabled={isSubmittingEvaluasi || !evaluasiInput.trim()}
-                              className="rounded-full bg-bridge-gold text-ink px-6 py-2 font-mono text-xs font-semibold hover:bg-bridge-gold/90 transition disabled:opacity-40 shadow-sm"
-                            >
-                              {isSubmittingEvaluasi ? "Menyimpan..." : "Kirim Evaluasi"}
-                            </button>
+                        {/* Form Evaluasi & Minta Revisi (hanya jika status BELUM Selesai) */}
+                        {selectedPelamar.status !== "Selesai" ? (
+                          <form onSubmit={handleKirimEvaluasi} className="pt-4 border-t border-steel/10 space-y-3">
+                            <label className="block font-mono text-xs font-bold text-ink">
+                              Evaluasi &amp; Catatan Masukan Perusahaan:
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={evaluasiInput}
+                              onChange={(e) => setEvaluasiInput(e.target.value)}
+                              placeholder="Tulis masukan, apresiasi, atau instruksi revisi untuk mahasiswa..."
+                              className="w-full rounded-xl border border-steel/20 p-3.5 text-xs outline-none focus:border-bridge-gold font-sans leading-relaxed bg-white"
+                            />
+                            <div className="flex items-center justify-end gap-2.5">
+                              <button
+                                type="button"
+                                onClick={() => handleMintaRevisi(evaluasiInput)}
+                                disabled={isSubmittingRevisi || !evaluasiInput.trim()}
+                                className="rounded-full border border-purple-200 bg-purple-50 text-purple-700 px-5 py-2 font-mono text-xs font-semibold hover:bg-purple-100 transition disabled:opacity-40"
+                              >
+                                {isSubmittingRevisi ? "Memproses..." : "Minta Revisi"}
+                              </button>
+                              <button
+                                type="submit"
+                                disabled={isSubmittingEvaluasi || !evaluasiInput.trim()}
+                                className="rounded-full bg-bridge-gold text-ink px-6 py-2 font-mono text-xs font-semibold hover:bg-bridge-gold/90 transition disabled:opacity-40 shadow-sm"
+                              >
+                                {isSubmittingEvaluasi ? "Menyimpan..." : "Kirim Evaluasi"}
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <div className="pt-4 border-t border-steel/10">
+                            <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3.5 flex items-center justify-between text-xs font-mono">
+                              <span className="font-semibold text-blue-900">
+                                Proyek Telah Diberikan Status Selesai
+                              </span>
+                              <span className="text-[11px] text-blue-700">
+                                Evaluasi & Minta Revisi Ditutup
+                              </span>
+                            </div>
                           </div>
-                        </form>
+                        )}
 
                         {/* Penilaian & Rating Perusahaan (hanya aktif jika status pengerjaan Selesai) */}
                         {selectedPelamar.status === "Selesai" && (
-                          <div className="pt-4 border-t border-steel/10 space-y-3 bg-amber-50/50 p-4 rounded-2xl border border-amber-200/60">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h5 className="font-display text-xs font-bold text-ink flex items-center gap-1.5">
-                                  <svg className="w-4 h-4 text-amber-500 fill-amber-400" viewBox="0 0 24 24">
-                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                                  </svg>
-                                  Penilaian Hasil Pengerjaan Mahasiswa
-                                </h5>
-                                <p className="font-mono text-[10px] text-steel">
-                                  {selectedPelamar.ratings != null
-                                    ? "Rating telah diberikan dan tidak dapat diubah lagi."
-                                    : "Beri rating bintang (1 - 5) untuk performa & luaran proyek mahasiswa."}
-                                </p>
-                              </div>
-                              {selectedPelamar.ratings != null && (
-                                <span className="font-mono text-xs font-bold text-amber-900 bg-amber-200/60 px-2.5 py-1 rounded-full border border-amber-300">
-                                  ★ {selectedPelamar.ratings} / 5
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Bintang Selection */}
-                            <div className="flex items-center gap-2 pt-1">
-                              {[1, 2, 3, 4, 5].map((star) => {
-                                const currentRating = selectedPelamar.ratings;
-                                const isFilled = currentRating != null && star <= currentRating;
-                                const isDisabled = currentRating != null;
-
-                                return (
-                                  <button
-                                    key={star}
-                                    type="button"
-                                    disabled={isDisabled}
-                                    onClick={() => handleGiveRating(star)}
-                                    className={`p-1.5 rounded-xl transition-all ${
-                                      isDisabled
-                                        ? "cursor-not-allowed opacity-80"
-                                        : "hover:scale-110 hover:bg-amber-100 cursor-pointer active:scale-95"
-                                    }`}
-                                    title={isDisabled ? `Rating sudah diberikan (${currentRating} bintang)` : `Beri rating ${star} Bintang`}
-                                  >
-                                    <svg
-                                      className={`w-7 h-7 transition-colors ${
-                                        isFilled
-                                          ? "text-amber-400 fill-amber-400"
-                                          : "text-steel/30 fill-transparent hover:text-amber-300"
-                                      }`}
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                      strokeWidth={1.5}
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                                      />
+                          <div className="space-y-4 pt-4 border-t border-steel/10">
+                            {/* Rating Bintang */}
+                            <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h5 className="font-display text-xs font-bold text-ink flex items-center gap-1.5">
+                                    <svg className="w-4 h-4 text-amber-500 fill-amber-400" viewBox="0 0 24 24">
+                                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                                     </svg>
-                                  </button>
-                                );
-                              })}
+                                    Penilaian Hasil Pengerjaan Mahasiswa
+                                  </h5>
+                                  <p className="font-mono text-[10px] text-steel">
+                                    {selectedPelamar.ratings != null
+                                      ? "Rating telah diberikan dan tersimpan."
+                                      : "Beri rating bintang (1 - 5) untuk performa & luaran proyek mahasiswa."}
+                                  </p>
+                                </div>
+                                {selectedPelamar.ratings != null && (
+                                  <span className="font-mono text-xs font-bold text-amber-900 bg-amber-200/70 px-3 py-1 rounded-full border border-amber-300 shadow-sm">
+                                    ★ {selectedPelamar.ratings} / 5
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Bintang Selection */}
+                              <div
+                                className="flex items-center gap-2 pt-1"
+                                onMouseLeave={() => setRatingHover(null)}
+                              >
+                                {[1, 2, 3, 4, 5].map((star) => {
+                                  const currentRating = selectedPelamar.ratings;
+                                  const effectiveRating = ratingHover !== null ? ratingHover : (currentRating || 0);
+                                  const isFilled = star <= effectiveRating;
+                                  const isDisabled = currentRating != null;
+
+                                  return (
+                                    <button
+                                      key={star}
+                                      type="button"
+                                      disabled={isDisabled}
+                                      onMouseEnter={() => !isDisabled && setRatingHover(star)}
+                                      onClick={() => {
+                                        if (!isDisabled) {
+                                          handleGiveRating(star);
+                                        }
+                                      }}
+                                      className={`p-2 rounded-xl transition-all duration-150 ${
+                                        isDisabled
+                                          ? "cursor-default opacity-90"
+                                          : "hover:scale-125 cursor-pointer active:scale-95 bg-amber-100/60 hover:bg-amber-200"
+                                      }`}
+                                      title={isDisabled ? `Rating sudah diberikan (${currentRating} bintang)` : `Beri rating ${star} Bintang`}
+                                    >
+                                      <svg
+                                        className={`w-8 h-8 transition-colors ${
+                                          isFilled
+                                            ? "text-amber-400 fill-amber-400"
+                                            : "text-steel/30 fill-transparent"
+                                        }`}
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={1.5}
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                                        />
+                                      </svg>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
+
+                            {/* Bukti Pembayaran (Khusus tipe Magang) */}
+                            {kolaborasi?.tipe === "Magang" && (
+                              <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200/80 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h5 className="font-display text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                                      <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <rect x="2" y="5" width="20" height="14" rx="2" />
+                                        <line x1="2" y1="10" x2="22" y2="10" />
+                                      </svg>
+                                      Bukti Pembayaran Stipend Magang
+                                    </h5>
+                                    <p className="font-mono text-[10px] text-steel">
+                                      {selectedPelamar.url_bukti_bayar
+                                        ? "Bukti pembayaran stipend telah diunggah."
+                                        : "Masukkan link bukti transfer/pembayaran stipend magang untuk mahasiswa."}
+                                    </p>
+                                  </div>
+                                  {selectedPelamar.status_pembayaran && (
+                                    <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                                      {selectedPelamar.status_pembayaran}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {selectedPelamar.url_bukti_bayar ? (
+                                  <div className="bg-white p-3 rounded-xl border border-emerald-200 flex items-center justify-between gap-3">
+                                    <a
+                                      href={selectedPelamar.url_bukti_bayar}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="font-mono text-xs text-emerald-700 underline font-bold truncate hover:text-emerald-900"
+                                    >
+                                      {selectedPelamar.url_bukti_bayar}
+                                    </a>
+                                    <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md shrink-0">
+                                      Tersimpan
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <form
+                                    onSubmit={(e) => {
+                                      e.preventDefault();
+                                      handleUploadBuktiBayar(buktiBayarInput);
+                                    }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <input
+                                      type="url"
+                                      value={buktiBayarInput}
+                                      onChange={(e) => setBuktiBayarInput(e.target.value)}
+                                      placeholder="https://drive.google.com/... atau link bukti transfer"
+                                      className="flex-1 rounded-xl border border-emerald-300 px-3.5 py-2 text-xs outline-none focus:border-emerald-600 bg-white"
+                                    />
+                                    <button
+                                      type="submit"
+                                      disabled={!buktiBayarInput.trim()}
+                                      className="rounded-xl bg-emerald-700 px-4 py-2 font-mono text-xs font-bold text-white hover:bg-emerald-800 transition disabled:opacity-40 shrink-0"
+                                    >
+                                      Simpan Bukti
+                                    </button>
+                                  </form>
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -839,7 +952,19 @@ export default function DetailKolaborasiPage() {
               {/* Ketentuan */}
               <div className="rounded-2xl border border-steel/15 bg-white p-6 shadow-sm space-y-4">
                 <h3 className="font-display text-sm font-bold text-ink border-b border-steel/10 pb-3">Ketentuan</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                  <div>
+                    <label className="block font-mono text-xs font-medium text-ink mb-1.5">Tipe Lokasi *</label>
+                    <select
+                      value={formData.tipe_lokasi}
+                      onChange={(e) => setFormData({ ...formData, tipe_lokasi: e.target.value as "Onsite" | "Hybrid" | "Remote" })}
+                      className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm bg-white outline-none focus:border-bridge-gold font-semibold text-ink"
+                    >
+                      <option value="Onsite">Onsite</option>
+                      <option value="Hybrid">Hybrid</option>
+                      <option value="Remote">Remote</option>
+                    </select>
+                  </div>
                   <div>
                     <label className="block font-mono text-xs font-medium text-ink mb-1.5">Tingkat Kesulitan</label>
                     <select
@@ -1285,6 +1410,7 @@ export default function DetailKolaborasiPage() {
 function StatusBadge({ status, small = false }: { status: string; small?: boolean }) {
   const map: Record<string, string> = {
     Diterima: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    Evaluasi: "bg-sky/15 text-ocean border-sky/30",
     Ditolak: "bg-red-50 text-red-800 border-red-200",
     Selesai: "bg-blue-50 text-blue-800 border-blue-200",
     "Minta Revisi": "bg-purple-50 text-purple-800 border-purple-200",

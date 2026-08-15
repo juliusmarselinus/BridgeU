@@ -27,7 +27,9 @@ export function useKolaborasiDetail() {
   const initialTab = (searchParams.get("tab") as "pelamar" | "settings") || "pelamar";
 
   // Tab & Loading State
-  const [activeTab, setActiveTab] = useState<"pelamar" | "settings">(initialTab);
+  const [activeTab, setActiveTab] = useState<"pelamar" | "workspace" | "settings">(
+    (searchParams.get("tab") as any) || "pelamar"
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -116,6 +118,7 @@ export function useKolaborasiDetail() {
     tipe: "Akademik" as "Akademik" | "Magang",
     selectedKategoriIds: [] as number[],
     lokasi_id: 1,
+    tipe_lokasi: "Remote" as "Onsite" | "Hybrid" | "Remote",
     tingkat_kesulitan: "Menengah" as "Pemula" | "Menengah" | "Lanjut",
     slot: 5,
     batas_waktu: "",
@@ -260,8 +263,8 @@ export function useKolaborasiDetail() {
         const { data: row, error } = await supabase
           .from("kolaborasi")
           .select(`
-            id, judul, tipe, deskripsi, lokasi_id, batas_waktu, tanggal_selesai, status_moderasi,
-            tingkat_kesulitan, gaji_stipend, slot, kategori_id,
+            id, judul, tipe, deskripsi, lokasi_id, tipe_lokasi, batas_waktu, tanggal_selesai, status_moderasi,
+            tingkat_kesulitan, gaji_stipend, slot, current_slot, kategori_id,
             kategori_minat:kategori_id ( nama_kategori ),
             kota ( nama_kota ),
             kolaborasi_target_prodi ( prodi_id ),
@@ -278,6 +281,8 @@ export function useKolaborasiDetail() {
               tujuan_mengajukan,
               ketersediaan,
               tanggal_mulai_diinginkan,
+              url_bukti_bayar,
+              status_pembayaran,
               mahasiswa_profiles (
                 nama_lengkap,
                 semester,
@@ -356,6 +361,8 @@ export function useKolaborasiDetail() {
               tujuan_mengajukan: p.tujuan_mengajukan,
               ketersediaan: p.ketersediaan,
               tanggal_mulai_diinginkan: p.tanggal_mulai_diinginkan,
+              url_bukti_bayar: p.url_bukti_bayar,
+              status_pembayaran: p.status_pembayaran,
               url_hasil_kolaborasi: latestSubmission?.url_hasil,
               catatan_hasil_kolaborasi: latestSubmission?.catatan_mahasiswa,
               riwayat_pengumpulan: riwayat,
@@ -365,7 +372,7 @@ export function useKolaborasiDetail() {
 
           // Select first pelamar by default if available
           const firstAktif = mappedPelamar.find(
-            (p) => p.status === "Diterima" || p.status === "Minta Revisi" || p.status === "Selesai"
+            (p) => p.status === "Diterima"|| p.status === "Evaluasi" || p.status === "Minta Revisi" || p.status === "Selesai"
           );
           if (firstAktif && !selectedPelamar) {
             setSelectedPelamar(firstAktif);
@@ -379,6 +386,7 @@ export function useKolaborasiDetail() {
             tipe: row.tipe === "Magang" ? "Magang" : "Akademik",
             selectedKategoriIds: selectedKategoriIds,
             lokasi_id: row.lokasi_id || (kotas[0]?.id || 1),
+            tipe_lokasi: row.tipe_lokasi || "Remote",
             tingkat_kesulitan: row.tingkat_kesulitan || "Menengah",
             slot: row.slot || 5,
             batas_waktu: row.batas_waktu || "",
@@ -587,26 +595,79 @@ export function useKolaborasiDetail() {
     if (!selectedPelamar) return;
     if (selectedPelamar.ratings != null) return; // tidak bisa ubah jika sudah ada rating
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from("pendaftaran_kolaborasi")
-      .update({ ratings: ratingVal })
+      .update({ ratings: ratingVal, updated_at: new Date().toISOString() })
       .eq("id", selectedPelamar.id);
 
     if (error) {
+      console.error("Gagal update ratings:", error.message);
       setActionModal({
         isOpen: true,
         title: "Gagal Memberikan Rating",
         message: "Terjadi kesalahan saat menyimpan rating: " + error.message,
       });
+      return;
+    }
+
+    setSelectedPelamar((prev) => (prev ? { ...prev, ratings: ratingVal } : null));
+    setPelamarList((prev) =>
+      prev.map((p) => (p.id === selectedPelamar.id ? { ...p, ratings: ratingVal } : p))
+    );
+    setSuccessModal({
+      isOpen: true,
+      title: "Rating Berhasil Disimpan",
+      message: `Terima kasih! Anda memberikan rating ${ratingVal} bintang untuk hasil pengerjaan mahasiswa ini.`,
+    });
+  };
+
+  const handleUploadBuktiBayar = async (urlBukti: string) => {
+    if (!selectedPelamar || !urlBukti.trim()) return;
+
+    const { error } = await supabase
+      .from("pendaftaran_kolaborasi")
+      .update({
+        url_bukti_bayar: urlBukti.trim(),
+        status_pembayaran: "Dibayar",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", selectedPelamar.id);
+
+    if (error) {
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Upload Bukti Pembayaran",
+        message: "Terjadi kesalahan saat menyimpan bukti pembayaran: " + error.message,
+      });
     } else {
-      setSelectedPelamar((prev) => (prev ? { ...prev, ratings: ratingVal } : null));
-      setPelamarList((prev) =>
-        prev.map((p) => (p.id === selectedPelamar.id ? { ...p, ratings: ratingVal } : p))
+      setSelectedPelamar((prev) =>
+        prev
+          ? {
+              ...prev,
+              url_bukti_bayar: urlBukti.trim(),
+              status_pembayaran: "Dibayar",
+            }
+          : null
       );
+      setPelamarList((prev) =>
+        prev.map((p) =>
+          p.id === selectedPelamar.id
+            ? { ...p, url_bukti_bayar: urlBukti.trim(), status_pembayaran: "Dibayar" }
+            : p
+        )
+      );
+
+      // Notifikasi ke mahasiswa
+      await notifikasiService.kirim(
+        selectedPelamar.mahasiswa_id,
+        "Bukti Pembayaran Stipend Diunggah",
+        `Perusahaan telah mengunggah bukti pembayaran stipend untuk proyek "${kolaborasi?.judul || 'Magang'}"`
+      );
+
       setSuccessModal({
         isOpen: true,
-        title: "Rating Berhasil Disimpan",
-        message: `Terima kasih! Anda memberikan rating ${ratingVal} bintang untuk hasil pengerjaan mahasiswa ini.`,
+        title: "Bukti Pembayaran Tersimpan",
+        message: "Link bukti pembayaran stipend telah berhasil disimpan dan diteruskan ke mahasiswa.",
       });
     }
   };
@@ -679,6 +740,7 @@ export function useKolaborasiDetail() {
       kategori_id: formData.selectedKategoriIds[0] || 1,
       deskripsi: formData.deskripsi,
       lokasi_id: formData.lokasi_id,
+      tipe_lokasi: formData.tipe_lokasi,
       batas_waktu: formData.batas_waktu,
       tanggal_selesai: formData.tanggal_selesai || undefined,
       tingkat_kesulitan: formData.tingkat_kesulitan,
@@ -1018,13 +1080,14 @@ export function useKolaborasiDetail() {
   const stats = {
     total: pelamarList.length,
     menunggu: pelamarList.filter((p) => p.status === "Menunggu").length,
+    evaluasi: pelamarList.filter((p) => p.status === "Evaluasi").length,
     diterima: pelamarList.filter((p) => p.status === "Diterima").length,
     ditolak: pelamarList.filter((p) => p.status === "Ditolak").length,
     selesai: pelamarList.filter((p) => p.status === "Selesai").length,
   };
 
   const hasPelamarAktif = pelamarList.some(
-    (p) => p.status === "Diterima" || p.status === "Minta Revisi" || p.status === "Selesai"
+    (p) => p.status === "Diterima" || p.status === "Evaluasi"  || p.status === "Minta Revisi" || p.status === "Selesai"
   );
 
   const getKategoriDisplay = () => {
@@ -1058,7 +1121,7 @@ export function useKolaborasiDetail() {
     pelamarList, setPelamarList,
     selectedPelamar, setSelectedPelamar,
     chatMessages, chatInput, setChatInput, isSendingChat, handleKirimChat, unreadCounts,
-    evaluasiInput, setEvaluasiInput, isSubmittingEvaluasi, handleKirimEvaluasi, handleGiveRating,
+    evaluasiInput, setEvaluasiInput, isSubmittingEvaluasi, handleKirimEvaluasi, handleGiveRating, handleUploadBuktiBayar,
     isSubmittingRevisi, handleMintaRevisi,
     deleteAlasan, setDeleteAlasan,
     deleteKompensasi, setDeleteKompensasi,

@@ -254,7 +254,27 @@ export default function TambahKolaborasiPage() {
             2. Ketentuan Proyek
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+            <div>
+              <label className="block font-mono text-xs font-medium text-ink mb-1">
+                Tipe Lokasi *
+              </label>
+              <select
+                value={formData.tipe_lokasi}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    tipe_lokasi: e.target.value as "Onsite" | "Hybrid" | "Remote",
+                  })
+                }
+                className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm bg-white outline-none focus:border-bridge-gold font-sans font-semibold text-ink"
+              >
+                <option value="Onsite">Onsite</option>
+                <option value="Hybrid">Hybrid</option>
+                <option value="Remote">Remote</option>
+              </select>
+            </div>
+
             <div>
               <label className="block font-mono text-xs font-medium text-ink mb-1">
                 Tingkat Kesulitan

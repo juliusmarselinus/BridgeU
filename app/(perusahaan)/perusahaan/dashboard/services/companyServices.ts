@@ -119,6 +119,7 @@ export const companyService = {
         tingkat_kesulitan: item.tingkat_kesulitan,
         gaji_stipend: item.gaji_stipend,
         slot: item.slot,
+        current_slot: item.current_slot != null ? item.current_slot : item.slot,
         perusahaan_nama: item.perusahaan_profiles?.nama_perusahaan,
         pelamar_count: item.pendaftaran_kolaborasi?.length || 0,
       };
@@ -232,6 +233,7 @@ export interface CreateFullKolaborasiPayload {
   kategori_id: number;
   deskripsi: string;
   lokasi_id: number;
+  tipe_lokasi?: "Onsite" | "Hybrid" | "Remote";
   batas_waktu: string;
   tanggal_selesai?: string;
   tingkat_kesulitan: "Pemula" | "Menengah" | "Lanjut";
@@ -285,6 +287,7 @@ export const companyServiceExtended = {
           kategori_id: payload.kategori_id,
           deskripsi: payload.deskripsi,
           lokasi_id: payload.lokasi_id,
+          tipe_lokasi: payload.tipe_lokasi || "Remote",
           batas_waktu: payload.batas_waktu,
           tanggal_selesai: payload.tanggal_selesai || null,
           tingkat_kesulitan: payload.tingkat_kesulitan,
@@ -368,6 +371,7 @@ export const companyServiceExtended = {
         kategori_id: payload.kategori_id,
         deskripsi: payload.deskripsi,
         lokasi_id: payload.lokasi_id,
+        tipe_lokasi: payload.tipe_lokasi || "Remote",
         batas_waktu: payload.batas_waktu,
         tanggal_selesai: payload.tanggal_selesai || null,
         tingkat_kesulitan: payload.tingkat_kesulitan,

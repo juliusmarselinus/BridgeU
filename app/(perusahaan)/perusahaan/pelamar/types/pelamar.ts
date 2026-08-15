@@ -24,6 +24,8 @@ export interface PelamarDetail {
   tujuan_mengajukan?: string | null;
   ketersediaan?: string | null;
   tanggal_mulai_diinginkan?: string | null;
+  url_bukti_bayar?: string | null;
+  status_pembayaran?: string | null;
 }
 
 export interface ProyekPelamarSummary {

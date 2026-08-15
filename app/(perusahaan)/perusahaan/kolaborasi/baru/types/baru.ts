@@ -16,6 +16,7 @@ export interface BaruFormData {
   tipe: "Akademik" | "Magang";
   selectedKategoriIds: number[];
   lokasi_id: number;
+  tipe_lokasi: "Onsite" | "Hybrid" | "Remote";
   tingkat_kesulitan: "Pemula" | "Menengah" | "Lanjut";
   slot: number;
   batas_waktu: string;
