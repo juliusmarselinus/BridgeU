@@ -45,6 +45,26 @@ function IconBuilding({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
+function IconEye({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function IconEyeOff({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 11 7 11 7a13.16 13.16 0 0 1-1.67 2.68" />
+      <path d="M6.61 6.61A13.53 13.53 0 0 0 1 12s4 7 11 7a9.74 9.74 0 0 0 5.39-1.61" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
 export default function MasukPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -55,6 +75,7 @@ export default function MasukPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -202,15 +223,25 @@ export default function MasukPage() {
                     </div>
                     <div>
                       <label className="block font-mono text-xs uppercase tracking-wide text-[#496783] font-medium">Kata Sandi</label>
-                      <input
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="mt-2 w-full rounded-2xl border-none bg-[#EAF2FB] px-4 py-3.5 text-sm text-[#17356F] outline-none transition"
-                        style={{ boxShadow: "inset 4px 4px 10px rgba(23,59,108,0.12), inset -4px -4px 10px rgba(255,255,255,0.9)" }}
-                      />
+                      <div className="relative mt-2">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full rounded-2xl border-none bg-[#EAF2FB] px-4 py-3.5 pr-11 text-sm text-[#17356F] outline-none transition"
+                          style={{ boxShadow: "inset 4px 4px 10px rgba(23,59,108,0.12), inset -4px -4px 10px rgba(255,255,255,0.9)" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#496783] hover:text-[#17356F] transition"
+                          aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                        >
+                          {showPassword ? <IconEyeOff className="w-4 h-4" /> : <IconEye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                     <button
                       type="submit"
@@ -349,15 +380,25 @@ export default function MasukPage() {
               </div>
               <div>
                 <label className="block font-mono text-xs uppercase tracking-wide text-[#496783] font-medium">Kata Sandi</label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="mt-2 w-full rounded-2xl border-none bg-[#EAF2FB] px-4 py-3.5 text-sm text-[#17356F] outline-none"
-                  style={{ boxShadow: "inset 4px 4px 10px rgba(23,59,108,0.12), inset -4px -4px 10px rgba(255,255,255,0.9)" }}
-                />
+                <div className="relative mt-2">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full rounded-2xl border-none bg-[#EAF2FB] px-4 py-3.5 pr-11 text-sm text-[#17356F] outline-none"
+                    style={{ boxShadow: "inset 4px 4px 10px rgba(23,59,108,0.12), inset -4px -4px 10px rgba(255,255,255,0.9)" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#496783] hover:text-[#17356F] transition"
+                    aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  >
+                    {showPassword ? <IconEyeOff className="w-4 h-4" /> : <IconEye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
               <button
                 type="submit"
