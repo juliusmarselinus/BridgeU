@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     type: "company" as const,
     roleOrCategory: p.sektor_perusahaan?.nama_sektor ?? "Perusahaan",
     fotoUrl: p.logo_url ?? null,
-    href: `/perusahaan/profile/${p.user_id}`, // Sesuai path app/(perusahaan)/perusahaan/profile/[id]/page.tsx
+    href: `/company/${p.user_id}`,
   }));
 
   // Nama diprioritaskan di depan, gabung dua-duanya

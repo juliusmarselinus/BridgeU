@@ -22,8 +22,7 @@ export async function GET(
         `user_id, nama_perusahaan, nib, logo_url, deskripsi_perusahaan,
          ukuran_perusahaan, tahun_berdiri, situs_web, alamat_lengkap, status_verifikasi,
          sektor:sektor_id ( nama_sektor ),
-         kota:kota_id ( nama_kota ),
-         user:user_id ( email )`
+         kota:kota_id ( nama_kota )`
       )
       .eq("user_id", id)
       .maybeSingle();
@@ -35,6 +34,13 @@ export async function GET(
     if (!profile) {
       return NextResponse.json({ error: "Profil perusahaan tidak ditemukan" }, { status: 404 });
     }
+
+    // Fetch email dari tabel users terpisah
+    const { data: userData } = await db
+      .from("users")
+      .select("email")
+      .eq("id", id)
+      .maybeSingle();
 
     const companyId = profile.user_id;
 
@@ -59,7 +65,7 @@ export async function GET(
     return NextResponse.json({
       id: profile.user_id,
       nama_perusahaan: profile.nama_perusahaan || "Perusahaan Terdaftar",
-      email: (profile.user as any)?.email || "",
+      email: userData?.email || "",
       logo_url: profile.logo_url || "",
       nama_sektor: (profile.sektor as any)?.nama_sektor ?? null,
       nama_kota: (profile.kota as any)?.nama_kota ?? null,

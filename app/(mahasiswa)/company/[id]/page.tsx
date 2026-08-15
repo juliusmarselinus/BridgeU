@@ -221,9 +221,9 @@ const tabSlideVariants = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Main Public Company Profile Page                                    */
+/* Main Public Company Profile Page for Mahasiswa                      */
 /* ------------------------------------------------------------------ */
-export default function PublicCompanyProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default function MahasiswaCompanyProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const companyId = resolvedParams.id;
 
@@ -249,9 +249,9 @@ export default function PublicCompanyProfilePage({ params }: { params: Promise<{
         if (authData.session?.access_token) {
           headers.Authorization = `Bearer ${authData.session.access_token}`;
         }
-        const res = await fetch(`/api/perusahaan/profile/${companyId}`, {
-        headers,
-        signal: controller.signal,
+        const res = await fetch(`/api/profile/company/${companyId}`, {
+          headers,
+          signal: controller.signal,
         });
         clearTimeout(timeoutId);
 
@@ -497,8 +497,8 @@ export default function PublicCompanyProfilePage({ params }: { params: Promise<{
               </h3>
               <div className="space-y-2.5">
                 {publicCompany.email && (
-                  
-                    <a href={`mailto:${publicCompany.email}`}
+                  <a
+                    href={`mailto:${publicCompany.email}`}
                     className="flex items-center gap-2 text-xs font-semibold text-ocean hover:underline"
                   >
                     <IconMail className="w-3.5 h-3.5" />
@@ -506,8 +506,8 @@ export default function PublicCompanyProfilePage({ params }: { params: Promise<{
                   </a>
                 )}
                 {publicCompany.situsWeb && (
-                  
-                    <a href={publicCompany.situsWeb}
+                  <a
+                    href={publicCompany.situsWeb}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-xs font-semibold text-ocean hover:underline"
