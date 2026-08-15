@@ -17,9 +17,12 @@ export async function fetchMahasiswaStatusList(): Promise<StatusItem[]> {
       ratings,
       tanggal_daftar,
       catatan_perusahaan,
+      url_bukti_bayar,
+      status_pembayaran,
       kolaborasi:kolaborasi_id (
         judul,
         tipe,
+        gaji_stipend,
         perusahaan:perusahaan_id ( nama_perusahaan )
       ),
       riwayat_pengumpulan_kolaborasi (
@@ -95,6 +98,9 @@ export async function fetchMahasiswaStatusList(): Promise<StatusItem[]> {
       catatan_pembatalan: catatanPembatalanMap[item.kolaborasi_id] || undefined,
       url_hasil_kolaborasi: latestSubmission?.url_hasil || undefined,
       ratings: item.ratings != null ? Number(item.ratings) : null,
+      gajiStipend: colab.gaji_stipend || undefined,
+      urlBuktiBayar: item.url_bukti_bayar || undefined,
+      statusPembayaran: item.status_pembayaran || undefined,
     };
   });
 

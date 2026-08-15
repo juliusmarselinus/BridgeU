@@ -481,6 +481,11 @@ export default function KolaborasiPage() {
                               <p className="mt-1 font-mono text-xs font-bold text-sky flex items-center gap-1.5">
                                 {rec.perusahaan}
                               </p>
+                              {rec.tipe === "Magang" && rec.gajiStipend && (
+                                <p className="mt-2 text-xs font-bold text-emerald-300 flex items-center gap-1 font-mono">
+                                  Gaji / Stipend: {rec.gajiStipend}
+                                </p>
+                              )}
                               <p className="mt-3 text-xs text-white/85 line-clamp-2 leading-relaxed font-medium">
                                 {rec.deskripsi}
                               </p>
@@ -499,7 +504,7 @@ export default function KolaborasiPage() {
                             </div>
                             <div className="mt-5 pt-3.5 border-t border-white/15 flex items-center justify-between gap-3">
                               <span className="font-mono text-xs text-white/70 truncate">
-                                {rec.lokasi} &bull; Batas: {rec.batasWaktu}
+                                {rec.lokasi} ({rec.tipeLokasi || "Remote"}) &bull; Batas: {rec.batasWaktu}
                               </span>
                               <div className="flex items-center gap-2 shrink-0">
                                 <button
@@ -511,7 +516,7 @@ export default function KolaborasiPage() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => setApplyTarget(rec)}
+                                  onClick={() => handleApplyTargetClick(rec)}
                                   className="rounded-xl bg-sky px-5 py-1.5 font-mono text-xs font-extrabold text-ocean hover:bg-white transition shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center text-center"
                                 >
                                   Ajukan
@@ -520,18 +525,20 @@ export default function KolaborasiPage() {
                             </div>
                           </>
                         ) : (
-                          <div className="flex flex-col gap-2 h-full justify-between">
-                            <div className="space-y-1.5">
-                              <div className="flex items-center justify-between text-[10px] font-mono text-white/60">
-                                <span>{isPrev ? "← Sebelumnya" : "Selanjutnya →"}</span>
-                                <span className="text-sky/80 font-bold">
-                                  {rec.match.scorePercent}%
+                          <div className="flex flex-col justify-between h-full">
+                            <div>
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <span className="font-mono text-[10px] font-bold text-sky">
+                                  {rec.match.scorePercent}% Match
+                                </span>
+                                <span className="text-[10px] font-mono text-white/60">
+                                  {rec.tipe}
                                 </span>
                               </div>
-                              <h4 className="font-display text-sm font-bold text-white line-clamp-3 leading-snug">
+                              <h4 className="font-display text-sm font-bold text-white line-clamp-2">
                                 {rec.judul}
                               </h4>
-                              <p className="text-[11px] font-mono text-sky/80 truncate">
+                              <p className="font-mono text-[11px] text-white/70 mt-1">
                                 {rec.perusahaan}
                               </p>
                             </div>
@@ -622,15 +629,20 @@ export default function KolaborasiPage() {
                             )}
                           </div>
                         </div>
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-extrabold shrink-0 ${
-                            k.tipe === "Akademik"
-                              ? "bg-slate-100 text-slate-800 border border-slate-300"
-                              : "bg-primary/10 text-primary border border-primary/20 font-black"
-                          }`}
-                        >
-                          {k.tipe}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="rounded-full bg-paper border border-steel/20 px-2 py-0.5 font-mono text-[9px] font-bold text-steel">
+                            {k.tipeLokasi || "Remote"}
+                          </span>
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-extrabold ${
+                              k.tipe === "Akademik"
+                                ? "bg-slate-100 text-slate-800 border border-slate-300"
+                                : "bg-primary/10 text-primary border border-primary/20 font-black"
+                            }`}
+                          >
+                            {k.tipe}
+                          </span>
+                        </div>
                       </div>
                       <h3 className="mt-3.5 font-display text-lg font-semibold text-ink leading-snug group-hover:text-primary transition-colors duration-200 line-clamp-2">
                         {k.judul}
@@ -638,6 +650,11 @@ export default function KolaborasiPage() {
                       <p className="mt-2 text-xs font-medium text-steel line-clamp-3 leading-relaxed">
                         {k.deskripsi}
                       </p>
+                      {k.tipe === "Magang" && k.gajiStipend && (
+                        <p className="mt-2.5 text-xs font-bold text-emerald-700 font-mono flex items-center gap-1">
+                          Insentif: {k.gajiStipend}
+                        </p>
+                      )}
                       {k.tags && k.tags.length > 0 && (
                         <div className="mt-3.5 flex flex-wrap gap-1.5">
                           {k.tags.slice(0, 3).map((tag) => (

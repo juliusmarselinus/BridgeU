@@ -196,6 +196,24 @@ export default function StatusPage() {
                         <span className="text-ink font-semibold">{item.tanggal_daftar}</span>
                       </div>
 
+                      {item.tipe === "Magang" && item.gajiStipend && (
+                        <div className="flex justify-between text-steel/70">
+                          <span>Insentif / Stipend</span>
+                          <span className="text-emerald-700 font-bold">{item.gajiStipend}</span>
+                        </div>
+                      )}
+
+                      {item.tipe === "Magang" && (item.urlBuktiBayar || item.statusPembayaran) && (
+                        <div className="mt-2 rounded-2xl bg-sky/10 border border-sky/20 px-3 py-2 flex items-center justify-between">
+                          <span className="text-[9px] font-mono uppercase text-ocean font-bold">
+                            Bukti Bayar / Insentif
+                          </span>
+                          <span className="text-[10px] font-bold text-ocean">
+                            {item.statusPembayaran || "Tersedia"}
+                          </span>
+                        </div>
+                      )}
+
                       {item.status === "Selesai" && (
                         <div className="mt-3 rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2 flex items-center justify-between">
                           <span className="text-[9px] font-mono uppercase text-emerald-800 font-bold">

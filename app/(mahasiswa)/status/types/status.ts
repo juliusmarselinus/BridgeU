@@ -13,6 +13,9 @@ export type StatusItem = {
   catatan_pembatalan?: string;
   url_hasil_kolaborasi?: string;
   ratings?: number | null;
+  gajiStipend?: string;
+  urlBuktiBayar?: string;
+  statusPembayaran?: string;
 };
 
 export const STAGES = ["Diajukan", "Diproses", "Dievaluasi", "Selesai"] as const;

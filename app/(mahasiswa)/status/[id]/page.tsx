@@ -25,6 +25,9 @@ type StatusDetail = {
   catatanHasilKolaborasi?: string;
   tanggalPengumpulan?: string;
   ratings?: number | null;
+  gajiStipend?: string;
+  urlBuktiBayar?: string;
+  statusPembayaran?: string;
 };
 
 type Tab = "timeline" | "pengumpulan" | "riwayat";
@@ -180,11 +183,14 @@ export default function StatusDetailPage() {
               tanggal_daftar,
               catatan_perusahaan,
               url_portofolio_dokumen,
+              url_bukti_bayar,
+              status_pembayaran,
               kolaborasi:kolaborasi_id (
                 judul,
                 tipe,
                 deskripsi,
                 batas_waktu,
+                gaji_stipend,
                 perusahaan:perusahaan_id ( nama_perusahaan )
               ),
               riwayat_pengumpulan_kolaborasi (
@@ -234,6 +240,9 @@ export default function StatusDetailPage() {
                   })
                 : undefined,
               ratings: row.ratings != null ? Number(row.ratings) : null,
+              gajiStipend: (row.kolaborasi as any)?.gaji_stipend ?? undefined,
+              urlBuktiBayar: row.url_bukti_bayar ?? undefined,
+              statusPembayaran: row.status_pembayaran ?? undefined,
             };
 
             setDetail(mapped);
@@ -635,6 +644,12 @@ export default function StatusDetailPage() {
                     <span className="text-steel block">Tanggal Daftar</span>
                     <strong className="text-ink">{detail.tanggalDaftar}</strong>
                   </div>
+                  {detail.tipe === "Magang" && detail.gajiStipend && (
+                    <div className="col-span-2">
+                      <span className="text-steel block">Gaji / Stipend</span>
+                      <strong className="text-emerald-700 font-bold">{detail.gajiStipend}</strong>
+                    </div>
+                  )}
                   {detail.batasWaktu !== "-" && (
                     <div className="col-span-2">
                       <span className="text-steel block">Batas Pelaksanaan</span>
@@ -643,6 +658,24 @@ export default function StatusDetailPage() {
                   )}
                 </div>
 
+                {detail.tipe === "Magang" && (detail.urlBuktiBayar || detail.statusPembayaran) && (
+                  <div className="rounded-2xl bg-sky/10 border border-sky/20 p-3 space-y-1 font-mono text-xs">
+                    <span className="text-[10px] uppercase font-bold text-ocean block">Bukti Bayar & Pencairan Insentif</span>
+                    <p className="text-xs text-ink font-bold">Status: {detail.statusPembayaran || "Tersedia"}</p>
+                    {detail.urlBuktiBayar && (
+                      <a
+                        href={detail.urlBuktiBayar}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline mt-1"
+                      >
+                        <IconLink className="w-3 h-3" />
+                        Unduh / Lihat Bukti Bayar →
+                      </a>
+                    )}
+                  </div>
+                )}
+
                 <div className="font-mono text-[11px] pt-2 border-t border-steel/10">
                   <span className="text-steel block">Tautan Portofolio</span>
                   {detail.urlPortofolioDokumen ? (
@@ -650,7 +683,7 @@ export default function StatusDetailPage() {
                       Lihat Portofolio →
                     </a>
                   ) : (
-                    <span className="text-steel">—</span>
+                    <span className="text-steel/60">—</span>
                   )}
                 </div>
               </div>
