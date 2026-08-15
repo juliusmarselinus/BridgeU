@@ -27,7 +27,9 @@ export function useKolaborasiDetail() {
   const initialTab = (searchParams.get("tab") as "pelamar" | "settings") || "pelamar";
 
   // Tab & Loading State
-  const [activeTab, setActiveTab] = useState<"pelamar" | "settings">(initialTab);
+  const [activeTab, setActiveTab] = useState<"pelamar" | "workspace" | "settings">(
+    (searchParams.get("tab") as any) || "pelamar"
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -365,7 +367,7 @@ export function useKolaborasiDetail() {
 
           // Select first pelamar by default if available
           const firstAktif = mappedPelamar.find(
-            (p) => p.status === "Diterima" || p.status === "Minta Revisi" || p.status === "Selesai"
+            (p) => p.status === "Diterima"|| p.status === "Evaluasi" || p.status === "Minta Revisi" || p.status === "Selesai"
           );
           if (firstAktif && !selectedPelamar) {
             setSelectedPelamar(firstAktif);
@@ -1018,13 +1020,14 @@ export function useKolaborasiDetail() {
   const stats = {
     total: pelamarList.length,
     menunggu: pelamarList.filter((p) => p.status === "Menunggu").length,
+    evaluasi: pelamarList.filter((p) => p.status === "Evaluasi").length,
     diterima: pelamarList.filter((p) => p.status === "Diterima").length,
     ditolak: pelamarList.filter((p) => p.status === "Ditolak").length,
     selesai: pelamarList.filter((p) => p.status === "Selesai").length,
   };
 
   const hasPelamarAktif = pelamarList.some(
-    (p) => p.status === "Diterima" || p.status === "Minta Revisi" || p.status === "Selesai"
+    (p) => p.status === "Diterima" || p.status === "Evaluasi"  || p.status === "Minta Revisi" || p.status === "Selesai"
   );
 
   const getKategoriDisplay = () => {

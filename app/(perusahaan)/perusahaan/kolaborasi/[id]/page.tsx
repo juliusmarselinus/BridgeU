@@ -110,7 +110,7 @@ export default function DetailKolaborasiPage() {
   // Categorize pelamar
   const pelamarMenunggu = pelamarList.filter((p) => p.status === "Menunggu");
   const pelamarAktif = pelamarList.filter(
-    (p) => p.status === "Diterima" || p.status === "Minta Revisi" || p.status === "Selesai"
+    (p) => p.status === "Diterima" || p.status === "Evaluasi" || p.status === "Minta Revisi" || p.status === "Selesai"
   );
   const pelamarDitolak = pelamarList.filter((p) => p.status === "Ditolak");
 
@@ -1285,6 +1285,7 @@ export default function DetailKolaborasiPage() {
 function StatusBadge({ status, small = false }: { status: string; small?: boolean }) {
   const map: Record<string, string> = {
     Diterima: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    Evaluasi: "bg-sky/15 text-ocean border-sky/30",
     Ditolak: "bg-red-50 text-red-800 border-red-200",
     Selesai: "bg-blue-50 text-blue-800 border-blue-200",
     "Minta Revisi": "bg-purple-50 text-purple-800 border-purple-200",
