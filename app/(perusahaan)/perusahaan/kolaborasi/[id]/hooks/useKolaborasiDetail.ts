@@ -720,8 +720,23 @@ export function useKolaborasiDetail() {
 
     setIsSubmittingInterview(true);
     const scheduledAt = new Date(`${interviewDate}T${interviewTime}`).toISOString();
-    const companyProfile = await companyService.fetchCompanyProfile();
-    const perusahaanUserId = companyProfile?.user_id || currentUserId;
+
+    // Pastikan selalu dapat auth.uid() yang valid, jangan pakai companyProfile.user_id
+    let perusahaanUserId = currentUserId;
+    if (!perusahaanUserId) {
+      const { data } = await supabase.auth.getUser();
+      perusahaanUserId = data.user?.id || "";
+    }
+
+    if (!perusahaanUserId) {
+      setIsSubmittingInterview(false);
+      setActionModal({
+        isOpen: true,
+        title: "Sesi Login Tidak Ditemukan",
+        message: "Sesi login pengguna tidak ditemukan. Silakan refresh halaman.",
+      });
+      return;
+    }
 
     const { data: newInterview, error } = await supabase
       .from("interviews")

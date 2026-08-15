@@ -53,7 +53,7 @@ export default function StatusPage() {
   return (
     <main className="min-h-screen text-ink font-sans bg-paper">
       <div
-        className="relative overflow-hidden pt-24 pb-20"
+        className="relative overflow-hidden pt-20 sm:pt-24 pb-16 sm:pb-20"
         style={{ clipPath: "polygon(0 0, 100% 0, 100% 88%, 0 100%)" }}
       >
         <div
@@ -73,7 +73,7 @@ export default function StatusPage() {
             Pelacak Status Proyek
           </span>
           <h1
-            className="font-display text-3xl sm:text-4xl font-black text-white"
+            className="font-display text-2xl sm:text-4xl font-black text-white"
             style={{ textShadow: "0 2px 16px rgba(0,0,0,0.35)" }}
           >
             Status Pengajuan &amp; Timeline Pengerjaan
@@ -84,14 +84,15 @@ export default function StatusPage() {
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 -mt-10 pb-24 space-y-6">
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-white border border-steel/15 shadow-md p-2">
-          <div className="relative z-10 flex items-center gap-1 w-fit">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 -mt-8 sm:-mt-10 pb-24 space-y-6">
+        {/* Filter bar: stacked on mobile, side-by-side on desktop */}
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl bg-white border border-steel/15 shadow-md p-2">
+          <div className="relative z-10 flex items-center gap-1 w-full sm:w-fit overflow-x-auto no-scrollbar">
             {TABS.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`px-3.5 py-1.5 rounded-xl font-mono text-[11px] font-bold transition ${
+                className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-xl font-mono text-[11px] font-bold transition ${
                   tab === t.key ? "bg-ink text-paper" : "text-steel hover:bg-steel/[0.06]"
                 }`}
               >
@@ -103,7 +104,7 @@ export default function StatusPage() {
             ))}
           </div>
 
-          <div className="relative z-10 sm:w-64">
+          <div className="relative z-10 w-full sm:w-64">
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-steel"
               fill="none"
@@ -129,7 +130,7 @@ export default function StatusPage() {
             ))}
           </div>
         ) : list.length === 0 ? (
-          <div className="rounded-[32px_32px_32px_6px] border border-steel/15 bg-white p-12 text-center space-y-4 max-w-xl mx-auto">
+          <div className="rounded-[32px_32px_32px_6px] border border-steel/15 bg-white p-8 sm:p-12 text-center space-y-4 max-w-xl mx-auto">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-steel/10 text-steel mx-auto">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -147,7 +148,7 @@ export default function StatusPage() {
             </Link>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-[32px_32px_32px_6px] border border-steel/15 bg-white p-12 text-center space-y-2 max-w-xl mx-auto">
+          <div className="rounded-[32px_32px_32px_6px] border border-steel/15 bg-white p-8 sm:p-12 text-center space-y-2 max-w-xl mx-auto">
             <h3 className="font-display text-lg font-bold text-ink">Tidak Ada Hasil</h3>
             <p className="text-xs text-steel max-w-md mx-auto">
               Coba ubah kata kunci pencarian atau pilih tab status lain.
@@ -155,13 +156,13 @@ export default function StatusPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {visible.map((item) => {
                 const meta = statusMeta[item.status];
                 return (
                   <div
                     key={item.id}
-                    className={`group flex flex-col rounded-[28px_28px_28px_4px] border bg-white p-5 shadow-sm hover:shadow-md transition ${
+                    className={`group flex flex-col rounded-[28px_28px_28px_4px] border bg-white p-4 sm:p-5 shadow-sm hover:shadow-md transition ${
                       meta.rejected
                         ? "border-rose-200 ring-1 ring-rose-100"
                         : meta.needsAction
@@ -194,7 +195,7 @@ export default function StatusPage() {
                       {item.judul}
                     </h3>
 
-                    <div className="mt-4">
+                    <div className="mt-4 overflow-x-auto no-scrollbar">
                       <StageTracker stage={meta.stage} rejected={meta.rejected} />
                     </div>
 
@@ -213,7 +214,7 @@ export default function StatusPage() {
 
                       {item.interview && (
                         <div className="mt-3 rounded-2xl bg-sky/10 border border-sky/30 p-3 space-y-2">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between flex-wrap gap-1">
                             <span className="text-[10px] font-mono font-bold text-ocean flex items-center gap-1">
                               <svg className="w-3.5 h-3.5 text-ocean" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -231,6 +232,7 @@ export default function StatusPage() {
                             {new Date(item.interview.scheduled_at).toLocaleDateString("id-ID", { dateStyle: "full" })}
                           </p>
                           {item.interview.meeting_link && (
+                            
                             <a
                               href={item.interview.meeting_link}
                               target="_blank"
@@ -244,7 +246,7 @@ export default function StatusPage() {
                       )}
 
                       {item.tipe === "Magang" && (item.urlBuktiBayar || item.statusPembayaran) && (
-                        <div className="mt-2 rounded-2xl bg-sky/10 border border-sky/20 px-3 py-2 flex items-center justify-between">
+                        <div className="mt-2 rounded-2xl bg-sky/10 border border-sky/20 px-3 py-2 flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-[9px] font-mono uppercase text-ocean font-bold">
                             Bukti Bayar / Insentif
                           </span>
@@ -255,7 +257,7 @@ export default function StatusPage() {
                       )}
 
                       {item.status === "Selesai" && (
-                        <div className="mt-3 rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2 flex items-center justify-between">
+                        <div className="mt-3 rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2 flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-[9px] font-mono uppercase text-emerald-800 font-bold">
                             Penilaian Mitra
                           </span>
@@ -329,7 +331,7 @@ export default function StatusPage() {
               <div className="flex justify-center pt-2">
                 <button
                   onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                  className="rounded-full border border-steel/25 bg-white px-6 py-2.5 font-mono text-xs font-bold text-ink hover:bg-steel/[0.05] transition shadow-sm"
+                  className="w-full sm:w-auto rounded-full border border-steel/25 bg-white px-6 py-2.5 font-mono text-xs font-bold text-ink hover:bg-steel/[0.05] transition shadow-sm"
                 >
                   Muat Lebih Banyak ({filtered.length - visibleCount} lagi)
                 </button>
