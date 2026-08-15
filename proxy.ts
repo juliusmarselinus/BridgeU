@@ -100,9 +100,8 @@ export async function proxy(req: NextRequest) {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/status") ||
     pathname.startsWith("/kolaborasi") ||
-    pathname.startsWith("/portfolio") ||
-    pathname.startsWith("/profile");
-
+    pathname.startsWith("/portfolio") 
+    
   let redirectTarget: string | null = null;
 
   // Role-Based Access Control (RBAC) rules

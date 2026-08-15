@@ -61,6 +61,8 @@ export default function DetailKolaborasiPage() {
     setIsKategoriModalOpen,
     isDeleteModalOpen,
     setIsDeleteModalOpen,
+    detailPelamar,
+    setDetailPelamar,
     kotaSearch,
     setKotaSearch,
     prodiSearch,
@@ -348,6 +350,12 @@ export default function DetailKolaborasiPage() {
 
                       {pelamar.status === "Menunggu" ? (
                         <div className="flex items-center gap-2 font-mono text-xs">
+                          <button
+                            onClick={() => setDetailPelamar(pelamar)}
+                            className="rounded-full border border-steel/20 bg-white text-ink px-4 py-1.5 font-semibold hover:bg-steel/5 transition"
+                          >
+                            Lihat Detail
+                          </button>
                           <button
                             onClick={() => handleUpdateStatus(pelamar.id, "Ditolak")}
                             className="rounded-full border border-red-200 bg-red-50 text-red-700 px-4 py-1.5 font-semibold hover:bg-red-100 transition"
@@ -1020,6 +1028,116 @@ export default function DetailKolaborasiPage() {
       )}
 
       {/* Modals: Kota, Kategori, Prodi, Skill — compact versions */}
+      {/* ==================== MODAL: DETAIL PELAMAR ==================== */}
+{detailPelamar && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-steel/20 space-y-4 font-sans max-h-[85vh] overflow-y-auto">
+      <div className="flex items-center justify-between border-b border-steel/10 pb-3">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 shrink-0 rounded-full bg-bridge-gold/15 border border-bridge-gold/30 flex items-center justify-center font-display text-base font-bold text-ink overflow-hidden">
+            {detailPelamar.foto_url ? (
+              <img src={detailPelamar.foto_url} alt={detailPelamar.nama_lengkap} className="h-full w-full object-cover" />
+            ) : (
+              detailPelamar.nama_lengkap.charAt(0).toUpperCase()
+            )}
+          </div>
+          <div>
+            <h3 className="font-display text-base font-bold text-ink">{detailPelamar.nama_lengkap}</h3>
+            <p className="font-mono text-[11px] text-steel">
+              {detailPelamar.universitas} &bull; {detailPelamar.program_studi} &bull; Semester {detailPelamar.semester}
+            </p>
+          </div>
+        </div>
+        <button onClick={() => setDetailPelamar(null)} className="text-steel hover:text-ink">
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="space-y-3 font-mono text-xs">
+        {detailPelamar.ringkasan_self && (
+          <div>
+            <p className="text-[10px] font-bold text-steel uppercase mb-1">Ringkasan Diri</p>
+            <p className="font-sans text-xs text-ink bg-steel/5 rounded-xl p-3 leading-relaxed border border-steel/10">
+              {detailPelamar.ringkasan_self}
+            </p>
+          </div>
+        )}
+
+        {detailPelamar.tujuan_mengajukan && (
+          <div>
+            <p className="text-[10px] font-bold text-steel uppercase mb-1">Tujuan Mengajukan</p>
+            <p className="font-sans text-xs text-ink bg-steel/5 rounded-xl p-3 leading-relaxed border border-steel/10">
+              {detailPelamar.tujuan_mengajukan}
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
+          {detailPelamar.ketersediaan && (
+            <div>
+              <p className="text-[10px] font-bold text-steel uppercase mb-1">Ketersediaan</p>
+              <p className="text-ink">{detailPelamar.ketersediaan}</p>
+            </div>
+          )}
+          {detailPelamar.tanggal_mulai_diinginkan && (
+            <div>
+              <p className="text-[10px] font-bold text-steel uppercase mb-1">Tanggal Mulai</p>
+              <p className="text-ink">
+                {new Date(detailPelamar.tanggal_mulai_diinginkan).toLocaleDateString("id-ID", { dateStyle: "medium" })}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {detailPelamar.url_portofolio_dokumen && (
+          
+          <a href={detailPelamar.url_portofolio_dokumen}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between text-bridge-gold font-bold hover:underline bg-amber-50/40 p-3 rounded-xl border border-amber-100"
+          >
+            <span>Lihat Portofolio / Dokumen</span>
+            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between gap-2 pt-3 border-t border-steel/10">
+        <Link
+          href={`/profile/${detailPelamar.mahasiswa_id}`}
+          className="rounded-full border border-steel/20 bg-white text-ink px-4 py-2 font-mono text-xs font-semibold hover:bg-steel/5 transition inline-flex items-center gap-1.5"
+        >
+          Lihat Profil Lengkap
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </Link>
+
+        {detailPelamar.status === "Menunggu" && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { handleUpdateStatus(detailPelamar.id, "Ditolak"); setDetailPelamar(null); }}
+              className="rounded-full border border-red-200 bg-red-50 text-red-700 px-4 py-2 font-mono text-xs font-semibold hover:bg-red-100 transition"
+            >
+              Tolak
+            </button>
+            <button
+              onClick={() => { handleUpdateStatus(detailPelamar.id, "Diterima"); setDetailPelamar(null); }}
+              className="rounded-full bg-emerald-600 text-white px-5 py-2 font-mono text-xs font-semibold hover:bg-emerald-700 transition shadow-sm"
+            >
+              Terima
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+        
       {[
         { open: isKotaModalOpen, close: () => { setIsKotaModalOpen(false); setKotaSearch(""); }, title: "Cari Kota Lokasi", search: kotaSearch, setSearch: setKotaSearch, options: searchedKotaOptions, onSelect: (k: any) => { setFormData((p) => ({ ...p, lokasi_id: k.id })); setIsKotaModalOpen(false); setKotaSearch(""); }, getLabel: (k: any) => k.nama_kota, isSelected: (k: any) => formData.lokasi_id === k.id },
       ].map((modal, i) => modal.open && (

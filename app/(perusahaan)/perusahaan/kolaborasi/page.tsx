@@ -131,6 +131,7 @@ export default function KolaborasiPage() {
         onOpenModal={handleOpenCreatePage}
         onExportCSV={handleExportCSV}
         totalCount={kolaborasiList.length}
+        counts={counts}
       />
 
       {filteredKolaborasi.length === 0 ? (

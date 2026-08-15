@@ -100,6 +100,7 @@ export function useKolaborasiDetail() {
   const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
   const [isKategoriModalOpen, setIsKategoriModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [detailPelamar, setDetailPelamar] = useState<PelamarDetail | null>(null);
 
   // Search queries inside modals
   const [kotaSearch, setKotaSearch] = useState("");
@@ -274,6 +275,9 @@ export function useKolaborasiDetail() {
               ratings,
               catatan_perusahaan,
               url_portofolio_dokumen,
+              tujuan_mengajukan,
+              ketersediaan,
+              tanggal_mulai_diinginkan,
               mahasiswa_profiles (
                 nama_lengkap,
                 semester,
@@ -349,6 +353,9 @@ export function useKolaborasiDetail() {
               ratings: p.ratings != null ? Number(p.ratings) : null,
               catatan_perusahaan: latestSubmission?.evaluasi_perusahaan || p.catatan_perusahaan,
               url_portofolio_dokumen: p.url_portofolio_dokumen,
+              tujuan_mengajukan: p.tujuan_mengajukan,
+              ketersediaan: p.ketersediaan,
+              tanggal_mulai_diinginkan: p.tanggal_mulai_diinginkan,
               url_hasil_kolaborasi: latestSubmission?.url_hasil,
               catatan_hasil_kolaborasi: latestSubmission?.catatan_mahasiswa,
               riwayat_pengumpulan: riwayat,
@@ -1067,6 +1074,7 @@ export function useKolaborasiDetail() {
     isSkillModalOpen, setIsSkillModalOpen,
     isKategoriModalOpen, setIsKategoriModalOpen,
     isDeleteModalOpen, setIsDeleteModalOpen,
+    detailPelamar, setDetailPelamar,
     kotaSearch, setKotaSearch,
     prodiSearch, setProdiSearch,
     skillSearch, setSkillSearch,

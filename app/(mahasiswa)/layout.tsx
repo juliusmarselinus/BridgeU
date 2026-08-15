@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Navbar } from "@/components/Navbar";
+import { AdaptiveNavbar } from "@/components/AdaptiveNavbar";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default function MahasiswaLayout({
   return (
     <div className="relative bg-clouds text-ink antialiased flex flex-col justify-between">
       {/* Fixed floating glass navbar — detached from flow, floats over page content */}
-      <Navbar />
+      <AdaptiveNavbar />
 
       <div className="flex-1">{children}</div>
 

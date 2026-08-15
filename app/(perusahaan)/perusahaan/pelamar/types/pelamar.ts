@@ -21,6 +21,9 @@ export interface PelamarDetail {
   catatan_hasil_kolaborasi?: string;
   riwayat_pengumpulan?: any[];
   ratings?: number | null;
+  tujuan_mengajukan?: string | null;
+  ketersediaan?: string | null;
+  tanggal_mulai_diinginkan?: string | null;
 }
 
 export interface ProyekPelamarSummary {
