@@ -162,22 +162,25 @@ export default function DaftarKolaborasiPage() {
 
     setSubmitting(true);
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData?.user?.id;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
 
-      if (currentUserId && id) {
-        const { error: insertErr } = await supabase
-          .from("pendaftaran_kolaborasi")
-          .insert({
-            kolaborasi_id: id as string,
-            mahasiswa_id: currentUserId,
-            status: "Menunggu",
-            url_portofolio_dokumen: portofolio || null,
-            updated_at: new Date().toISOString(),
-          });
+      if (token && id) {
+        const res = await fetch("/api/kolaborasi/apply", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            kolaborasiId: id as string,
+            portofolio,
+          }),
+        });
 
-        if (insertErr) {
-          console.error("Gagal menyimpan pendaftaran_kolaborasi ke Supabase:", insertErr.message);
+        const json = await res.json();
+        if (!res.ok) {
+          console.error("❌ [DaftarPage] Gagal menyimpan pendaftaran ke Supabase:", json.error);
         }
       }
     } catch (err) {

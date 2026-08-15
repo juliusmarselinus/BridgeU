@@ -124,6 +124,7 @@ CREATE TABLE public.kolaborasi (
   slot integer,
   tanggal_selesai date,
   tipe_lokasi text DEFAULT 'Remote'::text,
+  current_slot bigint,
   CONSTRAINT kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT kolaborasi_perusahaan_id_fkey FOREIGN KEY (perusahaan_id) REFERENCES public.perusahaan_profiles(user_id),
   CONSTRAINT kolaborasi_kategori_id_fkey FOREIGN KEY (kategori_id) REFERENCES public.kategori_minat(id),
@@ -157,6 +158,9 @@ CREATE TABLE public.pendaftaran_kolaborasi (
   ratings bigint DEFAULT '0'::bigint,
   url_bukti_bayar text,
   status_pembayaran text,
+  tujuan_mengajukan text,
+  ketersediaan text,
+  tanggal_mulai_diinginkan date,
   CONSTRAINT pendaftaran_kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT pendaftaran_kolaborasi_kolaborasi_id_fkey FOREIGN KEY (kolaborasi_id) REFERENCES public.kolaborasi(id),
   CONSTRAINT pendaftaran_kolaborasi_mahasiswa_id_fkey FOREIGN KEY (mahasiswa_id) REFERENCES public.mahasiswa_profiles(user_id)

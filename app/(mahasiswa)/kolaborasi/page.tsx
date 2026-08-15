@@ -67,6 +67,7 @@ function mapDbRow(row: any): Kolaborasi {
       : [],
     gajiStipend: row.gaji_stipend ?? undefined,
     slot: row.slot ?? null,
+    currentSlot: row.current_slot !== undefined && row.current_slot !== null ? row.current_slot : (row.slot ?? null),
 
     skillIds: row.kolaborasi_skills
       ? row.kolaborasi_skills.map((ks: any) => ks.skill_id).filter((v: any) => v != null)
@@ -86,7 +87,7 @@ async function fetchKolaborasiFromSupabase(): Promise<Kolaborasi[]> {
     .from("kolaborasi")
     .select(`
       id, judul, tipe, deskripsi, lokasi_id, batas_waktu, status_moderasi,
-      tingkat_kesulitan, gaji_stipend, perusahaan_id, slot, tipe_lokasi,
+      tingkat_kesulitan, gaji_stipend, perusahaan_id, slot, current_slot, tipe_lokasi,
       perusahaan:perusahaan_id ( nama_perusahaan ),
       kategori:kategori_id ( nama_kategori ),
       kota:lokasi_id ( nama_kota ),
@@ -239,9 +240,14 @@ export default function KolaborasiPage() {
     });
   }, [unregisteredList, mahasiswaProfile]);
 
-  // Rekomendasi utama buat carousel: HANYA yang lolos threshold kemiripan, top 5
+  // Rekomendasi utama buat carousel: HANYA yang lolos threshold kemiripan & SLOT MASIH TERSEDIA (>0), top 5
   const smartRecommendations = useMemo(() => {
-    return rankKolaborasiByMatch(unregisteredList, mahasiswaProfile, {
+    const availableForRecs = unregisteredList.filter((k) => {
+      const remaining = k.currentSlot !== undefined && k.currentSlot !== null ? k.currentSlot : k.slot;
+      return remaining === null || remaining > 0;
+    });
+
+    return rankKolaborasiByMatch(availableForRecs, mahasiswaProfile, {
       onlyPassingThreshold: true,
       topN: 5,
     });
@@ -671,7 +677,20 @@ export default function KolaborasiPage() {
                     <div className="mt-5 pt-3.5 border-t border-steel/15">
                       <div className="flex items-center justify-between font-mono text-[11px] text-steel font-semibold mb-3.5">
                         <span className="truncate">{k.lokasi}</span>
-                        <span className="shrink-0">Batas: {k.batasWaktu}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {(() => {
+                            const rem = k.currentSlot !== undefined && k.currentSlot !== null ? k.currentSlot : k.slot;
+                            if (rem === null) return null;
+                            return (
+                              <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
+                                rem > 0 ? "bg-amber-100 text-amber-800" : "bg-rose-100 text-rose-800"
+                              }`}>
+                                {rem > 0 ? `Sisa ${rem} Slot` : "Slot Habis"}
+                              </span>
+                            );
+                          })()}
+                          <span>Batas: {k.batasWaktu}</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -681,13 +700,24 @@ export default function KolaborasiPage() {
                         >
                           Detail
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleApplyTargetClick(k)}
-                          className="flex-1 rounded-full bg-primary py-2 text-center font-mono text-xs font-bold text-white transition hover:brightness-110 shadow-sm flex items-center justify-center"
-                        >
-                          Ajukan
-                        </button>
+                        {(() => {
+                          const rem = k.currentSlot !== undefined && k.currentSlot !== null ? k.currentSlot : k.slot;
+                          const isFull = rem !== null && rem <= 0;
+                          return (
+                            <button
+                              type="button"
+                              disabled={isFull}
+                              onClick={() => !isFull && handleApplyTargetClick(k)}
+                              className={`flex-1 rounded-full py-2 text-center font-mono text-xs font-bold transition shadow-sm flex items-center justify-center ${
+                                isFull
+                                  ? "bg-steel/30 text-steel/70 cursor-not-allowed"
+                                  : "bg-primary text-white hover:brightness-110"
+                              }`}
+                            >
+                              {isFull ? "Habis" : "Ajukan"}
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
                   </motion.div>

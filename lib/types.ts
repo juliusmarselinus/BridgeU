@@ -14,6 +14,7 @@ export type Kolaborasi = {
   rekomendasiProdi: string[];
   gajiStipend?: string;
   slot: number | null;
+  currentSlot?: number | null;
 
   // raw IDs, dipakai internal buat matching/scoring, gak ditampilin langsung di UI
   skillIds: number[];

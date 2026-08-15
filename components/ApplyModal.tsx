@@ -105,22 +105,27 @@ export function ApplyModal({
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData?.user?.id;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const currentUserId = sessionData?.session?.user?.id;
 
-      if (currentUserId && data.id) {
-        const { error: insertErr } = await supabase
-          .from("pendaftaran_kolaborasi")
-          .insert({
-            kolaborasi_id: data.id,
-            mahasiswa_id: currentUserId,
-            status: "Menunggu",
-            updated_at: new Date().toISOString(),
-          });
+      if (token && data.id) {
+        const res = await fetch("/api/kolaborasi/apply", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            kolaborasiId: data.id,
+            portofolio,
+          }),
+        });
 
-        if (insertErr) {
-          console.error("❌ [ApplyModal] Gagal menyimpan pendaftaran ke Supabase:", insertErr.message);
-        } else {
+        const json = await res.json();
+        if (!res.ok) {
+          console.error("❌ [ApplyModal] Gagal pendaftaran:", json.error);
+        } else if (currentUserId) {
           await notifyPengajuanBerhasil(currentUserId, data.judul, data.perusahaan);
         }
       }
@@ -270,10 +275,14 @@ export function ApplyModal({
                 <input
                   type="date"
                   required
+                  min={new Date().toISOString().split("T")[0]}
                   value={tanggalMulai}
                   onChange={(e) => setTanggalMulai(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-4 py-3 text-sm text-ink outline-none focus:border-ink transition"
+                  className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-4 py-3 text-sm text-ink outline-none focus:border-ink transition font-medium"
                 />
+                <p className="mt-1 text-[10px] text-steel/60">
+                  Pilih tanggal mulai hari ini atau di masa mendatang. Tanggal lalu tidak dapat dipilih.
+                </p>
               </div>
             </>
           )}
