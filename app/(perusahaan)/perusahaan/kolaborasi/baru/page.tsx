@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useKolaborasiBaru } from "./hooks/useKolaborasiBaru";
 import { SuccessModal } from "./components/SuccessModal";
 import { ActionModal } from "@/components/ActionModal";
+import { PerusahaanSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 export default function TambahKolaborasiPage() {
   const {
@@ -72,11 +73,7 @@ export default function TambahKolaborasiPage() {
   } = useKolaborasiBaru();
 
   if (isLoadingOptions) {
-    return (
-      <div className="flex h-96 items-center justify-center font-mono text-xs text-steel">
-        Memuat formulir pengajuan kolaborasi...
-      </div>
-    );
+    return <PerusahaanSkeletonPage />;
   }
 
   if (statusVerifikasi !== "Terverifikasi") {

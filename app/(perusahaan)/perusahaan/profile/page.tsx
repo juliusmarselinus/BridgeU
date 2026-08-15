@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ActionModal } from "@/components/ActionModal";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { PerusahaanSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 /* ------------------------------------------------------------------ */
 /* Icons Component                                                    */
@@ -147,11 +148,7 @@ export default function PerusahaanProfilePage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-96 items-center justify-center font-mono text-xs text-slate-500">
-        Memuat profil perusahaan...
-      </div>
-    );
+    return <PerusahaanSkeletonPage />;
   }
 
   if (!profile) {

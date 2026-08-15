@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCompanyDashboard } from "../dashboard/hooks/useCompanyDashboard";
 import { chatService, InboxThread } from "../kolaborasi/baru/services/chatService";
+import { PerusahaanSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 export default function PesanMasukPage() {
   const { company, isLoading: isLoadingCompany } = useCompanyDashboard();
@@ -34,13 +35,7 @@ export default function PesanMasukPage() {
   }, [company?.user_id]);
 
   if (isLoadingCompany || isLoading) {
-    return (
-      <main className="mx-auto max-w-4xl px-4 sm:px-6 pt-28 pb-16">
-        <div className="flex h-64 items-center justify-center font-mono text-xs text-steel">
-          Memuat pesan masuk...
-        </div>
-      </main>
-    );
+    return <PerusahaanSkeletonPage />;
   }
 
   return (

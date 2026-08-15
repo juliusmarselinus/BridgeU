@@ -11,6 +11,7 @@ import { chatService } from "./baru/services/chatService";
 
 import { ActionModal } from "@/components/ActionModal";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { PerusahaanSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 export default function KolaborasiPage() {
   const router = useRouter();
@@ -79,11 +80,7 @@ export default function KolaborasiPage() {
   }, [company?.user_id, kolaborasiList]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-96 items-center justify-center font-mono text-xs text-steel">
-        Memuat data kolaborasi...
-      </div>
-    );
+    return <PerusahaanSkeletonPage />;
   }
 
   if (company && company.status_verifikasi !== "Terverifikasi") {
@@ -122,6 +119,10 @@ export default function KolaborasiPage() {
     disetujui: kolaborasiList.filter((k) => k.status_moderasi === "Disetujui").length,
     ditolak: kolaborasiList.filter((k) => k.status_moderasi === "Ditolak").length,
   };
+
+  if (isLoading) {
+    return <PerusahaanSkeletonPage />;
+  }
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 pt-28 pb-16">

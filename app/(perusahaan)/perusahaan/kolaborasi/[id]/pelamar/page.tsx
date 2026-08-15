@@ -9,6 +9,7 @@ import { PelamarDetail, StatusLamaran } from "../../../pelamar/types/pelamar";
 
 import { ActionModal } from "@/components/ActionModal";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { PerusahaanSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 export default function ReviewPelamarPage() {
   const { id } = useParams();
@@ -149,11 +150,7 @@ export default function ReviewPelamarPage() {
   const countDiterima = pelamarList.filter((p) => p.status === "Diterima").length;
 
   if (isLoading) {
-    return (
-      <div className="flex h-96 items-center justify-center font-mono text-xs text-steel">
-        Memuat daftar pendaftaran pelamar...
-      </div>
-    );
+    return <PerusahaanSkeletonPage />;
   }
 
   return (
