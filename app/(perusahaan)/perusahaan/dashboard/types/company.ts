@@ -42,6 +42,7 @@ export interface KolaborasiWithMeta {
   tingkat_kesulitan?: TingkatKesulitan;
   gaji_stipend?: string;
   slot?: number;
+  current_slot?: number;
   perusahaan_nama?: string;
   pelamar_count?: number;
   status_aktif?: string;

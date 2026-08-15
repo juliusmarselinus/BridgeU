@@ -179,9 +179,26 @@ export default function DetailKolaborasiPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink leading-tight">
-            {kolaborasi.judul}
-          </h1>
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink leading-tight">
+              {kolaborasi.judul}
+            </h1>
+            <div className="flex items-center gap-3 mt-2 font-mono text-xs text-steel">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-steel/10 border border-steel/15 text-ink font-semibold">
+                <svg className="w-3.5 h-3.5 text-steel" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                </svg>
+                Sisa Slot Kuota:{" "}
+                <strong className={ (kolaborasi.current_slot ?? kolaborasi.slot ?? 0) === 0 ? "text-red-600" : "text-emerald-700" }>
+                  {kolaborasi.current_slot ?? kolaborasi.slot ?? 0}
+                </strong>{" "}
+                / {kolaborasi.slot || 0}
+              </span>
+              <span>&bull;</span>
+              <span>Tipe Lokasi: <strong className="text-ink">{kolaborasi.tipe_lokasi || "Remote"}</strong></span>
+            </div>
+          </div>
           <Link
             href="/perusahaan/kolaborasi"
             className="inline-flex items-center gap-1.5 rounded-full border border-steel/20 bg-white px-4 py-2 font-mono text-xs font-medium text-ink hover:bg-steel/5 transition shadow-sm shrink-0"
@@ -935,7 +952,19 @@ export default function DetailKolaborasiPage() {
               {/* Ketentuan */}
               <div className="rounded-2xl border border-steel/15 bg-white p-6 shadow-sm space-y-4">
                 <h3 className="font-display text-sm font-bold text-ink border-b border-steel/10 pb-3">Ketentuan</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                  <div>
+                    <label className="block font-mono text-xs font-medium text-ink mb-1.5">Tipe Lokasi *</label>
+                    <select
+                      value={formData.tipe_lokasi}
+                      onChange={(e) => setFormData({ ...formData, tipe_lokasi: e.target.value as "Onsite" | "Hybrid" | "Remote" })}
+                      className="w-full rounded-xl border border-steel/20 px-4 py-2.5 text-sm bg-white outline-none focus:border-bridge-gold font-semibold text-ink"
+                    >
+                      <option value="Onsite">Onsite</option>
+                      <option value="Hybrid">Hybrid</option>
+                      <option value="Remote">Remote</option>
+                    </select>
+                  </div>
                   <div>
                     <label className="block font-mono text-xs font-medium text-ink mb-1.5">Tingkat Kesulitan</label>
                     <select

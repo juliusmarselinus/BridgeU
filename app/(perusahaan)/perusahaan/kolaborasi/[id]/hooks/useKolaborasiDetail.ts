@@ -264,7 +264,7 @@ export function useKolaborasiDetail() {
           .from("kolaborasi")
           .select(`
             id, judul, tipe, deskripsi, lokasi_id, tipe_lokasi, batas_waktu, tanggal_selesai, status_moderasi,
-            tingkat_kesulitan, gaji_stipend, slot, kategori_id,
+            tingkat_kesulitan, gaji_stipend, slot, current_slot, kategori_id,
             kategori_minat:kategori_id ( nama_kategori ),
             kota ( nama_kota ),
             kolaborasi_target_prodi ( prodi_id ),
@@ -740,6 +740,7 @@ export function useKolaborasiDetail() {
       kategori_id: formData.selectedKategoriIds[0] || 1,
       deskripsi: formData.deskripsi,
       lokasi_id: formData.lokasi_id,
+      tipe_lokasi: formData.tipe_lokasi,
       batas_waktu: formData.batas_waktu,
       tanggal_selesai: formData.tanggal_selesai || undefined,
       tingkat_kesulitan: formData.tingkat_kesulitan,

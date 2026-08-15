@@ -98,12 +98,12 @@ export function KolaborasiItemCard({ item, onDelete, unreadCount = 0 }: Kolabora
             </svg>
             s.d {item.batas_waktu}
           </span>
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 font-semibold text-ink">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
             </svg>
-            {item.slot || 0} slot
+            Sisa Slot: <strong className={item.current_slot === 0 ? "text-red-600" : "text-emerald-700"}>{item.current_slot ?? item.slot ?? 0}</strong> / {item.slot || 0}
           </span>
         </div>
       </div>

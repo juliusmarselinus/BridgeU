@@ -119,6 +119,7 @@ export const companyService = {
         tingkat_kesulitan: item.tingkat_kesulitan,
         gaji_stipend: item.gaji_stipend,
         slot: item.slot,
+        current_slot: item.current_slot != null ? item.current_slot : item.slot,
         perusahaan_nama: item.perusahaan_profiles?.nama_perusahaan,
         pelamar_count: item.pendaftaran_kolaborasi?.length || 0,
       };
