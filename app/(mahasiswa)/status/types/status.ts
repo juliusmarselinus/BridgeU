@@ -54,6 +54,7 @@ export const statusMeta: Record<
 export const TABS = [
   { key: "semua", label: "Semua" },
   { key: "aksi", label: "Perlu Aksi" },
+    { key: "wawancara", label: "Jadwal Wawancara" },
   { key: "berjalan", label: "Berjalan" },
   { key: "selesai", label: "Selesai" },
 ] as const;
