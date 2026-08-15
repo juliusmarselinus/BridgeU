@@ -60,7 +60,7 @@ export function DashboardRecommendations({ recommendedProjects, loading }: Dashb
                     {item.matchScore}% Match
                   </span>
                 </div>
-                <h4 className="text-sm font-bold text-ink group-hover:text-bridge-gold transition line-clamp-2">
+                <h4 className="text-sm font-bold text-ink group-hover:text-amber-700 transition line-clamp-2">
                   {item.judul}
                 </h4>
                 <p className="text-xs font-medium text-steel mt-1">{item.perusahaan}</p>
@@ -68,7 +68,7 @@ export function DashboardRecommendations({ recommendedProjects, loading }: Dashb
 
               <Link
                 href={`/kolaborasi/${item.id}`}
-                className="font-mono text-xs font-bold text-ink group-hover:text-bridge-gold flex items-center gap-1 transition pt-2 border-t border-steel/10"
+                className="font-mono text-xs font-bold text-ink group-hover:text-amber-700 flex items-center gap-1 transition pt-2 border-t border-steel/10"
               >
                 Lihat Detail <span className="group-hover:translate-x-1 transition">→</span>
               </Link>

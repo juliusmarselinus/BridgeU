@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 import { useDashboard } from "./hooks/useDashboard";
 import { GradientBars } from "@/components/ui/gradient-bars-background";
 import { DashboardHero } from "./components/DashboardHero";
@@ -14,6 +15,20 @@ import { useEffect, useState, useMemo } from "react";
 import { fetchMahasiswaStatusList } from "../status/services/statusService";
 import { InteractiveCalendar, CalendarEvent } from "@/components/ui/InteractiveCalendar";
 import { MahasiswaSkeletonPage } from "@/components/ui/MahasiswaLoading";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+};
+
+const staggerContainer = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.12,
+    },
+  },
+};
 
 export default function DashboardPage() {
   const {
@@ -40,11 +55,14 @@ export default function DashboardPage() {
     const list: CalendarEvent[] = [];
 
     statusList.forEach((item) => {
+      // Jangan tampilkan agenda kalender untuk kolaborasi yang sudah batal/ditolak
+      const isInactive = item.status === "Dibatalkan" || item.status === "Ditolak";
+
       // Batas Pelaksanaan hanya tampil jika status Diterima, Evaluasi, atau Selesai
       const isAcceptedOrActive =
         item.status === "Diterima" || item.status === "Evaluasi" || item.status === "Selesai";
 
-      if (item.batasWaktu) {
+      if (item.batasWaktu && !isInactive) {
         list.push({
           id: `deadline-${item.id}`,
           date: item.batasWaktu,
@@ -56,7 +74,7 @@ export default function DashboardPage() {
         });
       }
 
-      if (item.tanggalSelesai && isAcceptedOrActive) {
+      if (item.tanggalSelesai && isAcceptedOrActive && !isInactive) {
         list.push({
           id: `completion-${item.id}`,
           date: item.tanggalSelesai,
@@ -68,7 +86,7 @@ export default function DashboardPage() {
         });
       }
 
-      if (item.interview?.scheduled_at) {
+      if (item.interview?.scheduled_at && !isInactive) {
         const dt = new Date(item.interview.scheduled_at);
         list.push({
           id: `interview-${item.id}`,
@@ -101,31 +119,56 @@ export default function DashboardPage() {
       />
 
       {/* 1. HERO SECTION */}
-      <div className="relative z-10">
+      <motion.div
+        className="relative z-10"
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
         <DashboardHero loading={loading} user={user} stats={stats} />
-      </div>
+      </motion.div>
 
       {/* 2. OVERLAPPING / STACKED CARDS CONTENT */}
-      <div className="relative mx-auto max-w-6xl px-6 -mt-16 z-30 space-y-10">
+      <motion.div
+        className="relative mx-auto max-w-6xl px-6 -mt-16 z-30 space-y-10"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="show"
+      >
         {/* STATS CARDS */}
-        <DashboardStatsCards stats={stats} loading={loading} />
+        <motion.div variants={fadeUp} transition={{ duration: 0.45, ease: "easeOut" }}>
+          <DashboardStatsCards stats={stats} loading={loading} />
+        </motion.div>
 
         {/* MAIN LAYOUT GRID (LEFT 2/3, RIGHT 1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* LEFT COLUMN */}
-          <div className="lg:col-span-2 space-y-8">
-            <DashboardPengajuanList pengajuan={pengajuan} loading={loading} />
-            <DashboardRecommendations recommendedProjects={recommendedProjects} loading={loading} />
-          </div>
+          <motion.div
+            className="lg:col-span-2 space-y-8"
+            variants={staggerContainer}
+          >
+            <motion.div variants={fadeUp} transition={{ duration: 0.45, ease: "easeOut" }}>
+              <DashboardPengajuanList pengajuan={pengajuan} loading={loading} />
+            </motion.div>
+            <motion.div variants={fadeUp} transition={{ duration: 0.45, ease: "easeOut" }}>
+              <DashboardRecommendations recommendedProjects={recommendedProjects} loading={loading} />
+            </motion.div>
+          </motion.div>
 
           {/* RIGHT COLUMN */}
-          <div className="space-y-6">
-            <InteractiveCalendar events={mahasiswaEvents} title="Kalender Agenda Saya" />
-            <DashboardBadges userBadges={userBadges} />
-            <DashboardPortfolioTracker />
-          </div>
+          <motion.div className="space-y-6" variants={staggerContainer}>
+            <motion.div variants={fadeUp} transition={{ duration: 0.45, ease: "easeOut" }}>
+              <InteractiveCalendar events={mahasiswaEvents} title="Kalender Agenda Saya" />
+            </motion.div>
+            <motion.div variants={fadeUp} transition={{ duration: 0.45, ease: "easeOut" }}>
+              <DashboardBadges userBadges={userBadges} />
+            </motion.div>
+            <motion.div variants={fadeUp} transition={{ duration: 0.45, ease: "easeOut" }}>
+              <DashboardPortfolioTracker />
+            </motion.div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </main>
   );
 }
