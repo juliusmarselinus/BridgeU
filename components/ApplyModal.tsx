@@ -20,7 +20,7 @@ type Kolaborasi = {
   tipe: string;
 };
 
-const STEPS = ["Data Pemohon", "Ketersediaan", "Portofolio", "Dokumen"];
+const STEPS = ["Data Pemohon", "Ketersediaan", "Portofolio"];
 
 const KETERSEDIAAN_OPTIONS = [
   "Full-time (5 hari/minggu)",
@@ -41,16 +41,6 @@ function IconCheck({ className = "w-4 h-4 text-bridge-gold" }: { className?: str
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function IconUpload({ className = "w-4 h-4 text-bridge-gold" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
     </svg>
   );
 }
@@ -80,7 +70,6 @@ export function ApplyModal({
   const [ketersediaan, setKetersediaan] = useState(KETERSEDIAAN_OPTIONS[0]);
   const [tanggalMulai, setTanggalMulai] = useState("");
   const [portofolio, setPortofolio] = useState("");
-  const [cvFile, setCvFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const mouseDownOnBackdrop = useRef(false);
@@ -146,7 +135,6 @@ export function ApplyModal({
       ketersediaan,
       tanggalMulai,
       portofolio,
-      cvNama: cvFile?.name || null,
       pemohon: user.nama,
       tanggal: new Date().toLocaleDateString("id-ID"),
     });
@@ -154,11 +142,6 @@ export function ApplyModal({
 
     setSubmitting(false);
     onSuccess();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) setCvFile(file);
   };
 
   return (
@@ -291,42 +274,32 @@ export function ApplyModal({
           )}
 
           {step === 2 && (
-            <div>
-              <label className="text-[10px] font-bold tracking-wider text-steel uppercase">
-                Link Portofolio / LinkedIn / GitHub
-              </label>
-              <input
-                type="url"
-                value={portofolio}
-                onChange={(e) => setPortofolio(e.target.value)}
-                placeholder="https://..."
-                className="mt-1 w-full rounded-xl border border-steel/20 bg-paper px-4 py-3 text-sm text-ink outline-none focus:border-ink transition"
-              />
-              <p className="mt-2 text-[11px] text-steel/60">
-                Opsional, tapi disarankan biar perusahaan lebih mudah menilai kecocokan kamu.
-              </p>
-            </div>
-          )}
-
-          {step === 3 && (
             <>
+              <div className="rounded-xl border border-sky/30 bg-sky/5 p-4 mb-4">
+                <div className="flex items-center gap-2 mb-1 text-ocean font-bold text-xs">
+                  <svg className="w-4 h-4 text-sky" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  Tautan Dokumen Utama (Portofolio / CV)
+                </div>
+                <p className="text-[11px] text-steel/80 leading-relaxed">
+                  Masukkan link dokumen publik kamu (seperti Google Drive CV, LinkedIn, Behance, GitHub, atau Website Pribadi) yang bisa diakses langsung oleh perusahaan.
+                </p>
+              </div>
+
               <div>
-                <label className="block text-[10px] font-bold tracking-wider text-steel uppercase mb-2">
-                  Dokumen Pendukung (CV / Portofolio)
+                <label className="text-[11px] font-extrabold tracking-wider text-ink uppercase flex items-center justify-between">
+                  <span>Link Portofolio / CV <span className="text-rose-500 font-normal">*</span></span>
+                  <span className="text-[10px] text-steel/60 normal-case font-normal">(URL Publik)</span>
                 </label>
-                <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-steel/25 bg-steel/5 px-4 py-10 text-center cursor-pointer hover:border-bridge-gold/50 hover:bg-bridge-gold/5 transition">
-                  <IconUpload className="w-6 h-6 text-bridge-gold" />
-                  <span className="text-xs font-semibold text-ink">
-                    {cvFile ? cvFile.name : "Klik untuk upload file (PDF, maks 5MB)"}
-                  </span>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
-                <p className="mt-2 text-[11px] text-steel/60">Opsional, tapi sangat disarankan.</p>
+                <input
+                  type="url"
+                  required
+                  value={portofolio}
+                  onChange={(e) => setPortofolio(e.target.value)}
+                  placeholder="https://drive.google.com/... atau https://linkedin.com/in/..."
+                  className="mt-1.5 w-full rounded-xl border-2 border-sky/30 bg-paper px-4 py-3 text-sm text-ink outline-none focus:border-ocean transition font-medium placeholder:text-steel/40 shadow-sm"
+                />
               </div>
 
               <div className="rounded-xl border border-steel/15 bg-steel/5 p-5 space-y-2">
@@ -336,6 +309,7 @@ export function ApplyModal({
                 <p className="text-sm text-ink/80"><span className="text-steel/70">Posisi:</span> {data.judul}</p>
                 <p className="text-sm text-ink/80"><span className="text-steel/70">Ketersediaan:</span> {ketersediaan}</p>
                 <p className="text-sm text-ink/80"><span className="text-steel/70">Mulai:</span> {tanggalMulai || "—"}</p>
+                <p className="text-sm text-ink/80 truncate"><span className="text-steel/70">Link Portofolio / CV:</span> <span className="font-semibold text-ocean">{portofolio || "Belum diisi"}</span></p>
               </div>
             </>
           )}
