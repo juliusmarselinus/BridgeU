@@ -44,6 +44,8 @@ export interface KolaborasiWithMeta {
   slot?: number;
   perusahaan_nama?: string;
   pelamar_count?: number;
+  status_aktif?: string;
+  semua_pelamar_selesai?: boolean;
 }
 
 export interface KolaborasiFormData {
@@ -57,4 +59,5 @@ export interface KolaborasiFormData {
   tingkat_kesulitan: TingkatKesulitan;
   gaji_stipend?: string;
   slot: number;
+  status_aktif?: string;
 }
