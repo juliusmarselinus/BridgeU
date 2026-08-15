@@ -20,14 +20,22 @@ export default function StatusPage() {
   } = useStatusList();
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { semua: list.length, aksi: 0, berjalan: 0, selesai: 0 };
-    for (const item of list) c[statusMeta[item.status].group]++;
+    const c: Record<string, number> = { semua: list.length, wawancara: 0, aksi: 0, berjalan: 0, selesai: 0 };
+    for (const item of list) {
+      if (item.interview) c.wawancara++;
+      c[statusMeta[item.status].group]++;
+    }
     return c;
   }, [list]);
 
   const filtered = useMemo(() => {
     return list.filter((item) => {
-      const matchesTab = tab === "semua" || statusMeta[item.status].group === tab;
+      const matchesTab =
+        tab === "semua"
+          ? true
+          : tab === "wawancara"
+          ? Boolean(item.interview)
+          : statusMeta[item.status].group === tab;
       const q = query.trim().toLowerCase();
       const matchesQuery =
         !q || item.judul.toLowerCase().includes(q) || item.perusahaan.toLowerCase().includes(q);
@@ -200,6 +208,38 @@ export default function StatusPage() {
                         <div className="flex justify-between text-steel/70">
                           <span>Insentif / Stipend</span>
                           <span className="text-emerald-700 font-bold">{item.gajiStipend}</span>
+                        </div>
+                      )}
+
+                      {item.interview && (
+                        <div className="mt-3 rounded-2xl bg-sky/10 border border-sky/30 p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-mono font-bold text-ocean flex items-center gap-1">
+                              <svg className="w-3.5 h-3.5 text-ocean" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                              </svg>
+                              Undangan Wawancara
+                            </span>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-sky/20 text-ocean">
+                              {new Date(item.interview.scheduled_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                          <p className="text-[11px] font-sans font-semibold text-ink">
+                            {new Date(item.interview.scheduled_at).toLocaleDateString("id-ID", { dateStyle: "full" })}
+                          </p>
+                          {item.interview.meeting_link && (
+                            <a
+                              href={item.interview.meeting_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1 flex items-center justify-center gap-1.5 rounded-xl bg-ocean text-white font-mono text-[10px] font-bold py-1.5 px-3 hover:bg-ink transition shadow-sm"
+                            >
+                              Buka Link Google Meet / Meeting
+                            </a>
+                          )}
                         </div>
                       )}
 

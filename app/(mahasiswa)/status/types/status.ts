@@ -16,6 +16,15 @@ export type StatusItem = {
   gajiStipend?: string;
   urlBuktiBayar?: string;
   statusPembayaran?: string;
+  tanggalSelesai?: string;
+  batasWaktu?: string;
+  interview?: {
+    id: string;
+    scheduled_at: string;
+    meeting_link: string;
+    status: string;
+    notes?: string | null;
+  } | null;
 };
 
 export const STAGES = ["Diajukan", "Diproses", "Dievaluasi", "Selesai"] as const;
@@ -44,6 +53,7 @@ export const statusMeta: Record<
 
 export const TABS = [
   { key: "semua", label: "Semua" },
+  { key: "wawancara", label: "Jadwal Wawancara" },
   { key: "aksi", label: "Perlu Aksi" },
   { key: "berjalan", label: "Berjalan" },
   { key: "selesai", label: "Selesai" },

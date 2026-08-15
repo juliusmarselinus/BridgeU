@@ -10,6 +10,9 @@ import { DashboardRecommendations } from "./components/DashboardRecommendations"
 import { DashboardBadges } from "./components/DashboardBadges";
 import { DashboardPortfolioTracker } from "./components/DashboardPortfolioTracker";
 
+import { useEffect, useState, useMemo } from "react";
+import { fetchMahasiswaStatusList } from "../status/services/statusService";
+import { InteractiveCalendar, CalendarEvent } from "@/components/ui/InteractiveCalendar";
 import { MahasiswaSkeletonPage } from "@/components/ui/MahasiswaLoading";
 
 export default function DashboardPage() {
@@ -22,6 +25,65 @@ export default function DashboardPage() {
     userBadges,
     stats,
   } = useDashboard();
+
+  const [statusList, setStatusList] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadStatus() {
+      const data = await fetchMahasiswaStatusList();
+      setStatusList(data);
+    }
+    loadStatus();
+  }, []);
+
+  const mahasiswaEvents = useMemo<CalendarEvent[]>(() => {
+    const list: CalendarEvent[] = [];
+
+    statusList.forEach((item) => {
+      // Batas Pelaksanaan hanya tampil jika status Diterima, Evaluasi, atau Selesai
+      const isAcceptedOrActive =
+        item.status === "Diterima" || item.status === "Evaluasi" || item.status === "Selesai";
+
+      if (item.batasWaktu) {
+        list.push({
+          id: `deadline-${item.id}`,
+          date: item.batasWaktu,
+          title: `Start Kolaborasi: ${item.judul}`,
+          type: "deadline",
+          typeLabel: "Start Kolaborasi",
+          subtitle: `Mitra: ${item.perusahaan}`,
+          link: item.id ? `/status/${item.id}` : `/status`,
+        });
+      }
+
+      if (item.tanggalSelesai && isAcceptedOrActive) {
+        list.push({
+          id: `completion-${item.id}`,
+          date: item.tanggalSelesai,
+          title: `Batas Pelaksanaan: ${item.judul}`,
+          type: "completion",
+          typeLabel: "Batas Pelaksanaan",
+          subtitle: `Mitra: ${item.perusahaan}`,
+          link: item.id ? `/status/${item.id}` : `/status`,
+        });
+      }
+
+      if (item.interview?.scheduled_at) {
+        const dt = new Date(item.interview.scheduled_at);
+        list.push({
+          id: `interview-${item.id}`,
+          date: dt.toISOString().split("T")[0],
+          title: `Wawancara: ${item.perusahaan}`,
+          type: "interview",
+          typeLabel: "Wawancara",
+          subtitle: `Proyek: ${item.judul} (${dt.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB)`,
+          link: item.id ? `/status/${item.id}` : `/status`,
+        });
+      }
+    });
+
+    return list;
+  }, [statusList]);
 
   if (loading || (!authChecked && loading)) {
     return <MahasiswaSkeletonPage />;
@@ -58,6 +120,7 @@ export default function DashboardPage() {
 
           {/* RIGHT COLUMN */}
           <div className="space-y-6">
+            <InteractiveCalendar events={mahasiswaEvents} title="Kalender Agenda Saya" />
             <DashboardBadges userBadges={userBadges} />
             <DashboardPortfolioTracker />
           </div>

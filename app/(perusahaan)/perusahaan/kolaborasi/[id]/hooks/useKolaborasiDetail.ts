@@ -55,6 +55,19 @@ export function useKolaborasiDetail() {
   const [isSubmittingEvaluasi, setIsSubmittingEvaluasi] = useState<boolean>(false);
   const [isSubmittingRevisi, setIsSubmittingRevisi] = useState<boolean>(false);
 
+  // Modal Wawancara State
+  const [isInterviewModalOpen, setIsInterviewModalOpen] = useState(false);
+  const [interviewTargetPelamar, setInterviewTargetPelamar] = useState<PelamarDetail | null>(null);
+  const [interviewDate, setInterviewDate] = useState("");
+  const [interviewTime, setInterviewTime] = useState("");
+  const [interviewLink, setInterviewLink] = useState("https://meet.google.com/abc-defg-hij");
+  const [interviewNotes, setInterviewNotes] = useState("");
+  const [isSubmittingInterview, setIsSubmittingInterview] = useState(false);
+
+  // Pagination State (3x2 = 6 per page)
+  const [pelamarPage, setPelamarPage] = useState(1);
+  const PELAMAR_PAGE_SIZE = 6;
+
   // Delete Request Catatan
   const [deleteAlasan, setDeleteAlasan] = useState<string>("");
   const [deleteKompensasi, setDeleteKompensasi] = useState<string>("");
@@ -672,6 +685,89 @@ export function useKolaborasiDetail() {
     }
   };
 
+  // Minimal tanggal wawancara H+2 dari hari ini
+  const minInterviewDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    return d.toISOString().split("T")[0];
+  }, []);
+
+  const openInterviewModal = (pelamar: PelamarDetail) => {
+    setInterviewTargetPelamar(pelamar);
+    if (!interviewDate) {
+      setInterviewDate(minInterviewDate);
+    }
+    setIsInterviewModalOpen(true);
+  };
+
+  const handleScheduleInterview = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!id || !interviewTargetPelamar || !interviewDate || !interviewTime) return;
+
+    const selectedDateTime = new Date(`${interviewDate}T${interviewTime}`);
+    const minDateTime = new Date();
+    minDateTime.setDate(minDateTime.getDate() + 2);
+    minDateTime.setHours(0, 0, 0, 0);
+
+    if (selectedDateTime < minDateTime) {
+      setActionModal({
+        isOpen: true,
+        title: "Tanggal Wawancara Terlalu Mendadak",
+        message: "Jadwal wawancara minimal harus H+2 hari dari sekarang agar mahasiswa memiliki waktu persiapan.",
+      });
+      return;
+    }
+
+    setIsSubmittingInterview(true);
+    const scheduledAt = new Date(`${interviewDate}T${interviewTime}`).toISOString();
+    const companyProfile = await companyService.fetchCompanyProfile();
+    const perusahaanUserId = companyProfile?.user_id || currentUserId;
+
+    const { data: newInterview, error } = await supabase
+      .from("interviews")
+      .insert([
+        {
+          kolaborasi_id: id as string,
+          student_id: interviewTargetPelamar.mahasiswa_id,
+          perusahaan_id: perusahaanUserId,
+          scheduled_at: scheduledAt,
+          meeting_link: interviewLink.trim() || "https://meet.google.com/abc-defg-hij",
+          notes: interviewNotes.trim() || null,
+          status: "Scheduled",
+        },
+      ])
+      .select()
+      .single();
+
+    setIsSubmittingInterview(false);
+
+    if (error) {
+      setActionModal({
+        isOpen: true,
+        title: "Gagal Menjadwalkan Wawancara",
+        message: "Terjadi kesalahan saat menyimpan jadwal: " + error.message,
+      });
+    } else {
+      setIsInterviewModalOpen(false);
+      setInterviewDate("");
+      setInterviewTime("");
+      setInterviewNotes("");
+
+      // Kirim Notifikasi ke Mahasiswa
+      await notifikasiService.kirim(
+        interviewTargetPelamar.mahasiswa_id,
+        "Jadwal Undangan Wawancara Baru",
+        `Perusahaan mengundang Anda wawancara untuk proyek "${kolaborasi?.judul || 'Kolaborasi'}". Tanggal: ${new Date(scheduledAt).toLocaleString("id-ID")}`
+      );
+
+      setSuccessModal({
+        isOpen: true,
+        title: "Jadwal Wawancara Berhasil Dibuat",
+        message: `Wawancara dengan ${interviewTargetPelamar.nama_lengkap} berhasil dijadwalkan pada ${new Date(scheduledAt).toLocaleString("id-ID")}. Notifikasi telah dikirimkan ke mahasiswa.`,
+      });
+    }
+  };
+
   const handleKirimChat = async (e: FormEvent) => {
     e.preventDefault();
     if (!id || !selectedPelamar || !chatInput.trim()) return;
@@ -1108,6 +1204,13 @@ export function useKolaborasiDetail() {
     );
   }, [pelamarList]);
 
+  const totalPelamarPages = Math.ceil(sortedPelamarList.length / PELAMAR_PAGE_SIZE) || 1;
+
+  const paginatedPelamarList = useMemo(() => {
+    const start = (pelamarPage - 1) * PELAMAR_PAGE_SIZE;
+    return sortedPelamarList.slice(start, start + PELAMAR_PAGE_SIZE);
+  }, [sortedPelamarList, pelamarPage]);
+
   const isSlotPenuh = kolaborasi?.slot
     ? pelamarList.filter((p) => p.status === "Diterima").length >= kolaborasi.slot
     : false;
@@ -1122,6 +1225,15 @@ export function useKolaborasiDetail() {
     selectedPelamar, setSelectedPelamar,
     chatMessages, chatInput, setChatInput, isSendingChat, handleKirimChat, unreadCounts,
     evaluasiInput, setEvaluasiInput, isSubmittingEvaluasi, handleKirimEvaluasi, handleGiveRating, handleUploadBuktiBayar,
+    isInterviewModalOpen, setIsInterviewModalOpen,
+    interviewTargetPelamar, setInterviewTargetPelamar,
+    interviewDate, setInterviewDate,
+    interviewTime, setInterviewTime,
+    interviewLink, setInterviewLink,
+    interviewNotes, setInterviewNotes,
+    minInterviewDate,
+    isSubmittingInterview, openInterviewModal, handleScheduleInterview,
+    paginatedPelamarList, pelamarPage, setPelamarPage, totalPelamarPages,
     isSubmittingRevisi, handleMintaRevisi,
     deleteAlasan, setDeleteAlasan,
     deleteKompensasi, setDeleteKompensasi,

@@ -7,6 +7,9 @@ import { pelamarService } from "../pelamar/services/pelamarService";
 import { StoredCompany, KolaborasiWithMeta } from "./types/company";
 import { PelamarDetail } from "../pelamar/types/pelamar";
 import { PerusahaanSkeletonPage } from "@/components/ui/MahasiswaLoading";
+import { InteractiveCalendar, CalendarEvent } from "@/components/ui/InteractiveCalendar";
+
+import { supabase } from "@/lib/supabase";
 
 interface RecentPelamar extends PelamarDetail {
   kolaborasi_judul: string;
@@ -20,6 +23,7 @@ export default function CompanyDashboardPage() {
   const [company, setCompany] = useState<StoredCompany | null>(null);
   const [kolaborasiList, setKolaborasiList] = useState<KolaborasiWithMeta[]>([]);
   const [recentPelamar, setRecentPelamar] = useState<RecentPelamar[]>([]);
+  const [interviewsList, setInterviewsList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,13 +37,19 @@ export default function CompanyDashboardPage() {
         setCompany(compData);
 
         if (compData) {
-          const [kolaborasiData, proyekPelamar] = await Promise.all([
+          const [kolaborasiData, proyekPelamar, interviewsRes] = await Promise.all([
             companyService.fetchKolaborasiList(compData.user_id),
             pelamarService.fetchProyekDanPelamar(compData.user_id),
+            supabase
+              .from("interviews")
+              .select("*, mahasiswa_profiles(nama_lengkap, foto_url), kolaborasi(judul)")
+              .eq("perusahaan_id", compData.user_id)
+              .order("scheduled_at", { ascending: true }),
           ]);
           if (!isMounted) return;
 
           setKolaborasiList(kolaborasiData);
+          setInterviewsList(interviewsRes.data || []);
 
           const flatPelamar: RecentPelamar[] = proyekPelamar.flatMap((proyek) =>
             proyek.pelamar_list.map((p) => ({ ...p, kolaborasi_judul: proyek.judul }))
@@ -86,6 +96,57 @@ export default function CompanyDashboardPage() {
     iso
       ? new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
       : "-";
+
+  const companyCalendarEvents = useMemo<CalendarEvent[]>(() => {
+    const list: CalendarEvent[] = [];
+
+    kolaborasiList.forEach((k) => {
+      if (k.batas_waktu) {
+        list.push({
+          id: `deadline-${k.id}`,
+          date: k.batas_waktu,
+          title: `Start Kolaborasi: ${k.judul}`,
+          type: "deadline",
+          typeLabel: "Start Kolaborasi",
+          subtitle: `Slot: ${k.current_slot ?? k.slot ?? 0} / ${k.slot || 0}`,
+          link: `/perusahaan/kolaborasi/${k.id}`,
+        });
+      }
+
+      if (k.tanggal_selesai) {
+        list.push({
+          id: `completion-${k.id}`,
+          date: k.tanggal_selesai,
+          title: `Batas Pelaksanaan: ${k.judul}`,
+          type: "completion",
+          typeLabel: "Batas Pelaksanaan",
+          subtitle: `Tipe: ${k.tipe}`,
+          link: `/perusahaan/kolaborasi/${k.id}`,
+        });
+      }
+    });
+
+    interviewsList.forEach((inv) => {
+      if (inv.scheduled_at) {
+        const dt = new Date(inv.scheduled_at);
+        const colabLink = inv.kolaborasi_id
+          ? `/perusahaan/kolaborasi/${inv.kolaborasi_id}?tab=pelamar`
+          : `/perusahaan/jadwal`;
+
+        list.push({
+          id: `interview-${inv.id}`,
+          date: dt.toISOString().split("T")[0],
+          title: `Wawancara: ${inv.mahasiswa_profiles?.nama_lengkap || "Pelamar"}`,
+          type: "interview",
+          typeLabel: "Wawancara",
+          subtitle: `Proyek: ${inv.kolaborasi?.judul || "Kolaborasi"} (${dt.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB)`,
+          link: colabLink,
+        });
+      }
+    });
+
+    return list;
+  }, [kolaborasiList, interviewsList]);
 
   if (isLoading) return <PerusahaanSkeletonPage />;
 
@@ -215,6 +276,120 @@ export default function CompanyDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Section Analytics & Visualisasi Konversi */}
+      <section className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Kolom Kiri 2-Span: Analytics & Interviews */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className={`rounded-3xl bg-white p-6 ${NEO_CARD}`}>
+            <div className="flex items-center justify-between border-b border-[#E6F0F8] pb-4 mb-4">
+              <div>
+                <h2 className="font-display text-lg font-bold text-ink">Analytics Konversi Pelamar</h2>
+                <p className="font-mono text-xs text-steel">Distribusi status pendaftar pada seluruh proyek aktif</p>
+              </div>
+              <span className="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                Total {totalPelamar} Pelamar
+              </span>
+            </div>
+
+            <div className="space-y-3 font-mono text-xs">
+              <div>
+                <div className="flex justify-between mb-1 text-ink">
+                  <span>Menunggu Review ({menungguReview})</span>
+                  <span>{totalPelamar ? Math.round((menungguReview / totalPelamar) * 100) : 0}%</span>
+                </div>
+                <div className="h-3 w-full bg-steel/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                    style={{ width: `${totalPelamar ? (menungguReview / totalPelamar) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1 text-ink">
+                  <span>Diterima &amp; Berjalan ({diterima})</span>
+                  <span>{totalPelamar ? Math.round((diterima / totalPelamar) * 100) : 0}%</span>
+                </div>
+                <div className="h-3 w-full bg-steel/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${totalPelamar ? (diterima / totalPelamar) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1 text-ink">
+                  <span>Selesai ({selesai})</span>
+                  <span>{totalPelamar ? Math.round((selesai / totalPelamar) * 100) : 0}%</span>
+                </div>
+                <div className="h-3 w-full bg-steel/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                    style={{ width: `${totalPelamar ? (selesai / totalPelamar) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={`rounded-3xl bg-white p-6 ${NEO_CARD}`}>
+            <div className="flex items-center justify-between border-b border-[#E6F0F8] pb-4 mb-4">
+              <h2 className="font-display text-lg font-bold text-ink flex items-center gap-2">
+                <svg className="w-4 h-4 text-ocean" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Jadwal Wawancara Mendatang
+              </h2>
+              <span className="font-mono text-[11px] font-bold text-ocean bg-sky/10 px-2.5 py-0.5 rounded-full">
+                {interviewsList.length} Total
+              </span>
+            </div>
+
+            {interviewsList.length === 0 ? (
+              <div className="py-8 text-center font-mono text-xs text-steel">
+                Belum ada wawancara yang dijadwalkan.
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                {interviewsList.map((inv) => (
+                  <div key={inv.id} className="rounded-2xl border border-steel/15 bg-steel/5 p-3.5 space-y-1.5 font-mono text-xs">
+                    <div className="flex items-center justify-between font-bold text-ink">
+                      <span className="truncate max-w-[140px]">
+                        {inv.mahasiswa_profiles?.nama_lengkap || "Mahasiswa"}
+                      </span>
+                      <span className="text-[10px] text-ocean bg-sky/15 px-2 py-0.5 rounded-md">
+                        {new Date(inv.scheduled_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <p className="text-[10.5px] text-steel truncate">Proyek: {inv.kolaborasi?.judul || "-"}</p>
+                    <p className="text-[10px] text-steel/70">{new Date(inv.scheduled_at).toLocaleDateString("id-ID", { dateStyle: "medium" })}</p>
+                    {inv.meeting_link && (
+                      <a
+                        href={inv.meeting_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-[10px] font-bold text-ocean underline truncate pt-0.5 hover:text-ink"
+                      >
+                        {inv.meeting_link}
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Kolom Kanan 1-Span: Kalender Agenda Compact */}
+        <div className="lg:col-span-1">
+          <InteractiveCalendar events={companyCalendarEvents} title="Kalender Agenda" />
+        </div>
+      </section>
 
       {/* Section Aktivitas Terbaru (Pelamar) */}
       <section className="mt-12">

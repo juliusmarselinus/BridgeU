@@ -32,6 +32,15 @@ export default function DetailKolaborasiPage() {
     handleKirimEvaluasi,
     handleGiveRating,
     handleUploadBuktiBayar,
+    isInterviewModalOpen, setIsInterviewModalOpen,
+    interviewTargetPelamar,
+    interviewDate, setInterviewDate,
+    interviewTime, setInterviewTime,
+    interviewLink, setInterviewLink,
+    interviewNotes, setInterviewNotes,
+    minInterviewDate,
+    isSubmittingInterview, openInterviewModal, handleScheduleInterview,
+    paginatedPelamarList, pelamarPage, setPelamarPage, totalPelamarPages,
     isSubmittingRevisi,
     handleMintaRevisi,
     deleteAlasan,
@@ -198,6 +207,14 @@ export default function DetailKolaborasiPage() {
               <span>&bull;</span>
               <span>Tipe Lokasi: <strong className="text-ink">{kolaborasi.tipe_lokasi || "Remote"}</strong></span>
             </div>
+            <div className="flex flex-wrap items-center gap-3 mt-2 font-mono text-xs text-steel">
+              {kolaborasi.batas_waktu && (
+                <span>Start Kolaborasi: <strong className="text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{new Date(kolaborasi.batas_waktu).toLocaleDateString("id-ID", { dateStyle: "medium" })}</strong></span>
+              )}
+              {kolaborasi.tanggal_selesai && (
+                <span>Batas Pelaksanaan: <strong className="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">{new Date(kolaborasi.tanggal_selesai).toLocaleDateString("id-ID", { dateStyle: "medium" })}</strong></span>
+              )}
+            </div>
           </div>
           <Link
             href="/perusahaan/kolaborasi"
@@ -301,139 +318,183 @@ export default function DetailKolaborasiPage() {
                 Belum ada mahasiswa yang mendaftar pada proyek ini.
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {sortedPelamarList.map((pelamar) => (
-                  <div
-                    key={pelamar.id}
-                    className="rounded-2xl border border-steel/15 bg-white p-5 shadow-sm space-y-4 flex flex-col"
-                  >
-                    {/* Header Kartu Pelamar */}
-                    <div className="flex items-start justify-between gap-3 pb-4 border-b border-steel/10">
-                      <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 shrink-0 rounded-full bg-bridge-gold/15 border border-bridge-gold/30 flex items-center justify-center font-display text-base font-bold text-ink overflow-hidden">
-                          {pelamar.foto_url ? (
-                            <img src={pelamar.foto_url} alt={pelamar.nama_lengkap} className="h-full w-full object-cover" />
-                          ) : (
-                            pelamar.nama_lengkap.charAt(0).toUpperCase()
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-display text-sm font-bold text-ink">{pelamar.nama_lengkap}</h3>
-                            <span className="font-mono text-[9px] text-steel border border-steel/20 rounded-full px-2 py-0.5">
-                              {pelamar.reputation_score} Pts
-                            </span>
-                          </div>
-                          <p className="font-mono text-[11px] text-steel mt-0.5">
-                            {pelamar.universitas} &bull; {pelamar.program_studi}
-                          </p>
-                        </div>
-                      </div>
-
-                      <StatusBadge status={pelamar.status} />
-                    </div>
-
-                    {/* Self Description */}
-                    {pelamar.ringkasan_self && (
-                      <p className="font-sans text-xs text-steel bg-steel/5 rounded-xl p-3.5 leading-relaxed border border-steel/10">
-                        {pelamar.ringkasan_self}
-                      </p>
-                    )}
-
-                    {/* Data Form Pengajuan */}
-                    {(pelamar.tujuan_mengajukan || pelamar.ketersediaan || pelamar.tanggal_mulai_diinginkan) && (
-                      <div className="space-y-2 flex-1">
-                        {pelamar.tujuan_mengajukan && (
-                          <div>
-                            <p className="font-mono text-[9px] font-bold text-steel/70 uppercase mb-1">Tujuan Mengajukan</p>
-                            <p className="font-sans text-xs text-ink bg-steel/5 rounded-xl p-3 leading-relaxed border border-steel/10">
-                              {pelamar.tujuan_mengajukan}
-                            </p>
-                          </div>
-                        )}
-                        <div className="grid grid-cols-2 gap-2">
-                          {pelamar.ketersediaan && (
-                            <div className="bg-steel/5 rounded-xl p-2.5 border border-steel/10">
-                              <p className="font-mono text-[9px] font-bold text-steel/70 uppercase mb-0.5">Ketersediaan</p>
-                              <p className="font-sans text-xs text-ink font-semibold">{pelamar.ketersediaan}</p>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {paginatedPelamarList.map((pelamar) => (
+                    <div
+                      key={pelamar.id}
+                      className="rounded-2xl border border-steel/15 bg-white p-5 shadow-sm space-y-4 flex flex-col justify-between"
+                    >
+                      <div className="space-y-4">
+                        {/* Header Kartu Pelamar */}
+                        <div className="flex items-start justify-between gap-3 pb-3 border-b border-steel/10">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-11 w-11 shrink-0 rounded-full bg-bridge-gold/15 border border-bridge-gold/30 flex items-center justify-center font-display text-sm font-bold text-ink overflow-hidden">
+                              {pelamar.foto_url ? (
+                                <img src={pelamar.foto_url} alt={pelamar.nama_lengkap} className="h-full w-full object-cover" />
+                              ) : (
+                                pelamar.nama_lengkap.charAt(0).toUpperCase()
+                              )}
                             </div>
-                          )}
-                          {pelamar.tanggal_mulai_diinginkan && (
-                            <div className="bg-steel/5 rounded-xl p-2.5 border border-steel/10">
-                              <p className="font-mono text-[9px] font-bold text-steel/70 uppercase mb-0.5">Tanggal Mulai</p>
-                              <p className="font-sans text-xs text-ink font-semibold">
-                                {new Date(pelamar.tanggal_mulai_diinginkan).toLocaleDateString("id-ID", { dateStyle: "medium" })}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <h3 className="font-display text-xs sm:text-sm font-bold text-ink truncate">{pelamar.nama_lengkap}</h3>
+                                <span className="font-mono text-[9px] text-steel border border-steel/20 rounded-full px-1.5 py-0.2 shrink-0">
+                                  {pelamar.reputation_score} Pts
+                                </span>
+                              </div>
+                              <p className="font-mono text-[10px] text-steel mt-0.5 truncate">
+                                {pelamar.universitas} &bull; {pelamar.program_studi}
                               </p>
                             </div>
-                          )}
+                          </div>
+
+                          <StatusBadge status={pelamar.status} small />
                         </div>
+
+                        {/* Self Description */}
+                        {pelamar.ringkasan_self && (
+                          <p className="font-sans text-[11px] text-steel bg-steel/5 rounded-xl p-3 leading-relaxed border border-steel/10 line-clamp-3">
+                            {pelamar.ringkasan_self}
+                          </p>
+                        )}
+
+                        {/* Data Form Pengajuan */}
+                        {(pelamar.tujuan_mengajukan || pelamar.ketersediaan || pelamar.tanggal_mulai_diinginkan) && (
+                          <div className="space-y-2">
+                            {pelamar.tujuan_mengajukan && (
+                              <div>
+                                <p className="font-mono text-[9px] font-bold text-steel/70 uppercase mb-0.5">Tujuan Mengajukan</p>
+                                <p className="font-sans text-[11px] text-ink bg-steel/5 rounded-xl p-2.5 leading-relaxed border border-steel/10 line-clamp-2">
+                                  {pelamar.tujuan_mengajukan}
+                                </p>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {pelamar.ketersediaan && (
+                                <div className="bg-steel/5 rounded-xl p-2 border border-steel/10">
+                                  <p className="font-mono text-[8.5px] font-bold text-steel/70 uppercase mb-0.5">Ketersediaan</p>
+                                  <p className="font-sans text-[11px] text-ink font-semibold truncate">{pelamar.ketersediaan}</p>
+                                </div>
+                              )}
+                              {pelamar.tanggal_mulai_diinginkan && (
+                                <div className="bg-steel/5 rounded-xl p-2 border border-steel/10">
+                                  <p className="font-mono text-[8.5px] font-bold text-steel/70 uppercase mb-0.5">Tanggal Mulai</p>
+                                  <p className="font-sans text-[11px] text-ink font-semibold truncate">
+                                    {new Date(pelamar.tanggal_mulai_diinginkan).toLocaleDateString("id-ID", { dateStyle: "short" })}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Portofolio */}
+                        {pelamar.url_portofolio_dokumen?.trim() && (
+                          <a href={pelamar.url_portofolio_dokumen}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between font-mono text-[11px] text-amber-800 font-bold hover:underline bg-amber-100 p-2.5 rounded-xl border border-amber-300 hover:bg-amber-200 transition"
+                          >
+                            <span className="truncate">Dokumen Portofolio</span>
+                            <svg className="h-3 w-3 shrink-0 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        )}
                       </div>
-                    )}
 
-                    {/* Portofolio */}
-                    {pelamar.url_portofolio_dokumen?.trim() && (
-  
-                      <a href={pelamar.url_portofolio_dokumen}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-between font-mono text-xs text-amber-800 font-bold hover:underline bg-amber-100 p-3 rounded-xl border border-amber-300 hover:bg-amber-200 transition"
+                      {/* Action Footer */}
+                      <div className="pt-3 border-t border-steel/10 space-y-2">
+                        <div className="flex items-center justify-between text-[9.5px] font-mono text-steel">
+                          <span>Daftar: {new Date(pelamar.tanggal_daftar).toLocaleDateString("id-ID", { dateStyle: "short" })}</span>
+                        </div>
+
+                        {pelamar.status === "Menunggu" ? (
+                          <div className="flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
+                            <Link
+                              href={`/profile/${pelamar.mahasiswa_id}`}
+                              className="flex-1 min-w-[70px] text-center rounded-full border border-steel/20 bg-white text-ink px-2.5 py-1.5 font-semibold hover:bg-steel/5 transition"
+                            >
+                              Profil
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => openInterviewModal(pelamar)}
+                              className="flex-1 min-w-[80px] rounded-full border border-sky/30 bg-sky/10 text-ocean px-2.5 py-1.5 font-semibold hover:bg-sky/20 transition flex items-center justify-center gap-1"
+                            >
+                              <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                              </svg>
+                              Interview
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(pelamar.id, "Ditolak")}
+                              className="rounded-full border border-red-200 bg-red-50 text-red-700 px-2.5 py-1.5 font-semibold hover:bg-red-100 transition"
+                            >
+                              Tolak
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(pelamar.id, "Diterima")}
+                              className="rounded-full bg-emerald-600 text-white px-3 py-1.5 font-semibold hover:bg-emerald-700 transition shadow-sm"
+                            >
+                              Terima
+                            </button>
+                          </div>
+                        ) : pelamar.status === "Diterima" || pelamar.status === "Minta Revisi" || pelamar.status === "Selesai" ? (
+                          <div className="flex items-center gap-2 font-mono text-[11px]">
+                            <Link
+                              href={`/profile/${pelamar.mahasiswa_id}`}
+                              className="rounded-full border border-steel/20 bg-white text-ink px-3 py-1.5 font-semibold hover:bg-steel/5 transition"
+                            >
+                              Profil
+                            </Link>
+                            <button
+                              onClick={() => {
+                                setSelectedPelamar(pelamar);
+                                setActiveTab("workspace" as any);
+                              }}
+                              className="flex-1 rounded-full bg-ink text-white px-3 py-1.5 font-mono text-[11px] font-semibold hover:bg-steel transition text-center"
+                            >
+                              Buka Workspace
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Kontrol Pagination (3x2 Concept) */}
+                {totalPelamarPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 border-t border-steel/10 font-mono text-xs">
+                    <span className="text-steel">
+                      Halaman <strong className="text-ink">{pelamarPage}</strong> dari {totalPelamarPages} (Total {sortedPelamarList.length} Pelamar)
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={pelamarPage === 1}
+                        onClick={() => setPelamarPage((prev) => Math.max(prev - 1, 1))}
+                        className="rounded-xl border border-steel/20 bg-white px-3.5 py-1.5 font-semibold text-ink hover:bg-steel/5 disabled:opacity-40 transition"
                       >
-                        <span>Lihat Dokumen Portofolio</span>
-                        <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    )}
-
-                    {/* Action Footer */}
-                    <div className="pt-3 border-t border-steel/10 flex items-center justify-between gap-3">
-                      <span className="font-mono text-[10px] text-steel">
-                        Daftar {new Date(pelamar.tanggal_daftar).toLocaleDateString("id-ID", { dateStyle: "medium" })}
-                      </span>
-
-                      {pelamar.status === "Menunggu" ? (
-                        <div className="flex items-center gap-2 font-mono text-xs">
-                          <Link
-                            href={`/profile/${pelamar.mahasiswa_id}`}
-                            className="rounded-full border border-steel/20 bg-white text-ink px-4 py-1.5 font-semibold hover:bg-steel/5 transition"
-                          >
-                            Lihat Profil
-                          </Link>
-                          <button
-                            onClick={() => handleUpdateStatus(pelamar.id, "Ditolak")}
-                            className="rounded-full border border-red-200 bg-red-50 text-red-700 px-4 py-1.5 font-semibold hover:bg-red-100 transition"
-                          >
-                            Tolak
-                          </button>
-                          <button
-                            onClick={() => handleUpdateStatus(pelamar.id, "Diterima")}
-                            className="rounded-full bg-emerald-600 text-white px-5 py-1.5 font-semibold hover:bg-emerald-700 transition shadow-sm"
-                          >
-                            Terima
-                          </button>
-                        </div>
-                      ) : pelamar.status === "Diterima" || pelamar.status === "Minta Revisi" || pelamar.status === "Selesai" ? (
-                        <div className="flex items-center gap-2 font-mono text-xs">
-                          <Link
-                            href={`/profile/${pelamar.mahasiswa_id}`}
-                            className="rounded-full border border-steel/20 bg-white text-ink px-4 py-1.5 font-semibold hover:bg-steel/5 transition"
-                          >
-                            Lihat Profil
-                          </Link>
-                          <button
-                            onClick={() => {
-                              setSelectedPelamar(pelamar);
-                              setActiveTab("workspace" as any);
-                            }}
-                            className="rounded-full bg-ink text-white px-4 py-1.5 font-mono text-xs font-semibold hover:bg-steel transition"
-                          >
-                            Buka Workspace
-                          </button>
-                        </div>
-                      ) : null}
+                        &larr; Prev
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pelamarPage >= totalPelamarPages}
+                        onClick={() => setPelamarPage((prev) => Math.min(prev + 1, totalPelamarPages))}
+                        className="rounded-xl border border-steel/20 bg-white px-3.5 py-1.5 font-semibold text-ink hover:bg-steel/5 disabled:opacity-40 transition"
+                      >
+                        Next &rarr;
+                      </button>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
@@ -1391,6 +1452,102 @@ export default function DetailKolaborasiPage() {
             >
               Selesai
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Wawancara */}
+      {isInterviewModalOpen && interviewTargetPelamar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4 border border-steel/20">
+            <div className="flex items-center justify-between border-b border-steel/10 pb-3">
+              <div>
+                <h3 className="font-display text-base font-bold text-ink flex items-center gap-2">
+                  <svg className="w-4 h-4 text-ocean" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  Jadwalkan Wawancara
+                </h3>
+                <p className="font-mono text-[11px] text-steel mt-0.5">
+                  Undang {interviewTargetPelamar.nama_lengkap} untuk sesi wawancara.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsInterviewModalOpen(false)}
+                className="text-steel hover:text-ink font-mono text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleScheduleInterview} className="space-y-3 font-mono text-xs">
+              <div>
+                <label className="block font-bold text-ink mb-1">Tanggal Wawancara * (Min. H+2)</label>
+                <input
+                  type="date"
+                  required
+                  min={minInterviewDate}
+                  value={interviewDate}
+                  onChange={(e) => setInterviewDate(e.target.value)}
+                  className="w-full rounded-xl border border-steel/20 px-3.5 py-2.5 outline-none focus:border-bridge-gold bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-ink mb-1">Jam Wawancara *</label>
+                <input
+                  type="time"
+                  required
+                  value={interviewTime}
+                  onChange={(e) => setInterviewTime(e.target.value)}
+                  className="w-full rounded-xl border border-steel/20 px-3.5 py-2.5 outline-none focus:border-bridge-gold bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-ink mb-1">Link Video Call / Meeting *</label>
+                <input
+                  type="url"
+                  required
+                  value={interviewLink}
+                  onChange={(e) => setInterviewLink(e.target.value)}
+                  placeholder="https://meet.google.com/..."
+                  className="w-full rounded-xl border border-steel/20 px-3.5 py-2.5 outline-none focus:border-bridge-gold bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-ink mb-1">Catatan Tambahan (Opsional)</label>
+                <textarea
+                  rows={2}
+                  value={interviewNotes}
+                  onChange={(e) => setInterviewNotes(e.target.value)}
+                  placeholder="Instruksi khusus, persiapan portofolio, dll."
+                  className="w-full rounded-xl border border-steel/20 px-3.5 py-2.5 outline-none focus:border-bridge-gold bg-white leading-relaxed font-sans"
+                />
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsInterviewModalOpen(false)}
+                  className="rounded-full border border-steel/20 px-5 py-2 text-steel hover:bg-steel/5 transition font-semibold"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingInterview || !interviewDate || !interviewTime}
+                  className="rounded-full bg-ocean text-white px-6 py-2 font-bold hover:bg-ink transition disabled:opacity-40 shadow-sm"
+                >
+                  {isSubmittingInterview ? "Menyimpan..." : "Kirim Undangan"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

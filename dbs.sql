@@ -125,6 +125,7 @@ CREATE TABLE public.kolaborasi (
   tanggal_selesai date,
   tipe_lokasi text DEFAULT 'Remote'::text,
   current_slot bigint,
+  status_aktif text NOT NULL DEFAULT 'Aktif'::text,
   CONSTRAINT kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT kolaborasi_perusahaan_id_fkey FOREIGN KEY (perusahaan_id) REFERENCES public.perusahaan_profiles(user_id),
   CONSTRAINT kolaborasi_kategori_id_fkey FOREIGN KEY (kategori_id) REFERENCES public.kategori_minat(id),
@@ -161,6 +162,7 @@ CREATE TABLE public.pendaftaran_kolaborasi (
   tujuan_mengajukan text,
   ketersediaan text,
   tanggal_mulai_diinginkan date,
+  status_lamaran_override text,
   CONSTRAINT pendaftaran_kolaborasi_pkey PRIMARY KEY (id),
   CONSTRAINT pendaftaran_kolaborasi_kolaborasi_id_fkey FOREIGN KEY (kolaborasi_id) REFERENCES public.kolaborasi(id),
   CONSTRAINT pendaftaran_kolaborasi_mahasiswa_id_fkey FOREIGN KEY (mahasiswa_id) REFERENCES public.mahasiswa_profiles(user_id)
@@ -308,4 +310,19 @@ CREATE TABLE public.banks (
   is_active boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT banks_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.interviews (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  kolaborasi_id uuid NOT NULL,
+  student_id uuid NOT NULL,
+  perusahaan_id uuid NOT NULL,
+  scheduled_at timestamp with time zone NOT NULL,
+  meeting_link character varying DEFAULT 'https://meet.google.com/abc-defg-hij'::character varying,
+  status character varying DEFAULT 'Scheduled'::character varying,
+  notes text,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT interviews_pkey PRIMARY KEY (id),
+  CONSTRAINT interviews_kolaborasi_id_fkey FOREIGN KEY (kolaborasi_id) REFERENCES public.kolaborasi(id),
+  CONSTRAINT interviews_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.mahasiswa_profiles(user_id),
+  CONSTRAINT interviews_perusahaan_id_fkey FOREIGN KEY (perusahaan_id) REFERENCES public.perusahaan_profiles(user_id)
 );

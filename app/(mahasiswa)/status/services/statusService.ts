@@ -23,6 +23,8 @@ export async function fetchMahasiswaStatusList(): Promise<StatusItem[]> {
         judul,
         tipe,
         gaji_stipend,
+        tanggal_selesai,
+        batas_waktu,
         perusahaan:perusahaan_id ( nama_perusahaan )
       ),
       riwayat_pengumpulan_kolaborasi (
@@ -51,6 +53,19 @@ export async function fetchMahasiswaStatusList(): Promise<StatusItem[]> {
       catatanPembatalanMap[row.kolaborasi_id] = row.catatan_perusahaan;
     });
   }
+
+  let interviewMap: Record<string, any> = {};
+  const { data: interviewRows } = await supabase
+    .from("interviews")
+    .select("*")
+    .eq("student_id", currentUserId)
+    .order("scheduled_at", { ascending: false });
+
+  (interviewRows || []).forEach((inv: any) => {
+    if (!interviewMap[inv.kolaborasi_id]) {
+      interviewMap[inv.kolaborasi_id] = inv;
+    }
+  });
 
   const mapped: StatusItem[] = dbData.map((item: any) => {
     const riwayatList = item.riwayat_pengumpulan_kolaborasi || [];
@@ -101,6 +116,9 @@ export async function fetchMahasiswaStatusList(): Promise<StatusItem[]> {
       gajiStipend: colab.gaji_stipend || undefined,
       urlBuktiBayar: item.url_bukti_bayar || undefined,
       statusPembayaran: item.status_pembayaran || undefined,
+      tanggalSelesai: colab.tanggal_selesai || undefined,
+      batasWaktu: colab.batas_waktu || undefined,
+      interview: interviewMap[item.kolaborasi_id] || null,
     };
   });
 
