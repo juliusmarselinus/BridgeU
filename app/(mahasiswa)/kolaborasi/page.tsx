@@ -276,6 +276,28 @@ export default function KolaborasiPage() {
   }, [kolaborasiWithScores, search, tipeFilter]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+
+  // Bikin daftar nomor halaman yang dipadatkan: 1 ... (current-1, current, current+1) ... last
+  const getPaginationRange = (current: number, total: number): (number | "...")[] => {
+    const delta = 1;
+    const range: number[] = [];
+    for (let i = 1; i <= total; i++) {
+      if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+        range.push(i);
+      }
+    }
+    const withDots: (number | "...")[] = [];
+    let last: number | undefined;
+    for (const i of range) {
+      if (last !== undefined) {
+        if (i - last === 2) withDots.push(last + 1);
+        else if (i - last !== 1) withDots.push("...");
+      }
+      withDots.push(i);
+      last = i;
+    }
+    return withDots;
+  };
   const paginatedItems = filtered.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -311,7 +333,7 @@ export default function KolaborasiPage() {
       {/* Soft ambient bars — sama kayak dashboard, buat break flat background */}
       <GradientBars
         numBars={20}
-        gradientFrom="rgb(141, 209, 255)"
+        gradientFrom="rgb(176, 208, 218)"
         gradientTo="transparent"
         animationDuration={7}
         className="opacity-70"
@@ -747,19 +769,28 @@ export default function KolaborasiPage() {
               >
                 ←
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`h-9 w-9 rounded-full border font-mono text-sm font-bold transition shadow-sm ${
-                    page === currentPage
-                      ? "border-primary bg-primary text-white shadow-md"
-                      : "border-border bg-card text-ink hover:border-primary/40 hover:bg-surface"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+              {getPaginationRange(currentPage, totalPages).map((page, idx) =>
+                page === "..." ? (
+                  <span
+                    key={`dots-${idx}`}
+                    className="h-9 w-9 flex items-center justify-center font-mono text-sm text-steel/60 select-none"
+                  >
+                    ···
+                  </span>
+                ) : (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`h-9 w-9 rounded-full border font-mono text-sm font-bold transition shadow-sm ${
+                      page === currentPage
+                        ? "border-primary bg-primary text-white shadow-md"
+                        : "border-border bg-card text-ink hover:border-primary/40 hover:bg-surface"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
