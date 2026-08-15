@@ -8,6 +8,7 @@ import { StoredCompany, KolaborasiWithMeta } from "./types/company";
 import { PelamarDetail } from "../pelamar/types/pelamar";
 import { PerusahaanSkeletonPage } from "@/components/ui/MahasiswaLoading";
 import { InteractiveCalendar, CalendarEvent } from "@/components/ui/InteractiveCalendar";
+import { InteractiveAnalyticsViewer } from "@/components/ui/InteractiveAnalyticsViewer";
 
 import { supabase } from "@/lib/supabase";
 
@@ -25,6 +26,10 @@ export default function CompanyDashboardPage() {
   const [recentPelamar, setRecentPelamar] = useState<RecentPelamar[]>([]);
   const [interviewsList, setInterviewsList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Pagination Aktivitas Terbaru (Pelamar)
+  const [pelamarPage, setPelamarPage] = useState(1);
+  const PELAMAR_PER_PAGE = 5;
 
   useEffect(() => {
     let isMounted = true;
@@ -147,6 +152,110 @@ export default function CompanyDashboardPage() {
 
     return list;
   }, [kolaborasiList, interviewsList]);
+
+  // --- ANALYTICS MITRA BUSINESS INSIGHTS ---
+  // 1. Conversion Funnel
+  const diproses = recentPelamar.filter((p) => p.status === "Diproses" || p.status === "Diterima").length;
+  const evaluasi = recentPelamar.filter((p) => p.status === "Evaluasi" || p.status === "Revisi").length;
+
+  // 2. Talent Demographics (Sebaran Kampus & Prodi)
+  const demographicsData = useMemo(() => {
+    const univMap: Record<string, number> = {};
+    const prodiMap: Record<string, number> = {};
+    recentPelamar.forEach((p) => {
+      const uName = p.universitas || "Lainnya";
+      const prName = p.program_studi || "Lainnya";
+      univMap[uName] = (univMap[uName] || 0) + 1;
+      prodiMap[prName] = (prodiMap[prName] || 0) + 1;
+    });
+
+    const topUniv = Object.entries(univMap)
+      .map(([name, count]) => ({ name, count, percent: Math.round((count / (totalPelamar || 1)) * 100) }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 4);
+
+    const topProdi = Object.entries(prodiMap)
+      .map(([name, count]) => ({ name, count, percent: Math.round((count / (totalPelamar || 1)) * 100) }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 4);
+
+    return { topUniv, topProdi };
+  }, [recentPelamar, totalPelamar]);
+
+  // 3. Slot Occupancy & Velocity
+  const slotOccupancyData = useMemo(() => {
+    let totalSlots = 0;
+    let filledSlots = 0;
+    kolaborasiList.forEach((k) => {
+      const s = k.slot || 0;
+      const curr = k.current_slot ?? s;
+      totalSlots += s;
+      filledSlots += Math.max(0, s - curr);
+    });
+    const occupancyRate = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
+    return { totalSlots, filledSlots, occupancyRate };
+  }, [kolaborasiList]);
+
+  // 4. Performance & Rating Index
+  const performanceIndex = useMemo(() => {
+    let ratedCount = 0;
+    let totalRatingSum = 0;
+    let totalRevisions = 0;
+
+    recentPelamar.forEach((p) => {
+      if (p.ratings && p.ratings > 0) {
+        ratedCount++;
+        totalRatingSum += Number(p.ratings);
+      }
+      if (p.riwayat_pengumpulan && p.riwayat_pengumpulan.length > 1) {
+        totalRevisions += p.riwayat_pengumpulan.length - 1;
+      }
+    });
+
+    const avgRating = ratedCount > 0 ? (totalRatingSum / ratedCount).toFixed(1) : "0.0";
+    return { avgRating, ratedCount, totalRevisions };
+  }, [recentPelamar]);
+  // Formatted Chart Arrays for Interactive Analytics Viewer
+  const chartConversionData = useMemo(() => [
+    { label: "Pendaftar Masuk", value: totalPelamar, color: "#3B82F6", formattedValue: `${totalPelamar} Orang` },
+    { label: "Diterima / Aktif", value: diproses, color: "#10B981", formattedValue: `${diproses} Orang` },
+    { label: "Tahap Evaluasi", value: evaluasi, color: "#8B5CF6", formattedValue: `${evaluasi} Orang` },
+    { label: "Proyek Selesai", value: selesai, color: "#06B6D4", formattedValue: `${selesai} Proyek` },
+  ], [totalPelamar, diproses, evaluasi, selesai]);
+
+  const chartOccupancyData = useMemo(() => [
+    { label: "Total Slot Dibuka", value: slotOccupancyData.totalSlots, color: "#6366F1", formattedValue: `${slotOccupancyData.totalSlots} Slot` },
+    { label: "Slot Terisi", value: slotOccupancyData.filledSlots, color: "#10B981", formattedValue: `${slotOccupancyData.filledSlots} Slot` },
+    { label: "Sisa Slot Kuota", value: Math.max(0, slotOccupancyData.totalSlots - slotOccupancyData.filledSlots), color: "#F59E0B", formattedValue: `${Math.max(0, slotOccupancyData.totalSlots - slotOccupancyData.filledSlots)} Slot` },
+  ], [slotOccupancyData]);
+
+  const chartDemographicsData = useMemo(() => {
+    const colors = ["#3B82F6", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981"];
+    if (demographicsData.topUniv.length === 0) {
+      return [{ label: "Belum Ada Pelamar", value: 1, color: "#94A3B8", formattedValue: "0 Pelamar" }];
+    }
+    return demographicsData.topUniv.map((u, i) => ({
+      label: u.name,
+      value: u.count,
+      color: colors[i % colors.length],
+      formattedValue: `${u.count} (${u.percent}%)`,
+    }));
+  }, [demographicsData]);
+
+  const chartPerformanceData = useMemo(() => [
+    { label: "Proyek Di-rating", value: performanceIndex.ratedCount, color: "#10B981", formattedValue: `${performanceIndex.ratedCount} Proyek` },
+    { label: "Rata-Rata Rating", value: Math.round(Number(performanceIndex.avgRating) * 20), color: "#F59E0B", formattedValue: `★ ${performanceIndex.avgRating} / 5.0` },
+    { label: "Frekuensi Revisi", value: performanceIndex.totalRevisions, color: "#EF4444", formattedValue: `${performanceIndex.totalRevisions} Kali` },
+  ], [performanceIndex]);
+
+  const totalPelamarPages = useMemo(() => {
+    return Math.ceil(recentPelamar.length / PELAMAR_PER_PAGE) || 1;
+  }, [recentPelamar.length]);
+
+  const paginatedPelamar = useMemo(() => {
+    const start = (pelamarPage - 1) * PELAMAR_PER_PAGE;
+    return recentPelamar.slice(start, start + PELAMAR_PER_PAGE);
+  }, [recentPelamar, pelamarPage]);
 
   if (isLoading) return <PerusahaanSkeletonPage />;
 
@@ -441,60 +550,117 @@ export default function CompanyDashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="mt-6 space-y-3 animate-fade-in">
-            {recentPelamar.slice(0, 5).map((p) => (
-              <div
-                key={p.id}
-                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-white p-5 transition-all duration-300 ${NEO_CARD} ${NEO_CARD_HOVER} hover:-translate-y-0.5`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#97B8D8] font-display text-sm font-bold text-[#12284B]">
-                    {p.nama_lengkap?.charAt(0)?.toUpperCase() || "M"}
+          <div className="mt-6 space-y-4 animate-fade-in">
+            <div className="space-y-3">
+              {paginatedPelamar.map((p) => (
+                <div
+                  key={p.id}
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-white p-5 transition-all duration-300 ${NEO_CARD} ${NEO_CARD_HOVER} hover:-translate-y-0.5`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#97B8D8] font-display text-sm font-bold text-[#12284B]">
+                      {p.nama_lengkap?.charAt(0)?.toUpperCase() || "M"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-display text-sm font-bold text-ink leading-snug">
+                        {p.nama_lengkap}
+                      </p>
+                      <p className="text-xs text-steel truncate">
+                        {p.universitas} · {p.program_studi}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-display text-sm font-bold text-ink leading-snug">
-                      {p.nama_lengkap}
+
+                  <div className="flex flex-col items-start sm:items-end gap-1 pl-[52px] sm:pl-0 shrink-0">
+                    <p className="font-mono text-[10px] text-steel/60 uppercase tracking-wider">
+                      Proyek
                     </p>
-                    <p className="text-xs text-steel truncate">
-                      {p.universitas} · {p.program_studi}
-                    </p>
+                    <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+                      <p className="font-display text-sm font-bold text-ink truncate max-w-[220px]">
+                        {p.kolaborasi_judul}
+                      </p>
+                      <span className="font-mono text-[11px] text-steel/60 whitespace-nowrap">
+                        {formatTanggal(p.tanggal_daftar)}
+                      </span>
+                      <span
+                        className={`rounded-full px-3 py-1 font-mono text-[10px] font-semibold whitespace-nowrap ${
+                          p.status === "Diterima"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : p.status === "Ditolak"
+                            ? "bg-red-50 text-red-600 border border-red-200"
+                            : "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}
+                      >
+                        {p.status}
+                      </span>
+                    </div>
+                    <Link
+                      href={`/perusahaan/kolaborasi/${p.kolaborasi_id}`}
+                      className="font-mono text-[11px] text-[#4A7DA6] font-medium hover:underline"
+                    >
+                      Lihat Detail ↗
+                    </Link>
                   </div>
                 </div>
+              ))}
+            </div>
 
-                <div className="flex flex-col items-start sm:items-end gap-1 pl-[52px] sm:pl-0 shrink-0">
-                  <p className="font-mono text-[10px] text-steel/60 uppercase tracking-wider">
-                    Proyek
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <p className="font-display text-sm font-bold text-ink truncate max-w-[220px]">
-                      {p.kolaborasi_judul}
-                    </p>
-                    <span className="font-mono text-[11px] text-steel/60 whitespace-nowrap">
-                      {formatTanggal(p.tanggal_daftar)}
-                    </span>
-                    <span
-                      className={`rounded-full px-3 py-1 font-mono text-[10px] font-semibold whitespace-nowrap ${
-                        p.status === "Diterima"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : p.status === "Ditolak"
-                          ? "bg-red-50 text-red-600 border border-red-200"
-                          : "bg-amber-50 text-amber-700 border border-amber-200"
-                      }`}
-                    >
-                      {p.status}
-                    </span>
-                  </div>
-                  <Link
-                    href={`/perusahaan/kolaborasi/${p.kolaborasi_id}`}
-                    className="font-mono text-[11px] text-[#4A7DA6] font-medium hover:underline"
+            {/* Controls Pagination Aktivitas Terbaru */}
+            {totalPelamarPages > 1 && (
+              <div className="flex items-center justify-between border-t border-steel/10 pt-4 font-mono text-xs text-steel">
+                <span>
+                  Halaman <strong className="text-ink">{pelamarPage}</strong> dari <strong className="text-ink">{totalPelamarPages}</strong> ({recentPelamar.length} Total Pelamar)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={pelamarPage === 1}
+                    onClick={() => setPelamarPage((prev) => Math.max(1, prev - 1))}
+                    className="rounded-xl border border-steel/20 bg-white px-3.5 py-1.5 font-bold text-ink hover:bg-steel/5 disabled:opacity-40 transition"
                   >
-                    Lihat Detail ↗
-                  </Link>
+                    &larr; Prev
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pelamarPage === totalPelamarPages}
+                    onClick={() => setPelamarPage((prev) => Math.min(totalPelamarPages, prev + 1))}
+                    className="rounded-xl border border-steel/20 bg-white px-3.5 py-1.5 font-bold text-ink hover:bg-steel/5 disabled:opacity-40 transition"
+                  >
+                    Next &rarr;
+                  </button>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         )}
+      </section>
+
+      {/* SECTION Bawah: ANALYTICS MITRA BUSINESS INSIGHTS (INTERACTIVE CHARTS) */}
+      <section className="mt-14 pt-8 border-t border-steel/15 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-ink flex items-center gap-2">
+              <svg className="w-6 h-6 text-ocean" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Mitra Business Insights &amp; Analytics
+            </h2>
+            <p className="font-mono text-xs text-steel mt-0.5">
+              Pilih kartu kategori di bawah untuk mengganti visualisasi Bar Chart / Pie Chart
+            </p>
+          </div>
+          <span className="font-mono text-xs font-bold text-ocean bg-sky/15 px-3 py-1 rounded-full border border-sky/30 self-start sm:self-auto">
+            Interactive Dynamic Charts
+          </span>
+        </div>
+
+        {/* Interactive Analytics Viewer Component */}
+        <InteractiveAnalyticsViewer
+          conversionData={chartConversionData}
+          occupancyData={chartOccupancyData}
+          demographicsData={chartDemographicsData}
+          performanceData={chartPerformanceData}
+        />
       </section>
     </main>
   );
