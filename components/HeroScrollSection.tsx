@@ -1,6 +1,5 @@
 "use client";
 import React from "react";
-import Image from "next/image";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 
 export function HeroScrollSection() {
@@ -19,13 +18,12 @@ export function HeroScrollSection() {
             </>
           }
         >
-          <Image
-            src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1400&auto=format&fit=crop&q=80"
-            alt="Preview dasbor BridgeU"
-            height={720}
-            width={1400}
-            className="mx-auto h-full rounded-2xl object-cover object-left-top"
-            draggable={false}
+          <iframe
+            src="https://www.youtube.com/embed/WSNszd1CaZo?rel=0&modestbranding=1"
+            title="Preview BridgeU"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="mx-auto h-full w-full rounded-2xl"
           />
         </ContainerScroll>
       </div>

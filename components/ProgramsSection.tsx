@@ -4,7 +4,7 @@ const programs = [
   {
     title: "Studi Kasus & Riset",
     desc:
-      "Lebih dari 30 peluang kolaborasi tersedia lintas bidang: Teknologi, Bisnis, Desain, hingga Riset Sosial. Beberapa studi kasus datang langsung dari tantangan nyata yang dihadapi perusahaan mitra.",
+      "Peluang kolaborasi tersedia lintas bidang: Teknologi, Bisnis, Desain, hingga Riset Sosial. Beberapa studi kasus datang langsung dari tantangan nyata yang dihadapi perusahaan mitra.",
   },
   {
     title: "Program Magang",

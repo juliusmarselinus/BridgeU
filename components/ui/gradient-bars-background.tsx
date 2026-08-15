@@ -57,6 +57,8 @@ export const GradientBars: React.FC<GradientBarsProps> = ({
           className="flex h-full"
           style={{
             width: "100%",
+            // Fallback: kalau masih ada celah 1px yang kelewat, warnanya ngikutin gradientFrom (bukan putih)
+            backgroundColor: gradientFrom,
             transform: "translateZ(0)",
             backfaceVisibility: "hidden",
             WebkitFontSmoothing: "antialiased",
@@ -68,8 +70,9 @@ export const GradientBars: React.FC<GradientBarsProps> = ({
               <div
                 key={index}
                 style={{
-                  flex: `1 0 calc(100% / ${numBars})`,
-                  maxWidth: `calc(100% / ${numBars})`,
+                  flex: `0 0 calc(100% / ${numBars} + 1px)`,
+                  width: `calc(100% / ${numBars} + 1px)`,
+                  marginRight: index === numBars - 1 ? 0 : "-1px",
                   height: "100%",
                   background: `linear-gradient(to top, ${gradientFrom}, ${gradientTo})`,
                   transform: `scaleY(${height / 100})`,
