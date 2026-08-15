@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SearchBar } from "./SearchBar";
 import { supabase } from "@/lib/supabase";
@@ -98,12 +99,12 @@ function BellIcon() {
 
 function NotificationPanel({
   notifications,
-  onMarkAsRead,
   onMarkAllAsRead,
+  onOpenDetail,
 }: {
   notifications: NotifikasiItem[];
-  onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
+  onOpenDetail: (n: NotifikasiItem) => void;
 }) {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
@@ -145,7 +146,7 @@ function NotificationPanel({
             return (
               <button
                 key={n.id}
-                onClick={() => onMarkAsRead(String(n.id))}
+                onClick={() => onOpenDetail(n)}
                 className={`flex w-full items-start gap-3 px-5 py-4 text-left transition ${
                   i !== notifications.length - 1 ? "border-b border-border" : ""
                 } ${isRead ? "hover:bg-surface" : "bg-primary/[0.05] hover:bg-primary/[0.08]"}`}
@@ -164,7 +165,7 @@ function NotificationPanel({
                   </div>
                   {n.pesan && (
                     <p
-                      className={`mt-1 font-mono text-[11px] leading-relaxed ${
+                      className={`mt-1 font-mono text-[11px] leading-relaxed line-clamp-2 ${
                         isRead ? "text-steel/50" : "text-steel"
                       }`}
                     >
@@ -194,7 +195,95 @@ function NotificationPanel({
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// Notification type derivation — single source of truth for icon+color
+// NotifDetailModal — muncul di tengah layar saat notifikasi diklik.
+// Tombol "Lihat Detail" mengarah ke halaman berbeda tergantung jenis notif
+// (badge/level → /profile, lamaran/kolaborasi/proyek → /status).
+// ───────────────────────────────────────────────────────────────────────────
+function NotifDetailModal({
+  notif,
+  onClose,
+  onNavigate,
+}: {
+  notif: NotifikasiItem | null;
+  onClose: () => void;
+  onNavigate: (href: string) => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  const targetRoute = notif ? deriveNotifRoute(notif.judul) : null;
+
+  return createPortal(
+    <AnimatePresence>
+      {notif && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.96 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"
+          >
+            <div className="flex items-start gap-3 border-b border-border bg-surface px-6 py-5">
+              <NotifIcon type={deriveNotifType(notif.judul)} />
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display text-sm font-bold text-ink">{notif.judul}</h3>
+                <span className="mt-0.5 block font-mono text-[10px] text-steel/60">
+                  {formatNotifTime(notif.created_at)}
+                </span>
+              </div>
+              <button
+                onClick={onClose}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-steel hover:bg-white hover:text-ink transition"
+                aria-label="Tutup"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-5">
+              <p className="font-sans text-sm leading-relaxed text-ink whitespace-pre-line">
+                {notif.pesan || "Tidak ada detail tambahan untuk notifikasi ini."}
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-border bg-surface px-6 py-3.5">
+              {targetRoute && (
+                <button
+                  onClick={() => onNavigate(targetRoute)}
+                  className="rounded-full bg-bridge-gold px-5 py-2 font-mono text-xs font-bold text-ink hover:bg-bridge-gold/90 transition"
+                >
+                  Lihat Detail
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="rounded-full bg-ink px-5 py-2 font-mono text-xs font-bold text-paper hover:bg-steel transition"
+              >
+                Tutup
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Notification type & route derivation — single source of truth
 // ───────────────────────────────────────────────────────────────────────────
 function deriveNotifType(judul: string): NotificationType {
   const j = judul.toLowerCase();
@@ -206,9 +295,26 @@ function deriveNotifType(judul: string): NotificationType {
     j.includes("selamat")
   )
     return "success";
-  if (j.includes("ditolak") || j.includes("tidak lolos") || j.includes("gagal"))
+  if (j.includes("ditolak") || j.includes("tidak lolos") || j.includes("gagal") || j.includes("dibatalkan"))
     return "warning";
   return "info";
+}
+
+function deriveNotifRoute(judul: string): string | null {
+  const j = judul.toLowerCase();
+  if (j.includes("badge") || j.includes("level") || j.includes("xp"))
+    return "/profile";
+  if (
+    j.includes("lamaran") ||
+    j.includes("kolaborasi") ||
+    j.includes("pengajuan") ||
+    j.includes("proyek") ||
+    j.includes("diterima") ||
+    j.includes("ditolak") ||
+    j.includes("dibatalkan")
+  )
+    return "/status";
+  return null;
 }
 
 function formatNotifTime(createdAt: string): string {
@@ -228,8 +334,10 @@ function formatNotifTime(createdAt: string): string {
 // NotificationBell — powered by realtime Supabase subscription
 // ───────────────────────────────────────────────────────────────────────────
 function NotificationBell() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [selectedNotif, setSelectedNotif] = useState<NotifikasiItem | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   // Resolve userId dari sesi Supabase satu kali
@@ -256,12 +364,19 @@ function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleMarkAsRead = (id: string) => {
-    markAsRead(parseInt(id, 10));
-  };
-
   const handleMarkAllAsRead = () => {
     markAsRead();
+  };
+
+  const handleOpenDetail = (n: NotifikasiItem) => {
+    if (!n.is_read) markAsRead(Number(n.id));
+    setSelectedNotif(n);
+    setOpen(false);
+  };
+
+  const handleNavigate = (href: string) => {
+    setSelectedNotif(null);
+    router.push(href);
   };
 
   return (
@@ -284,10 +399,16 @@ function NotificationBell() {
       {open && (
         <NotificationPanel
           notifications={notifications}
-          onMarkAsRead={handleMarkAsRead}
           onMarkAllAsRead={handleMarkAllAsRead}
+          onOpenDetail={handleOpenDetail}
         />
       )}
+
+      <NotifDetailModal
+        notif={selectedNotif}
+        onClose={() => setSelectedNotif(null)}
+        onNavigate={handleNavigate}
+      />
     </div>
   );
 }
