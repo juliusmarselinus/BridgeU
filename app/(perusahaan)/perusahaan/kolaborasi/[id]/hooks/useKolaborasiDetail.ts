@@ -364,8 +364,11 @@ export function useKolaborasiDetail() {
           setPelamarList(mappedPelamar);
 
           // Select first pelamar by default if available
-          if (mappedPelamar.length > 0 && !selectedPelamar) {
-            setSelectedPelamar(mappedPelamar[0]);
+          const firstAktif = mappedPelamar.find(
+            (p) => p.status === "Diterima" || p.status === "Minta Revisi" || p.status === "Selesai"
+          );
+          if (firstAktif && !selectedPelamar) {
+            setSelectedPelamar(firstAktif);
           }
 
           const activeProdis = (row.kolaborasi_target_prodi || []).map((p: any) => p.prodi_id);
